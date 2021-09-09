@@ -44,5 +44,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 }
             }
         }
+
+        public string BufferAsString()
+        {
+            return BitConverter.ToString(Buffer).Replace("-", "");
+        }
     }
 }
