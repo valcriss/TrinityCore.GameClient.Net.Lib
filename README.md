@@ -14,7 +14,7 @@ _Have a nice day_
 ## What can i do with the library ?
 For the moment here are the things you can do :  
 **/!\ Only supported version is TrinityCore branch 3.3.5**
-- [x] Authenticate on authserver
+- [x] Authenticate with an existing account on authserver
 - [x] Get the list of world servers
 - [x] Connect to a world server
 - [x] Get the list of existing characters
