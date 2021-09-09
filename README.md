@@ -15,8 +15,8 @@ _Have a nice day_
 For the moment here are the things you can do :  
 **/!\ Only supported version is TrinityCore branch 3.3.5**
 - [x] Authenticate on authserver
-- [x] Get list of world servers
-- [x] Connect to world a server
-- [x] Get list of characters
-- [x] Enter world with a character
+- [x] Get the list of world servers
+- [x] Connect to a world server
+- [x] Get the list of existing characters
+- [x] Enter the world with a character
 - [x] Stay connected
