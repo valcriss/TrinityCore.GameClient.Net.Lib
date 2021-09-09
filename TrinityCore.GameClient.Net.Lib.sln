@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityCore.GameClient.Net.Lib", "TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.csproj", "{2B645ACB-CA19-423B-AA96-0F0705B413B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityCore.GameClient.Net.Lib.Sample", "TrinityCore.GameClient.Net.Lib.Sample\TrinityCore.GameClient.Net.Lib.Sample.csproj", "{7E517E49-1AD4-4427-B176-849BC52304D3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B645ACB-CA19-423B-AA96-0F0705B413B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B645ACB-CA19-423B-AA96-0F0705B413B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B645ACB-CA19-423B-AA96-0F0705B413B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B645ACB-CA19-423B-AA96-0F0705B413B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E517E49-1AD4-4427-B176-849BC52304D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E517E49-1AD4-4427-B176-849BC52304D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E517E49-1AD4-4427-B176-849BC52304D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E517E49-1AD4-4427-B176-849BC52304D3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB246DB4-2945-40C7-9B73-B6D088B26232}
+	EndGlobalSection
+EndGlobal
