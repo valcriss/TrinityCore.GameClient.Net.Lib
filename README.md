@@ -1,4 +1,5 @@
 # TrinityCore.GameClient.Net.Lib
+**:warning: Only supported version is TrinityCore branch 3.3.5 :warning:**
 
 _First of all, English is not my mother tongue, so sorry in advance for any mistakes._
 
@@ -12,8 +13,7 @@ _This library is therefore a piece of a bot system for TrinityCore, a system tha
 _Have a nice day_  
 
 ## What can i do with the library ?
-For the moment here are the things you can do :  
-**/!\ Only supported version is TrinityCore branch 3.3.5**
+**For the moment here are the things you can do :**
 - [x] Authenticate with an existing account on authserver
 - [x] Get the list of world servers
 - [x] Connect to a world server
