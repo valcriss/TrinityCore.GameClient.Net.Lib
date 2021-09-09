@@ -1,4 +1,4 @@
-# TrinityCore.GameClient.Net.Lib
+# TrinityCore.GameClient.Net.Lib [![.NET](https://github.com/valcriss/TrinityCore.GameClient.Net.Lib/actions/workflows/dotnet.yml/badge.svg)](https://github.com/valcriss/TrinityCore.GameClient.Net.Lib/actions/workflows/dotnet.yml)
 **:warning: Only supported version is TrinityCore branch 3.3.5 :warning:**
 
 _First of all, English is not my mother tongue, so sorry in advance for any mistakes._
