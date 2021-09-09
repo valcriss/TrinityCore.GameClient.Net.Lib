@@ -12,9 +12,25 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         private static Client Client { get; set; }
         static void Main(string[] args)
         {
+            Configuration configuration = Configuration.Load();
+            while (!configuration.IsValid)
+            {
+                configuration.Host = AnsiConsole.Ask<string>("[green]AuthServer Host  :[/]");
+                configuration.Port = AnsiConsole.Ask<int>("[green]AuthServer Port  :[/]");
+                configuration.Login = AnsiConsole.Ask<string>("[green]Account login    :[/]");
+                configuration.Password = AnsiConsole.Ask<string>("[green]Account password :[/]");
+                configuration.LogLevel = Select(new List<string>() { "DETAIL", "INFO", "WARNING" }, "LogLevel");
+                configuration.Save();              
+            }
+
             Logger.Level = LogLevel.INFO;
+            if (Enum.TryParse(configuration.LogLevel, out LogLevel level))
+            {
+                Logger.Level = level;
+            }
+
             Logger.LogObject = new ConsoleLogger();
-            Client = new Client("94.23.27.24", 3724, "test", "test");
+            Client = new Client(configuration.Host, configuration.Port, configuration.Login, configuration.Password);
 
             if (!Authenticate())
             {
