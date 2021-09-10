@@ -67,10 +67,10 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 
             BigInteger x = HashAlgorithm.SHA1.Hash(Salt, passwordHash).ToBigInteger();
 
-            Logger.Log("---====== shared password hash ======---", LogLevel.DETAIL);
-            Logger.Log($"g={g.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"x={x.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"N={n.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
+            Logger.Log("---====== shared password hash ======---", LogLevel.VERBOSE);
+            Logger.Log($"g={g.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"x={x.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"N={n.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
 
             #endregion Hash password
 
@@ -87,8 +87,8 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
                 y = g.ModPow(a, n);
             } while (y.ModPow(1, n) == 0);
 
-            Logger.Log("---====== Send data to server: ======---", LogLevel.DETAIL);
-            Logger.Log($"A={y.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
+            Logger.Log("---====== Send data to server: ======---", LogLevel.VERBOSE);
+            Logger.Log($"A={y.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
 
             #endregion Create random key pair
 
@@ -126,10 +126,10 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 
             Key = keyData.ToBigInteger();
 
-            Logger.Log("---====== Compute session key ======---", LogLevel.DETAIL);
-            Logger.Log($"u={u.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"S={s.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"K={Key.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
+            Logger.Log("---====== Compute session key ======---", LogLevel.VERBOSE);
+            Logger.Log($"u={u.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"S={s.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"K={Key.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
 
             #endregion Compute session key
 
@@ -141,12 +141,12 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
             byte[] nHash = HashAlgorithm.SHA1.Hash(n.ToCleanByteArray());
             for (int i = 0; i < 20; ++i)
                 gNHash[i] = nHash[i];
-            Logger.Log($"nHash={nHash.ToHexString()}", LogLevel.DETAIL);
+            Logger.Log($"nHash={nHash.ToHexString()}", LogLevel.VERBOSE);
 
             byte[] gHash = HashAlgorithm.SHA1.Hash(g.ToCleanByteArray());
             for (int i = 0; i < 20; ++i)
                 gNHash[i] ^= gHash[i];
-            Logger.Log($"gHash={gHash.ToHexString()}", LogLevel.DETAIL);
+            Logger.Log($"gHash={gHash.ToHexString()}", LogLevel.VERBOSE);
 
             // hash username
             byte[] userHash = HashAlgorithm.SHA1.Hash(Encoding.ASCII.GetBytes(username));
@@ -162,16 +162,16 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
                 Key.ToCleanByteArray()
             );
 
-            Logger.Log("---====== Client proof: ======---", LogLevel.DETAIL);
-            Logger.Log($"gNHash={gNHash.ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"userHash={userHash.ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"salt={Salt.ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"A={y.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"B={b.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
-            Logger.Log($"key={Key.ToCleanByteArray().ToHexString()}", LogLevel.DETAIL);
+            Logger.Log("---====== Client proof: ======---", LogLevel.VERBOSE);
+            Logger.Log($"gNHash={gNHash.ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"userHash={userHash.ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"salt={Salt.ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"A={y.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"B={b.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
+            Logger.Log($"key={Key.ToCleanByteArray().ToHexString()}", LogLevel.VERBOSE);
 
-            Logger.Log("---====== Send proof to server: ======---", LogLevel.DETAIL);
-            Logger.Log($"M={m1Hash.ToHexString()}", LogLevel.DETAIL);
+            Logger.Log("---====== Send proof to server: ======---", LogLevel.VERBOSE);
+            Logger.Log($"M={m1Hash.ToHexString()}", LogLevel.VERBOSE);
 
             // expected proof for server
             byte[] m2 = HashAlgorithm.SHA1.Hash(y.ToCleanByteArray(), m1Hash, keyData);

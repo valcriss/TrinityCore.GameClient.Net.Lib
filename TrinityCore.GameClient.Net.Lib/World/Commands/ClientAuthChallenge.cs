@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
 using HashAlgorithm = TrinityCore.GameClient.Net.Lib.Network.Crypto.HashAlgorithm;
 using System.Text;

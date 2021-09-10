@@ -19,8 +19,8 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 configuration.Port = AnsiConsole.Ask<int>("[green]AuthServer Port  :[/]");
                 configuration.Login = AnsiConsole.Ask<string>("[green]Account login    :[/]");
                 configuration.Password = AnsiConsole.Ask<string>("[green]Account password :[/]");
-                configuration.LogLevel = Select(new List<string>() { "DETAIL", "INFO", "WARNING" }, "LogLevel");
-                configuration.Save();              
+                configuration.LogLevel = Select(new List<string>() { "VERBOSE", "DETAIL", "INFO", "WARNING" }, "LogLevel");
+                configuration.Save();
             }
 
             Logger.Level = LogLevel.INFO;
@@ -76,8 +76,8 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool Authenticate()
         {
-            AnsiConsole.MarkupLine("[bold white]Starting Auth Login[/]");
-            Logger.Log("Starting Authentication", LogLevel.INFO);
+            Logger.Log("[bold white]Starting Auth Login[/]", LogLevel.DETAIL);
+            Logger.Log("Starting Authentication", LogLevel.DETAIL);
             bool authLogin = Client.Authenticate().Result;
             if (!authLogin)
             {
@@ -96,7 +96,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool Connect(WorldServerInfo world)
         {
-            Logger.Log("Starting World Connect : " + world.Name, LogLevel.INFO);
+            Logger.Log("Starting World Connect : " + world.Name, LogLevel.DETAIL);
             bool worldLogin = Client.Connect(world).Result;
 
             if (!worldLogin)
@@ -126,7 +126,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool EnterWorld(Character character)
         {
-            Logger.Log("Starting Character Entering World : " + character.Name, LogLevel.INFO);
+            Logger.Log("Starting Character Entering World : " + character.Name, LogLevel.DETAIL);
             bool characterLogin = Client.EnterWorld(character).Result;
             if (!characterLogin)
             {

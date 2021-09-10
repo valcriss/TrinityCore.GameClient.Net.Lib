@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -35,7 +33,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             get=> playerState;            
             set
             {
-                Logger.Log("PlayerState Updated : " + playerState + " -> " + value, LogLevel.DETAIL);
+                Logger.Log("PlayerState Updated : " + playerState + " -> " + value, LogLevel.VERBOSE);
                 playerState = value;
             }
         }
@@ -46,7 +44,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             get => state; 
             set
             {
-                Logger.Log("WorldState Updated : " + state + " -> " + value, LogLevel.DETAIL);
+                Logger.Log("WorldState Updated : " + state + " -> " + value, LogLevel.VERBOSE);
                 state = value;
             }
         }
@@ -178,7 +176,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
         {
             if (State != WorldState.AUTHENTICATED) return;
             if (PlayerState != WorldPlayerState.LOGGED_IN) return;
-            Logger.Log("Sending KeepAlive", LogLevel.DETAIL);
+            Logger.Log("Sending KeepAlive", LogLevel.VERBOSE);
             Send(new KeepAlive(this));
         }
 

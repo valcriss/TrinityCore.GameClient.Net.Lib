@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.Network.Core
+﻿namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
     public abstract class SendablePacket : Packet
     {

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace TrinityCore.GameClient.Net.Lib.Log
 {
@@ -36,6 +34,7 @@ namespace TrinityCore.GameClient.Net.Lib.Log
 
     public enum LogLevel
     {
+        VERBOSE = 5,
         DETAIL = 4,
         INFO = 3,
         WARNING = 2,

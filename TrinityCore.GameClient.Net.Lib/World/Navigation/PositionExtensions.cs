@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.World.Navigation
+﻿namespace TrinityCore.GameClient.Net.Lib.World.Navigation
 {
     public static class PositionExtensions
     {

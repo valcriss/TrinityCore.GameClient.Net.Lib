@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Log;
 
@@ -30,13 +28,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         protected virtual void RaiseSocketConnected()
         {
-            Logger.Log("SocketConnected", LogLevel.DETAIL);
+            Logger.Log("SocketConnected", LogLevel.VERBOSE);
             OnGameSocketConnected?.Invoke(this);
         }
 
         protected virtual void RaiseSocketDisconnected()
         {
-            Logger.Log("SocketDisconnected", LogLevel.DETAIL);
+            Logger.Log("SocketDisconnected", LogLevel.VERBOSE);
             OnGameSocketDisconnected?.Invoke(this);
         }
 
@@ -68,7 +66,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 try
                 {
                     TcpClient?.Close();
-                    Logger.Log("Connecting to " + Host + ":" + Port, LogLevel.DETAIL);
+                    Logger.Log("Connecting to " + Host + ":" + Port, LogLevel.VERBOSE);
                     TcpClient = new TcpClient(Host, Port);
                     OnGameSocketConnected?.Invoke(this);
                     ReceiveData();

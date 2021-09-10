@@ -1,6 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Text;
@@ -48,6 +47,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
                 }
 
                 return output;
+            }
+            catch(ICSharpCode.SharpZipLib.SharpZipBaseException)
+            {
+                return null;
             }
             catch (Exception e)
             {

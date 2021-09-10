@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TrinityCore.GameClient.Net.Lib.Auth.Enums;
+﻿using TrinityCore.GameClient.Net.Lib.Auth.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
 namespace TrinityCore.GameClient.Net.Lib.Auth

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Text;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {

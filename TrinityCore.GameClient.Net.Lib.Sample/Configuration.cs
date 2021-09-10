@@ -52,7 +52,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                     return JsonConvert.DeserializeObject<Configuration>(content);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
 
             }

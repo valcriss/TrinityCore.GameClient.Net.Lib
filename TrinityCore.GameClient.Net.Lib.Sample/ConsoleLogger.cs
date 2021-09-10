@@ -9,9 +9,17 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         public void Log(string message, LogLevel level = LogLevel.INFO)
         {
             string color = null;
+            if(message.EndsWith(" YES"))
+            {
+                message = message.Substring(0, message.Length - 3) + "[chartreuse2]YES[/]";
+            }
+            else if (message.EndsWith(" NO"))
+            {
+                message = message.Substring(0, message.Length - 2) + "[indianred1]NO[/]";
+            }
             switch (level)
             {
-                case LogLevel.DETAIL:
+                case LogLevel.VERBOSE:
                     color = "grey46";
                     break;
                 case LogLevel.INFO:
@@ -27,13 +35,12 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                     color = "chartreuse2";
                     break;
             }
-            AnsiConsole.MarkupLine("[bold " + color + "]" + level + " : " + message + "[/]");
+            AnsiConsole.MarkupLine("[bold " + color + "]" + level.ToString().EnsureLength(7) + " : " + message + "[/]");
         }
 
         public void LogException(Exception e)
         {
-            AnsiConsole.MarkupLine("[bold indianred1]EXCEPTION : " + e.Message + "[/]");
-            AnsiConsole.MarkupLine("[bold indianred1]EXCEPTION : " + e.StackTrace + "[/]");
+            AnsiConsole.WriteException(e);
         }
     }
 }

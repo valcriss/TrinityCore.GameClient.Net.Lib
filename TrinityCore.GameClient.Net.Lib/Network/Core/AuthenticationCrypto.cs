@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Network.Crypto;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core

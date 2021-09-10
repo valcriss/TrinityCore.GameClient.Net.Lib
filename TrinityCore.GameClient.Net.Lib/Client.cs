@@ -1,47 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Auth;
-using TrinityCore.GameClient.Net.Lib.Network.Entities;
-using TrinityCore.GameClient.Net.Lib.World;
-using TrinityCore.GameClient.Net.Lib.World.Entities;
+﻿using TrinityCore.GameClient.Net.Lib.Clients;
+using TrinityCore.GameClient.Net.Lib.Components.Player;
+using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration;
 
 namespace TrinityCore.GameClient.Net.Lib
 {
-    public class Client
+    public class Client : ExtendableClient
     {
-        private AuthClient AuthClient { get; set; }
-        private WorldClient WorldClient { get; set; }
-
-        public Client(string host, int port, string login, string password)
+        public WorldConfigurationComponent WorldConfiguration { get; set; }
+        public PlayerComponent Player { get; set; }
+        public Client(string host, int port, string login, string password) : base(host, port, login, password)
         {
-            AuthClient = new AuthClient(host, port, login, password);
+            WorldConfiguration = AddComponent(new WorldConfigurationComponent());
+            Player = AddComponent(new PlayerComponent());
         }
 
-        public async Task<bool> Authenticate()
-        {
-            return await AuthClient.Authenticate();
-        }
 
-        public async Task<List<WorldServerInfo>> GetWorlds()
-        {
-            return await AuthClient.GetWorlds();
-        }
-
-        public async Task<bool> Connect(WorldServerInfo server)
-        {
-            WorldClient = new WorldClient(server, AuthClient.Username, AuthClient.SessionKey);
-            return await WorldClient.Start();
-        }
-
-        public async Task<List<Character>> GetCharacters()
-        {
-            return await WorldClient.GetCharacters();
-        }
-
-        public async Task<bool> EnterWorld(Character selectedCharacter)
-        {
-            return await WorldClient.LoginCharacter(selectedCharacter);
-        }
     }
 }
