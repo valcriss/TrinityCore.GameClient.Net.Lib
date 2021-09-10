@@ -1,6 +1,5 @@
 ﻿using TrinityCore.GameClient.Net.Lib.Clients;
 using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands;
-using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Enums;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.Network.Core;

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.Sample
+﻿namespace TrinityCore.GameClient.Net.Lib.Sample
 {
     public static class StringExtensions
     {

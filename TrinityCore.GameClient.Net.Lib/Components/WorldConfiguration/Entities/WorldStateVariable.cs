@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Entities
+﻿namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Entities
 {
     public class WorldStateVariable
     {

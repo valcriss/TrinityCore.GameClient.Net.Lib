@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Clients;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Commands;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Entities;

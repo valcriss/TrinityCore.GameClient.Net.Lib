@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
+﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
     public class TalentInfo
     {
