@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.World;
+using TrinityCore.GameClient.Net.Lib.World.Commands;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
 
@@ -73,6 +72,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                         {
                             Players.Add(entity.Guid, new Player(entity));
                             Map[entity.Guid] = MapType.PLAYER;
+                            WorldClient.Send(new NameQueryRequest(WorldClient, entity.Guid));
                         }
                     }
                     break;
@@ -100,9 +100,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                     UnCategorized.Remove(entity.Guid);
                 }
             }
-
+            
             DisplayStatus();
-        }
+        } 
 
         public void Close()
         {
@@ -343,7 +343,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                                     {
                                         if (!Npc.ContainsKey(entity.Guid))
                                         {
-                                            Npc.Add(entity.Guid, new Npc(entity, info));
+                                            Npc npc = new Npc(entity, info);
+                                            npc.Name = npc.Infos.Name;
+                                            Npc.Add(entity.Guid, npc);
                                         }
                                     }
 
@@ -358,7 +360,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                                     {
                                         if (!Creatures.ContainsKey(entity.Guid))
                                         {
-                                            Creatures.Add(entity.Guid, new Creature(entity, info));
+                                            Creature creature = new Creature(entity, info);
+                                            creature.Name = creature.Infos.Name;
+                                            Creatures.Add(entity.Guid, creature);
                                         }
                                     }
                                     lock (Map)

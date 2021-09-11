@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
@@ -11,12 +10,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
     public class Entity
     {
+        protected string _name = null;
         public Dictionary<UpdateFields, uint> Fields { get; set; }
         public ulong Guid { get; set; }
         public Movement Movement { get; set; }
         public Dictionary<Powers, uint> Powers { get; set; }
         public SplineMoveMode SplineMoveMode { get; set; }
         public TypeID Type { get; set; }
+        public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
 
         public Position GetPosition()
         {
@@ -25,7 +26,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
         public void UpdatePosition(Position position)
         {
             Movement.Position = position;
-            Logger.Log("Entity [" + Guid + "] Position update : " + position, LogLevel.DETAIL);
+            Logger.Log("Entity " + Name + " Position update : " + position, LogLevel.VERBOSE);
         }
 
         public Entity(UInt64 guid)
@@ -47,7 +48,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                 }
 
                 Fields[field.Key] = field.Value;
-                Logger.Log("Update " + field.Key + " = " + field.Value + " for Guid " + Guid, LogLevel.DETAIL);
+                Logger.Log("Update " + field.Key + " = " + field.Value + " for Guid " + Guid, LogLevel.VERBOSE);
             }
         }
 

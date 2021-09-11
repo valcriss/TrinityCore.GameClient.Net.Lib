@@ -23,6 +23,8 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 configuration.Save();
             }
 
+            
+
             Logger.Level = LogLevel.INFO;
             if (Enum.TryParse(configuration.LogLevel, out LogLevel level))
             {

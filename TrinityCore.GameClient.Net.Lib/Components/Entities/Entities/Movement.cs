@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TrinityCore.GameClient.Net.Lib.World.Entities;
+﻿using TrinityCore.GameClient.Net.Lib.World.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities

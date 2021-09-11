@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Clients;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
+using TrinityCore.GameClient.Net.Lib.World.Commands;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
 
@@ -18,7 +17,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 
         public EntitiesComponent()
         {
-            
+
         }
 
         public override void RegisterHandlers()
@@ -58,13 +57,25 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             RegisterInternalHandler(Internals.UPDATE_FIELDS, UpdateFields);
             RegisterInternalHandler(Internals.CREATE_OBJECTS, CreateObjects);
             RegisterInternalHandler(Internals.MOVEMENTS, UpdateMovements);
+
+            RegisterHandler(WorldCommand.SMSG_NAME_QUERY_RESPONSE, HandleNameQueryReponse);
+        }
+
+        private void HandleNameQueryReponse(ReceivablePacket content)
+        {
+            NameQueryResponse nameQueryResponse = new NameQueryResponse(content);
+            if(nameQueryResponse.Found)
+            {
+                Entity entity = Collection.GetUnit(nameQueryResponse.Guid);
+                entity.Name = nameQueryResponse.Name;
+            }
         }
 
         private void PowerUpdate(ReceivablePacket content)
         {
             PowerUpdate powerUpdate = new PowerUpdate(content);
- 
-            Logger.Log("PowerUpdate [" + powerUpdate.Guid + "] Power [" + powerUpdate.Power + "] : " + powerUpdate.Value + " for Guid : " + powerUpdate.Guid, LogLevel.DETAIL);
+
+            Logger.Log("PowerUpdate {" + powerUpdate.Guid + "} Power {" + powerUpdate.Power + "} : " + powerUpdate.Value + " for Guid : " + powerUpdate.Guid, LogLevel.VERBOSE);
 
             Entity entity = Collection.GetUnit(powerUpdate.Guid);
             entity.UpdatePower(powerUpdate.Power, powerUpdate.Value);
@@ -79,13 +90,18 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
         private void MonsterMove(ReceivablePacket content)
         {
             MonsterMove monsterMove = new MonsterMove(content);
-            Collection.GetUnit(monsterMove.MonsterGuid).UpdatePosition(monsterMove.Position);
+            Entity entity = Collection.GetUnit(monsterMove.MonsterGuid);
+            entity.UpdatePosition(monsterMove.Position);
+            Logger.Log("Entity " + entity.Name + " Update position " + entity.Movement.Position, LogLevel.VERBOSE);
         }
 
         private void HandleMovement(ReceivablePacket content)
         {
             HandleMovement handleMovement = new HandleMovement(content);
-            Collection.GetUnit(handleMovement.Guid).UpdateMovement(handleMovement.MovementLiving);
+            Entity entity = Collection.GetUnit(handleMovement.Guid);
+            entity.UpdateMovement(handleMovement.MovementLiving);
+            //if (entity.Type == TypeID.TYPEID_PLAYER)
+                Logger.Log("Entity " + entity.Name + " Update position " + entity.Movement.Position, LogLevel.VERBOSE);
         }
 
         private void SplineMoveSetWalkMode(ReceivablePacket content)
@@ -104,7 +120,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
         {
             List<UpdateValues> values = (List<UpdateValues>)content;
             foreach (UpdateValues updateValues in values)
-            {                
+            {
                 Entity entity = Collection.GetUnit(updateValues.Guid);
                 entity.UpdateFields(updateValues.Fields);
             }
