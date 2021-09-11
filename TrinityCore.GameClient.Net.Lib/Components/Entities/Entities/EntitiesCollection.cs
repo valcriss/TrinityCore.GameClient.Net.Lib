@@ -89,7 +89,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                     break;
 
                 default:
-                    Logger.Log("Unhandled TypeId : [" + type + "] Keeping on UnCategorized", LogLevel.WARNING);
+                    Logger.Log("Unhandled TypeId : " + type + " Keeping on UnCategorized", LogLevel.WARNING);
                     return;
             }
 
