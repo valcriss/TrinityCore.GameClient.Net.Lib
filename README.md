@@ -20,3 +20,6 @@ _Have a nice day_
 - [x] Get the list of existing characters
 - [x] Enter the world with a character
 - [x] Stay connected
+- [x] Getting world properties
+- [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
+- [ ] Currently working on player moves.
