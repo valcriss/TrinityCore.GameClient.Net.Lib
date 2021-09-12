@@ -1,18 +1,18 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Network.Crypto
 {
-    public class Arc4
+    internal class Arc4
     {
         private readonly byte[] _state;
         private byte _x, _y;
 
-        public Arc4(byte[] key)
+        internal Arc4(byte[] key)
         {
             _state = new byte[256];
             _x = _y = 0;
             KeySetup(key);
         }
 
-        public int Process(byte[] buffer, int start, int count)
+        internal int Process(byte[] buffer, int start, int count)
         {
             return InternalTransformBlock(buffer, start, count, buffer, start);
         }

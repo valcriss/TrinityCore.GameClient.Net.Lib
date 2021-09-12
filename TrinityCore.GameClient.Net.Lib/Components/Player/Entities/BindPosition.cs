@@ -2,18 +2,18 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class BindPosition
+    internal class BindPosition
     {
-        public uint AreaId { get; set; }
-        public uint MapId { get; set; }
-        public Vector3 Position { get; set; }
+        internal uint AreaId { get; set; }
+        internal uint MapId { get; set; }
+        internal Vector3 Position { get; set; }
 
-        public BindPosition()
+        internal BindPosition()
         {
             Position = new Vector3();
         }
 
-        public BindPosition(Vector3 position, uint mapId, uint areaId)
+        internal BindPosition(Vector3 position, uint mapId, uint areaId)
         {
             Position = position;
             MapId = mapId;

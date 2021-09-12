@@ -2,8 +2,8 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementHasTarget
+    internal class MovementHasTarget
     {
-        public UInt64 Target { get; set; }
+        internal UInt64 Target { get; set; }
     }
 }

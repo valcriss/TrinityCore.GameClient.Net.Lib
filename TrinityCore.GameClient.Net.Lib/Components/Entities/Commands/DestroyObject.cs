@@ -4,12 +4,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands
 {
-    public class DestroyObject : WorldReceivablePacket
+    internal class DestroyObject : WorldReceivablePacket
     {
-        public UInt64 DestroyedGuid { get; set; }
-        public bool OnDeath { get; set; }
+        internal UInt64 DestroyedGuid { get; set; }
+        internal bool OnDeath { get; set; }
 
-        public DestroyObject(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal DestroyObject(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             DestroyedGuid = ReadUInt64();
             OnDeath = ReadSByte() != 0;

@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Enums
 {
-    public enum ItemClass : sbyte
+    internal enum ItemClass : sbyte
     {
         ITEM_CLASS_CONSUMABLE = 0,
         ITEM_CLASS_CONTAINER = 1,

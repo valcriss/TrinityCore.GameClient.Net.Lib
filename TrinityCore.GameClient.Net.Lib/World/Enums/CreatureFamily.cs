@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum CreatureFamily
+    internal enum CreatureFamily
     {
         CREATURE_FAMILY_NONE = 0,
         CREATURE_FAMILY_WOLF = 1,

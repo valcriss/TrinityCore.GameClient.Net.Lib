@@ -1,8 +1,8 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class UpdateMovement
+    internal class UpdateMovement
     {
-        public ulong Guid { get; set; }
-        public MovementInfo Movement { get; set; }
+        internal ulong Guid { get; set; }
+        internal MovementInfo Movement { get; set; }
     }
 }

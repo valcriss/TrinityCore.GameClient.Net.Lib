@@ -11,17 +11,17 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 {
-    public class EntitiesComponent : GameComponent
+    internal class EntitiesComponent : GameComponent
     {
-        public static EntitiesComponent Instance { get; set; }
-        public EntitiesCollection Collection { get; set; }
+        internal static EntitiesComponent Instance { get; set; }
+        internal EntitiesCollection Collection { get; set; }
 
         public EntitiesComponent()
         {
             Instance = this;
         }
 
-        public override void RegisterHandlers()
+        internal override void RegisterHandlers()
         {
             Collection = new EntitiesCollection(WorldClient);
 

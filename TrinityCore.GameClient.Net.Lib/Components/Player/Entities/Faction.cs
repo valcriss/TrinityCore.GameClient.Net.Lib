@@ -1,9 +1,9 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class Faction
+    internal class Faction
     {
-        public sbyte Flags { get; set; }
-        public int Id { get; set; }
-        public uint Standing { get; set; }
+        internal sbyte Flags { get; set; }
+        internal int Id { get; set; }
+        internal uint Standing { get; set; }
     }
 }

@@ -1,8 +1,8 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    public class Item : Entity
+    internal class Item : Entity
     {
-        public Item(Entity entity) : base(entity.Guid)
+        internal Item(Entity entity) : base(entity.Guid)
         {
             Type = entity.Type;
             Powers = entity.Powers;

@@ -5,16 +5,16 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class TalentsInformations : WorldReceivablePacket
+    internal class TalentsInformations : WorldReceivablePacket
     {
         private const sbyte MAX_TALENT_SPECS = 2;
         private const sbyte MAX_TALENT_TABS = 2;
-        public List<GlyphInfo> GlyphInfos { get; set; }
-        public bool IsPet { get; set; }
-        public List<TalentInfo> TalentInfos { get; set; }
-        public uint UnSpendTalentPoints { get; set; }
+        internal List<GlyphInfo> GlyphInfos { get; set; }
+        internal bool IsPet { get; set; }
+        internal List<TalentInfo> TalentInfos { get; set; }
+        internal uint UnSpendTalentPoints { get; set; }
 
-        public TalentsInformations(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal TalentsInformations(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             TalentInfos = new List<TalentInfo>();
             GlyphInfos = new List<GlyphInfo>();

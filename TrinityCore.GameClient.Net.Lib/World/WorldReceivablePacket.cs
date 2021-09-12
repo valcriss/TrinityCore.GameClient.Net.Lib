@@ -5,19 +5,19 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World
 {
-    public class WorldReceivablePacket : ReceivablePacket
+    internal class WorldReceivablePacket : ReceivablePacket
     {
-        public WorldReceivablePacket(WorldCommand command, byte[] content, int readIndex = 0) : base((uint)command,
+        internal WorldReceivablePacket(WorldCommand command, byte[] content, int readIndex = 0) : base((uint)command,
             content, readIndex)
         {
         }
 
-        public WorldReceivablePacket(ReceivablePacket receivablePacket, int readIndex = 0) : base(receivablePacket,
+        internal WorldReceivablePacket(ReceivablePacket receivablePacket, int readIndex = 0) : base(receivablePacket,
             readIndex)
         {
         }
 
-        public new WorldReceivablePacket Inflate()
+        internal new WorldReceivablePacket Inflate()
         {
             uint uncompressedSize = ReadUInt32();
             //Skip first 2 bytes used by zlib only

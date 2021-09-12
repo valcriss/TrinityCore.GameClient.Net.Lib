@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum CommandDetail : byte
+    internal enum CommandDetail : byte
     {
         AUTH_OK = 12,
         AUTH_FAILED = 13,

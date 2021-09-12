@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.Network.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class AuthChallengeRequest : WorldReceivablePacket
+    internal class AuthChallengeRequest : WorldReceivablePacket
     {
-        public uint ServerSeed { get; set; }
+        internal uint ServerSeed { get; set; }
 
-        public AuthChallengeRequest(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal AuthChallengeRequest(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             uint one = ReadUInt32();
             ServerSeed = ReadUInt32();

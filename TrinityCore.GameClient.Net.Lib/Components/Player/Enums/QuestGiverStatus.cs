@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Enums
 {
-    public enum QuestGiverStatus : sbyte
+    internal enum QuestGiverStatus : sbyte
     {
         DIALOG_STATUS_NONE = 0,
         DIALOG_STATUS_UNAVAILABLE = 1,

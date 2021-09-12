@@ -4,16 +4,16 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Clients
 {
-    public abstract class GameComponent
+    internal abstract class GameComponent
     {
         protected WorldClient WorldClient { get; set; }
 
-        public void SetWorldClient(WorldClient worldClient)
+        internal void SetWorldClient(WorldClient worldClient)
         {
             WorldClient = worldClient;
         }
 
-        public abstract void RegisterHandlers();
+        internal abstract void RegisterHandlers();
 
         protected virtual void RegisterHandler(WorldCommand command, PacketHandler handler)
         {

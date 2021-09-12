@@ -7,14 +7,14 @@ using TrinityCore.GameClient.Net.Lib.Log;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Tools
 {
-    public static class BytesExtensions
+    internal static class BytesExtensions
     {
-        public static byte[] Append(this byte[] array1, byte value)
+        internal static byte[] Append(this byte[] array1, byte value)
         {
             return array1.Append(new[] { value });
         }
 
-        public static byte[] Append(this byte[] array1, byte[] array2, int length = -1)
+        internal static byte[] Append(this byte[] array1, byte[] array2, int length = -1)
         {
             if (array1 == null) array1 = new byte[0];
             if (array2 == null) return array1;
@@ -28,7 +28,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return buffer;
         }
 
-        public static byte[] Decompress(this byte[] data)
+        internal static byte[] Decompress(this byte[] data)
         {
             try
             {
@@ -59,12 +59,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             }
         }
 
-        public static BigInteger ModPow(this BigInteger value, BigInteger pow, BigInteger mod)
+        internal static BigInteger ModPow(this BigInteger value, BigInteger pow, BigInteger mod)
         {
             return BigInteger.ModPow(value, pow, mod);
         }
 
-        public static string ReadCString(this byte[] data, int start, out int length)
+        internal static string ReadCString(this byte[] data, int start, out int length)
         {
             StringBuilder builder = new StringBuilder();
             length = 0;
@@ -82,21 +82,21 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return builder.ToString();
         }
 
-        public static byte[] Split(this byte[] data, int startIndex, int length)
+        internal static byte[] Split(this byte[] data, int startIndex, int length)
         {
             byte[] buffer = new byte[length];
             Array.ConstrainedCopy(data, startIndex, buffer, 0, length);
             return buffer;
         }
 
-        public static byte[] SubArray(this byte[] array, int start, int count)
+        internal static byte[] SubArray(this byte[] array, int start, int count)
         {
             byte[] subArray = new byte[count];
             Array.Copy(array, start, subArray, 0, count);
             return subArray;
         }
 
-        public static BigInteger ToBigInteger(this byte[] array)
+        internal static BigInteger ToBigInteger(this byte[] array)
         {
             byte[] temp;
             if ((array[array.Length - 1] & 0x80) == 0x80)
@@ -113,7 +113,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return new BigInteger(temp);
         }
 
-        public static byte[] ToCleanByteArray(this BigInteger b)
+        internal static byte[] ToCleanByteArray(this BigInteger b)
         {
             byte[] array = b.ToByteArray();
             if (array[array.Length - 1] != 0)
@@ -124,7 +124,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return temp;
         }
 
-        public static byte[] ToCString(this string str)
+        internal static byte[] ToCString(this string str)
         {
             byte[] utf8StringBytes = Encoding.UTF8.GetBytes(str);
             byte[] data = new byte[utf8StringBytes.Length + 1];
@@ -133,7 +133,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return data;
         }
 
-        public static string ToHexString(this byte[] array)
+        internal static string ToHexString(this byte[] array)
         {
             StringBuilder builder = new StringBuilder();
 

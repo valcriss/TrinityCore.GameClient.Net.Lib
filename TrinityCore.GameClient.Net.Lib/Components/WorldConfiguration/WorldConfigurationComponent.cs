@@ -9,21 +9,21 @@ using WorldState = TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration
 {
-    public class WorldConfigurationComponent : GameComponent
+    internal class WorldConfigurationComponent : GameComponent
     {
-        public Difficulty DungeonDifficulty { get; set; }
-        public Difficulty InstanceDifficulty { get; set; }
-        public TutorialFlags TutorialFlags { get; set; }
-        public uint Version { get; set; }
-        public string Motd { get; set; }
-        public AccountDataTimes DataTimes { get; set; }
-        public LoginSetTimeSpeed LoginSetTimeSpeed { get; set; }
-        public bool VoiceChatEnabled { get; set; }
-        public UpdateWeatherState Weather { get; set; }
+        internal Difficulty DungeonDifficulty { get; set; }
+        internal Difficulty InstanceDifficulty { get; set; }
+        internal TutorialFlags TutorialFlags { get; set; }
+        internal uint Version { get; set; }
+        internal string Motd { get; set; }
+        internal AccountDataTimes DataTimes { get; set; }
+        internal LoginSetTimeSpeed LoginSetTimeSpeed { get; set; }
+        internal bool VoiceChatEnabled { get; set; }
+        internal UpdateWeatherState Weather { get; set; }
 
-        public WorldState WorldState { get; set; }
+        internal WorldState WorldState { get; set; }
 
-        public override void RegisterHandlers()
+        internal override void RegisterHandlers()
         {
             RegisterHandler(WorldCommand.SMSG_CLIENTCACHE_VERSION, ClientCacheVersion);
             RegisterHandler(WorldCommand.SMSG_TUTORIAL_FLAGS, SetTutorialFlags);

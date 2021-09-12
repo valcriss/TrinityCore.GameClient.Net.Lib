@@ -12,7 +12,7 @@ namespace TrinityCore.GameClient.Net.Lib.Clients
         protected AuthClient AuthClient { get; set; }
         protected WorldClient WorldClient { get; set; }
 
-        public BaseClient(string host, int port, string login, string password)
+        internal BaseClient(string host, int port, string login, string password)
         {
             AuthClient = new AuthClient(host, port, login, password);
         }

@@ -2,12 +2,12 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class Proficiency
+    internal class Proficiency
     {
-        public ItemClass ItemClass { get; set; }
+        internal ItemClass ItemClass { get; set; }
         protected uint SubItemClass { get; set; }
 
-        public Proficiency(ItemClass itemClass, uint subItemClass)
+        internal Proficiency(ItemClass itemClass, uint subItemClass)
         {
             ItemClass = itemClass;
             SubItemClass = subItemClass;

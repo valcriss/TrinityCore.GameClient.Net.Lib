@@ -3,25 +3,25 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class UnitInfo
+    internal class UnitInfo
     {
-        public CreatureEliteType Classification { get; set; }
-        public uint[] CreatureDisplayId { get; set; }
-        public CreatureFamily CreatureFamily { get; set; }
-        public uint CreatureId { get; set; }
-        public uint CreatureMovementInfoId { get; set; }
-        public CreatureType CreatureType { get; set; }
-        public string CursorName { get; set; }
-        public float EnergyMulti { get; set; }
-        public CreatureTypeFlags Flags { get; set; }
-        public float HpMulti { get; set; }
-        public bool Leader { get; set; }
-        public string Name { get; set; }
-        public string NameAlt { get; set; }
-        public uint[] ProxyCreatureId { get; set; }
-        public uint[] QuestItems { get; set; }
+        internal CreatureEliteType Classification { get; set; }
+        internal uint[] CreatureDisplayId { get; set; }
+        internal CreatureFamily CreatureFamily { get; set; }
+        internal uint CreatureId { get; set; }
+        internal uint CreatureMovementInfoId { get; set; }
+        internal CreatureType CreatureType { get; set; }
+        internal string CursorName { get; set; }
+        internal float EnergyMulti { get; set; }
+        internal CreatureTypeFlags Flags { get; set; }
+        internal float HpMulti { get; set; }
+        internal bool Leader { get; set; }
+        internal string Name { get; set; }
+        internal string NameAlt { get; set; }
+        internal uint[] ProxyCreatureId { get; set; }
+        internal uint[] QuestItems { get; set; }
 
-        public UnitInfo()
+        internal UnitInfo()
         {
             ProxyCreatureId = new uint[2];
             CreatureDisplayId = new uint[4];

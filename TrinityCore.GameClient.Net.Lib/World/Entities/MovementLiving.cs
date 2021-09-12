@@ -4,43 +4,43 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementLiving
+    internal class MovementLiving
     {
-        public MovementLiving()
+        internal MovementLiving()
         {
             Speeds = new Dictionary<UnitMoveType, float>();
         }
-        public MovementFlags MovementFlags { get; set; }
-        public MovementFlags2 ExtraMovementFlags { get; set; }
-        public uint Time { get; set; }
-        public Position Position { get; set; }
+        internal MovementFlags MovementFlags { get; set; }
+        internal MovementFlags2 ExtraMovementFlags { get; set; }
+        internal uint Time { get; set; }
+        internal Position Position { get; set; }
 
         // MOVEMENTFLAG_ONTRANSPORT
-        public ulong? TransportGuid { get; set; }
-        public Position TransportPosition { get; set; }
-        public byte? TransportSeat { get; set; }
-        public ulong? TransportTime { get; set; }
-        public ulong? TransportTime2 { get; set; }
+        internal ulong? TransportGuid { get; set; }
+        internal Position TransportPosition { get; set; }
+        internal byte? TransportSeat { get; set; }
+        internal ulong? TransportTime { get; set; }
+        internal ulong? TransportTime2 { get; set; }
 
         // MOVEMENTFLAG_SWIMMING || MOVEMENTFLAG_FLYING || MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING
-        public float? Pitch { get; set; }
+        internal float? Pitch { get; set; }
 
-        public uint FallTime { get; set; }
+        internal uint FallTime { get; set; }
 
         // MOVEMENTFLAG_FALLING
-        public float? JumpZSpeed { get; set; }
-        public float? JumpSinAngle { get; set; }
-        public float? JumpCosAngle { get; set; }
-        public float? JumpXySpeed { get; set; }
+        internal float? JumpZSpeed { get; set; }
+        internal float? JumpSinAngle { get; set; }
+        internal float? JumpCosAngle { get; set; }
+        internal float? JumpXySpeed { get; set; }
 
         // MOVEMENTFLAG_SPLINE_ELEVATION
-        public float? SplineElevation { get; set; }
+        internal float? SplineElevation { get; set; }
 
         // SPEEDS
-        public Dictionary<UnitMoveType, float> Speeds { get; set; }
+        internal Dictionary<UnitMoveType, float> Speeds { get; set; }
 
         // MOVEMENTFLAG_SPLINE_ENABLED
-        public MovementSpline MovementSpline { get; set; }
+        internal MovementSpline MovementSpline { get; set; }
 
 
 

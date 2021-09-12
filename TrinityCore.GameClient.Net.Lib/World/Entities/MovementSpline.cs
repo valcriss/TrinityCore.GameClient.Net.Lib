@@ -4,27 +4,27 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementSpline
+    internal class MovementSpline
     {
-        public int Duration { get; set; }
-        public int EffectStartTime { get; set; }
-        public float? FacingAngle { get; set; }
-        public float? FacingTarget { get; set; }
-        public Position FinalDestination { get; set; }
-        public Position FinalPosition { get; set; }
-        public SplineEvaluationMode SplineEvaluationMode { get; set; }
-        public SplineFlags? SplineFlags { get; set; }
-        public uint SplineId { get; set; }
-        public Position[] SplineNodes { get; set; }
-        public int TimePassed { get; set; }
-        public float VerticalAcceleration { get; set; }
+        internal int Duration { get; set; }
+        internal int EffectStartTime { get; set; }
+        internal float? FacingAngle { get; set; }
+        internal float? FacingTarget { get; set; }
+        internal Position FinalDestination { get; set; }
+        internal Position FinalPosition { get; set; }
+        internal SplineEvaluationMode SplineEvaluationMode { get; set; }
+        internal SplineFlags? SplineFlags { get; set; }
+        internal uint SplineId { get; set; }
+        internal Position[] SplineNodes { get; set; }
+        internal int TimePassed { get; set; }
+        internal float VerticalAcceleration { get; set; }
         private DateTime SplineStart { get; set; }
 
-        public MovementSpline()
+        internal MovementSpline()
         {
             SplineStart = DateTime.Now;
         }
-        public Position CurrentPosition(float speed)
+        internal Position CurrentPosition(float speed)
         {
             float totalTimePassed = (float)DateTime.Now.Subtract(SplineStart).TotalMilliseconds + TimePassed;
             float totalDistanceDone = speed * totalTimePassed;

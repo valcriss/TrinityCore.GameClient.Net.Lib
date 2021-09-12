@@ -3,11 +3,11 @@ using TrinityCore.GameClient.Net.Lib.World.Entities;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class CharactersListResponse : WorldReceivablePacket
+    internal class CharactersListResponse : WorldReceivablePacket
     {
-        public Character[] Characters { get; set; }
+        internal Character[] Characters { get; set; }
 
-        public CharactersListResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal CharactersListResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             byte count = ReadByte();
             if (count == 0)

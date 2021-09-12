@@ -3,11 +3,11 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World
 {
-    public class WorldPacketHeader
+    internal class WorldPacketHeader
     {
-        public WorldCommand Command { get; }
-        public int InputDataLength { get; }
-        public int Size { get; }
+        internal WorldCommand Command { get; }
+        internal int InputDataLength { get; }
+        internal int Size { get; }
 
         internal WorldPacketHeader(byte[] data, int dataLength)
         {

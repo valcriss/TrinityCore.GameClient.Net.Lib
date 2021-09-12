@@ -11,16 +11,16 @@ namespace TrinityCore.GameClient.Net.Lib.Auth
 {
     public class AuthClient : AuthSocket
     {
-        public BigInteger SessionKey { get; set; }
+        internal BigInteger SessionKey { get; set; }
         private ManualResetEvent AuthenticateDone { get; }
         private string Password { get; }
         private ManualResetEvent RealmListDone { get; }
         private List<WorldServerInfo> Realms { get; set; }
         private byte[] SessionProof { get; set; }
         private AuthState State { get; set; }
-        public string Username { get; }
+        internal string Username { get; }
 
-        public AuthClient(string host,int port, string username, string password) : base(host, port)
+        internal AuthClient(string host,int port, string username, string password) : base(host, port)
         {
             AuthenticateDone = new ManualResetEvent(false);
             RealmListDone = new ManualResetEvent(false);
@@ -33,7 +33,7 @@ namespace TrinityCore.GameClient.Net.Lib.Auth
             PacketsHandler.RegisterHandler(AuthCommand.REALM_LIST, RealmList);
         }
 
-        public async Task<List<WorldServerInfo>> GetWorlds()
+        internal async Task<List<WorldServerInfo>> GetWorlds()
         {
             return await Task.Run(() =>
             {
@@ -46,7 +46,7 @@ namespace TrinityCore.GameClient.Net.Lib.Auth
             });
         }
 
-        public async Task<bool> Authenticate()
+        internal async Task<bool> Authenticate()
         {
             return await Task.Run(() =>
             {

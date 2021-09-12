@@ -4,19 +4,19 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementInfo : Packet
+    internal class MovementInfo : Packet
     {
-        public MovementLiving MovementLiving { get; set; }
-        public MovementPosition MovementPosition { get; set; }
-        public MovementStationary MovementStationary { get; set; }
-        public MovementHasTarget MovementHasTarget { get; set; }
-        public MovementRotation MovementRotation { get; set; }
+        internal MovementLiving MovementLiving { get; set; }
+        internal MovementPosition MovementPosition { get; set; }
+        internal MovementStationary MovementStationary { get; set; }
+        internal MovementHasTarget MovementHasTarget { get; set; }
+        internal MovementRotation MovementRotation { get; set; }
 
-        public MovementInfo()
+        internal MovementInfo()
         {
         }
 
-        public MovementInfo(byte[] buffer, int readIndex, TypeID typeId) : base(buffer, readIndex)
+        internal MovementInfo(byte[] buffer, int readIndex, TypeID typeId) : base(buffer, readIndex)
         {
             MovementLiving = null;
 

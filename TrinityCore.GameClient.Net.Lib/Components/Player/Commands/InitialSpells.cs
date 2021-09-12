@@ -5,11 +5,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class InitialSpells : WorldReceivablePacket
+    internal class InitialSpells : WorldReceivablePacket
     {
-        public List<Spell> Spells { get; set; }
+        internal List<Spell> Spells { get; set; }
 
-        public InitialSpells(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal InitialSpells(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Spells = new List<Spell>();
             ReadSByte();

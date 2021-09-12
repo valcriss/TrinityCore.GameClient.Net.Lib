@@ -2,7 +2,7 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    public enum Internals
+    internal enum Internals
     {
         UPDATE_FIELDS,
         CREATE_OBJECTS,
@@ -10,25 +10,25 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         OUT_OF_RANGES
     }
     
-    public delegate void InternalPacketHandler(object content);
+    internal delegate void InternalPacketHandler(object content);
 
-    public class InternalPacketsHandler
+    internal class InternalPacketsHandler
     {
         private Dictionary<Internals, List<InternalPacketHandler>> Handlers { get; }
 
-        public InternalPacketsHandler()
+        internal InternalPacketsHandler()
         {
             Handlers = new Dictionary<Internals, List<InternalPacketHandler>>();
         }
 
-        public bool Handle(Internals command, object content)
+        internal bool Handle(Internals command, object content)
         {
             if (!Handlers.ContainsKey(command)) return false;
             foreach (InternalPacketHandler handler in Handlers[command]) handler(content);
             return true;
         }
 
-        public void RegisterHandler(Internals command, InternalPacketHandler handler)
+        internal void RegisterHandler(Internals command, InternalPacketHandler handler)
         {
             if (Handlers.ContainsKey(command))
                 Handlers[command].Add(handler);

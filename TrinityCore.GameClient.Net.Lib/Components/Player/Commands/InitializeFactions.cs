@@ -5,11 +5,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class InitializeFactions : WorldReceivablePacket
+    internal class InitializeFactions : WorldReceivablePacket
     {
-        public List<Faction> Factions { get; set; }
+        internal List<Faction> Factions { get; set; }
 
-        public InitializeFactions(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal InitializeFactions(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Factions = new List<Faction>();
             uint count = ReadUInt32();

@@ -8,14 +8,14 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
     public abstract class GameSocket
     {
-        public event OnGameSocketConnectedEventHandler OnGameSocketConnected;
+        internal event OnGameSocketConnectedEventHandler OnGameSocketConnected;
 
-        public event OnGameSocketDisconnectedEventHandler OnGameSocketDisconnected;
+        internal event OnGameSocketDisconnectedEventHandler OnGameSocketDisconnected;
 
         protected GameSocketBuffer SocketBuffer { get; set; }
         protected TcpClient TcpClient { get; set; }
 
-        public bool IsConnected => (TcpClient != null && TcpClient.Connected);
+        internal bool IsConnected => (TcpClient != null && TcpClient.Connected);
         private string Host { get; }
         private int Port { get; }
 
@@ -89,7 +89,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #region Sending
 
-        public bool Send(SendablePacket sendablePacket)
+        internal bool Send(SendablePacket sendablePacket)
         {
             return Send(sendablePacket.GetBuffer());
         }
@@ -120,7 +120,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             Dispose();
         }
 
-        public void Dispose()
+        internal void Dispose()
         {
             Close();
         }

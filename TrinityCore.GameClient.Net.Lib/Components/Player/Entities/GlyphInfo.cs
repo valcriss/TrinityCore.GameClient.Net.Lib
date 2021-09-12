@@ -1,8 +1,8 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class GlyphInfo
+    internal class GlyphInfo
     {
-        public ushort GlyphId { get; set; }
-        public int Group { get; set; }
+        internal ushort GlyphId { get; set; }
+        internal int Group { get; set; }
     }
 }

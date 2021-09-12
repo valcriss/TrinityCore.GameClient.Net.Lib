@@ -2,11 +2,11 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementPosition
+    internal class MovementPosition
     {
-        public bool Transport { get; set; }
-        public ulong? TransportGuid { get; set; }
-        public Position Position { get; set; }
-        public Position TransportPosition { get; set; }
+        internal bool Transport { get; set; }
+        internal ulong? TransportGuid { get; set; }
+        internal Position Position { get; set; }
+        internal Position TransportPosition { get; set; }
     }
 }

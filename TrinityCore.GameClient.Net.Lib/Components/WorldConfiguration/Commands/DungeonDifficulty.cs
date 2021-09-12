@@ -4,12 +4,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class DungeonDifficulty : WorldReceivablePacket
+    internal class DungeonDifficulty : WorldReceivablePacket
     {
-        public Difficulty Difficulty { get; set; }
-        public bool IsInGroup { get; set; }
+        internal Difficulty Difficulty { get; set; }
+        internal bool IsInGroup { get; set; }
 
-        public DungeonDifficulty(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal DungeonDifficulty(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Difficulty = (Difficulty)ReadUInt32();
             ReadUInt32();

@@ -10,13 +10,13 @@ namespace TrinityCore.GameClient.Net.Lib.World.Navigation
         public float Y { get; set; }
         public float Z { get; set; }
 
-        public Vector3 Vector3 => new Vector3(X, Y, Z);
-        public Position()
+        internal Vector3 Vector3 => new Vector3(X, Y, Z);
+        internal Position()
         {
 
         }
 
-        public Position(float x, float y, float z, float o)
+        internal Position(float x, float y, float z, float o)
         {
             X = x;
             Y = y;
@@ -24,7 +24,7 @@ namespace TrinityCore.GameClient.Net.Lib.World.Navigation
             O = o;
         }
 
-        public Position Direction
+        internal Position Direction
         {
             get
             {
@@ -46,7 +46,7 @@ namespace TrinityCore.GameClient.Net.Lib.World.Navigation
             return point1;
         }
 
-        public Position(Vector3 position, float orientation)
+        internal Position(Vector3 position, float orientation)
         {
             X = position.X;
             Y = position.Y;

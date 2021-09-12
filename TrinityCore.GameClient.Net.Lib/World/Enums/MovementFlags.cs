@@ -3,7 +3,7 @@
 namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
     [Flags]
-    public enum MovementFlags : UInt32
+    internal enum MovementFlags : UInt32
     {
         MOVEMENTFLAG_NONE = 0x00000000,
         MOVEMENTFLAG_FORWARD = 0x00000001,
@@ -40,7 +40,7 @@ namespace TrinityCore.GameClient.Net.Lib.World.Enums
     }
 
     [Flags]
-    public enum MovementFlags2 : UInt16
+    internal enum MovementFlags2 : UInt16
     {
         MOVEMENTFLAG2_NONE = 0x00000000,
         MOVEMENTFLAG2_NO_STRAFE = 0x00000001,

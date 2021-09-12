@@ -2,9 +2,9 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class ClientLogOutRequest : WorldSendablePacket
+    internal class ClientLogOutRequest : WorldSendablePacket
     {
-        public ClientLogOutRequest(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_LOGOUT_REQUEST)
+        internal ClientLogOutRequest(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_LOGOUT_REQUEST)
         {
         }
     }

@@ -6,8 +6,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
     public class ReceivablePacket : Packet
     {
-        public uint Command { get; set; }
-        public byte[] Content => Buffer;
+        internal uint Command { get; set; }
+        internal byte[] Content => Buffer;
 
         protected ReceivablePacket(uint command, byte[] content, int readIndex = 0)
         {
@@ -23,7 +23,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             ReadIndex = readIndex;
         }
 
-        public virtual ReceivablePacket Inflate()
+        internal virtual ReceivablePacket Inflate()
         {
             uint uncompressedSize = ReadUInt32();
             //Skip first 2 bytes used by zlib only
@@ -43,7 +43,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             }
         }
 
-        public string BufferAsString()
+        internal string BufferAsString()
         {
             return BitConverter.ToString(Buffer).Replace("-", "");
         }

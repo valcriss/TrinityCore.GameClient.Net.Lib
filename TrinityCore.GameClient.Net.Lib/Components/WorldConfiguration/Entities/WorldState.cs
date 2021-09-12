@@ -2,19 +2,19 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Entities
 {
-    public class WorldState
+    internal class WorldState
     {
-        public int AreaId { get; set; }
-        public int MapId { get; set; }
-        public Dictionary<uint, WorldStateVariable> Variables { get; set; }
-        public int ZoneId { get; set; }
+        internal int AreaId { get; set; }
+        internal int MapId { get; set; }
+        internal Dictionary<uint, WorldStateVariable> Variables { get; set; }
+        internal int ZoneId { get; set; }
 
-        public WorldState()
+        internal WorldState()
         {
             Variables = new Dictionary<uint, WorldStateVariable>();
         }
 
-        public void UpdateVariable(WorldStateVariable variable)
+        internal void UpdateVariable(WorldStateVariable variable)
         {
             if (Variables.ContainsKey(variable.Id))
                 Variables[variable.Id] = variable;

@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum WorldState
+    internal enum WorldState
     {
         DISCONNECTED,
         ERROR,

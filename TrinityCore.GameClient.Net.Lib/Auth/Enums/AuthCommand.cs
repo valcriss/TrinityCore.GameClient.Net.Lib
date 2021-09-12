@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Auth.Enums
 {
-    public enum AuthCommand : byte
+    internal enum AuthCommand : byte
     {
         LOGON_CHALLENGE = 0x00,
         LOGON_PROOF = 0x01,

@@ -23,14 +23,14 @@ namespace TrinityCore.GameClient.Net.Lib.World.Entities
         public float Y { get; set; }
         public float Z { get; set; }
         public uint ZoneId { get; set; }
-        private byte[] Bytes { get; } // 5
+        public byte[] Bytes { get; } // 5
 
-        public Character() : base()
+        internal Character() : base()
         {
             Items = new Item[19];
         }
 
-        public Character(byte[] data, int readIndex = 0) : base(data, readIndex)
+        internal Character(byte[] data, int readIndex = 0) : base(data, readIndex)
         {
             Items = new Item[19];
             GUID = ReadUInt64();

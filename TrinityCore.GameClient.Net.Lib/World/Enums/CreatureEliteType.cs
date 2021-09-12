@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum CreatureEliteType
+    internal enum CreatureEliteType
     {
         CREATURE_ELITE_NORMAL = 0,
         CREATURE_ELITE_ELITE = 1,

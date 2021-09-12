@@ -3,7 +3,7 @@
 namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
     [Flags]
-    public enum ObjectUpdateFlags : ushort
+    internal enum ObjectUpdateFlags : ushort
     {
         UPDATEFLAG_NONE = 0x0000,
         UPDATEFLAG_SELF = 0x0001,
@@ -19,7 +19,7 @@ namespace TrinityCore.GameClient.Net.Lib.World.Enums
     }
 
     [Flags]
-    public enum ObjectUpdateType
+    internal enum ObjectUpdateType
     {
         UPDATETYPE_VALUES = 0,
         UPDATETYPE_MOVEMENT = 1,

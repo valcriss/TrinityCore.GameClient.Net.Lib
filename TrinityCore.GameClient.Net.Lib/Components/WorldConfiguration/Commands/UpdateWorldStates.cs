@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class UpdateWorldStates : WorldReceivablePacket
+    internal class UpdateWorldStates : WorldReceivablePacket
     {
-        public WorldStateVariable Variable { get; set; }
+        internal WorldStateVariable Variable { get; set; }
 
-        public UpdateWorldStates(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal UpdateWorldStates(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Variable = new WorldStateVariable
             {

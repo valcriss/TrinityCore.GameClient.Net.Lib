@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Enums
 {
-    public enum AccountDataTypes
+    internal enum AccountDataTypes
     {
         GLOBAL_CONFIG_CACHE = 0, // 0x01 g
         PER_CHARACTER_CONFIG_CACHE = 1, // 0x02 p

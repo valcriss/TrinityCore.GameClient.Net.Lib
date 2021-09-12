@@ -6,11 +6,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class EquipmentSetList : WorldReceivablePacket
+    internal class EquipmentSetList : WorldReceivablePacket
     {
-        public List<EquipmentSet> EquipmentSets { get; set; }
+        internal List<EquipmentSet> EquipmentSets { get; set; }
 
-        public EquipmentSetList(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal EquipmentSetList(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             EquipmentSets = new List<EquipmentSet>();
             uint count = ReadUInt32();

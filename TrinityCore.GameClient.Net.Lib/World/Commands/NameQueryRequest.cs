@@ -2,9 +2,9 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class NameQueryRequest : WorldSendablePacket
+    internal class NameQueryRequest : WorldSendablePacket
     {
-        public NameQueryRequest(WorldSocket worldSocket, ulong guid) : base(worldSocket, WorldCommand.CMSG_NAME_QUERY)
+        internal NameQueryRequest(WorldSocket worldSocket, ulong guid) : base(worldSocket, WorldCommand.CMSG_NAME_QUERY)
         {
             Append(guid);
         }

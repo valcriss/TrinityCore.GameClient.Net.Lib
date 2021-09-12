@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Enums
 {
-    public enum EquipmentSlots : sbyte // 19 slots
+    internal enum EquipmentSlots : sbyte // 19 slots
     {
         EQUIPMENT_SLOT_HEAD = 0,
         EQUIPMENT_SLOT_NECK = 1,

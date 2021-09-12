@@ -2,11 +2,11 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    public class Npc : Entity
+    internal class Npc : Entity
     {
-        public UnitInfo Infos { get; set; }
+        internal UnitInfo Infos { get; set; }
 
-        public Npc(Entity entity, UnitInfo unitInfo) : base(entity.Guid)
+        internal Npc(Entity entity, UnitInfo unitInfo) : base(entity.Guid)
         {
             Type = entity.Type;
             Powers = entity.Powers;

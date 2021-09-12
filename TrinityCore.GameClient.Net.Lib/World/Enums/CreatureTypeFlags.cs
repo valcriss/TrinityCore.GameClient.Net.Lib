@@ -3,7 +3,7 @@
 namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
     [Flags]
-    public enum CreatureTypeFlags : uint
+    internal enum CreatureTypeFlags : uint
     {
         CREATURE_TYPE_FLAG_TAMEABLE_PET =
             0x00000001, // Makes the mob tameable (must also be a beast and have family set)

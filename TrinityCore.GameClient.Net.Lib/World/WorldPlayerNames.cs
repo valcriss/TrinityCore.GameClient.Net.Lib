@@ -7,13 +7,13 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World
 {
-    public class WorldPlayerNames
+    internal class WorldPlayerNames
     {
-        public Dictionary<ulong, string> PlayerNames { get; set; }
+        internal Dictionary<ulong, string> PlayerNames { get; set; }
         private ManualResetEvent CharacterNameQueryDone { get; }
         private WorldClient WorldClient { get; }
 
-        public WorldPlayerNames(WorldClient worldClient)
+        internal WorldPlayerNames(WorldClient worldClient)
         {
             PlayerNames = new Dictionary<ulong, string>();
             WorldClient = worldClient;
@@ -21,7 +21,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             CharacterNameQueryDone = new ManualResetEvent(false);
         }
 
-        public async Task<string> GetPlayerName(ulong guid)
+        internal async Task<string> GetPlayerName(ulong guid)
         {
             return await Task.Run(() =>
             {

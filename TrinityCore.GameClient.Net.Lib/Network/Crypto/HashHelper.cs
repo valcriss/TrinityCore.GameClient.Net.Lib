@@ -21,7 +21,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Crypto
             HashFunctions = new Dictionary<HashAlgorithm, HashFunction> { [HashAlgorithm.SHA1] = Sha1 };
         }
 
-        public static byte[] Hash(this HashAlgorithm algorithm, params byte[][] data)
+        internal static byte[] Hash(this HashAlgorithm algorithm, params byte[][] data)
         {
             return HashFunctions[algorithm](data);
         }

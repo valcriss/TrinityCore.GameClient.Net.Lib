@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum SplineEvaluationMode : sbyte
+    internal enum SplineEvaluationMode : sbyte
     {
         ModeLinear = 0,
         ModeCatmullrom = 1,

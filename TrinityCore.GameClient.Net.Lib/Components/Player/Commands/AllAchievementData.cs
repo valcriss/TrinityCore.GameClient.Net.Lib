@@ -6,12 +6,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class AllAchievementData : WorldReceivablePacket
+    internal class AllAchievementData : WorldReceivablePacket
     {
-        public List<AchievementCriteria> AchievementCriteriaList { get; set; }
-        public List<CompletedAchievement> CompletedAchievements { get; set; }
+        internal List<AchievementCriteria> AchievementCriteriaList { get; set; }
+        internal List<CompletedAchievement> CompletedAchievements { get; set; }
 
-        public AllAchievementData(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal AllAchievementData(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             CompletedAchievements = new List<CompletedAchievement>();
             AchievementCriteriaList = new List<AchievementCriteria>();

@@ -3,13 +3,13 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class LoginSetTimeSpeed : WorldReceivablePacket
+    internal class LoginSetTimeSpeed : WorldReceivablePacket
     {
-        public float NewTime { get; set; }
-        public uint GameTime { get; set; }
-        public int TimeHolidayOffset { get; set; }
+        internal float NewTime { get; set; }
+        internal uint GameTime { get; set; }
+        internal int TimeHolidayOffset { get; set; }
 
-        public LoginSetTimeSpeed(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal LoginSetTimeSpeed(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             NewTime = ReadSingle();
             GameTime = ReadUInt32();

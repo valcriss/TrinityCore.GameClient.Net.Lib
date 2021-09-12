@@ -3,11 +3,11 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class AuthChallengeResponse : WorldReceivablePacket
+    internal class AuthChallengeResponse : WorldReceivablePacket
     {
-        public bool Success { get; set; }
+        internal bool Success { get; set; }
 
-        public AuthChallengeResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal AuthChallengeResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             CommandDetail detail = (CommandDetail)ReadByte();
 

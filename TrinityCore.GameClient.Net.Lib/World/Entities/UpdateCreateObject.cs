@@ -3,14 +3,14 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class UpdateCreateObject
+    internal class UpdateCreateObject
     {
-        public Dictionary<UpdateFields, uint> Fields { get; set; }
-        public ulong Guid { get; set; }
-        public MovementInfo Movement { get; set; }
-        public TypeID ObjectType { get; set; }
+        internal Dictionary<UpdateFields, uint> Fields { get; set; }
+        internal ulong Guid { get; set; }
+        internal MovementInfo Movement { get; set; }
+        internal TypeID ObjectType { get; set; }
 
-        public UpdateCreateObject()
+        internal UpdateCreateObject()
         {
             Fields = new Dictionary<UpdateFields, uint>();
         }

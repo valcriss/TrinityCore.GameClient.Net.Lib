@@ -7,7 +7,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
     public abstract class Packet
     {
-        public int ReadIndex { get; set; }
+        internal int ReadIndex { get; set; }
         protected byte[] Buffer { get; set; }
 
         protected Packet(byte[] content = null, int readIndex = 0)
@@ -16,7 +16,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             Buffer = content;
         }
 
-        public void AppendPacketGuid(UInt64 guid)
+        internal void AppendPacketGuid(UInt64 guid)
         {
             byte[] packGuid = new byte[8 + 1];
             packGuid[0] = 0;
@@ -35,42 +35,42 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             Append(packGuid.Take(size).ToArray());
         }
 
-        public void Append(byte value)
+        internal void Append(byte value)
         {
             Buffer = Buffer.Append(value);
         }
 
-        public void Append(ushort value)
+        internal void Append(ushort value)
         {
             Buffer = Buffer.Append(BitConverter.GetBytes(value));
         }
 
-        public void Append(float value)
+        internal void Append(float value)
         {
             Buffer = Buffer.Append(BitConverter.GetBytes(value));
         }
 
-        public void Append(uint value)
+        internal void Append(uint value)
         {
             Buffer = Buffer.Append(BitConverter.GetBytes(value));
         }
 
-        public void Append(ulong value)
+        internal void Append(ulong value)
         {
             Buffer = Buffer.Append(BitConverter.GetBytes(value));
         }
 
-        public void Append(byte[] value)
+        internal void Append(byte[] value)
         {
             Buffer = Buffer.Append(value);
         }
 
-        public virtual byte[] GetBuffer()
+        internal virtual byte[] GetBuffer()
         {
             return Buffer;
         }
 
-        public DateTime ReadPackedTime()
+        internal DateTime ReadPackedTime()
         {
             var packedDate = ReadInt32();
             var minute = packedDate & 0x3F;
@@ -85,7 +85,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 .AddMinutes(minute);
         }
 
-        public Vector3 ReadVector3()
+        internal Vector3 ReadVector3()
         {
             return new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
         }

@@ -3,12 +3,12 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class UpdateValues
+    internal class UpdateValues
     {
-        public Dictionary<UpdateFields, uint> Fields { get; set; }
-        public ulong Guid { get; set; }
+        internal Dictionary<UpdateFields, uint> Fields { get; set; }
+        internal ulong Guid { get; set; }
 
-        public UpdateValues()
+        internal UpdateValues()
         {
             Fields = new Dictionary<UpdateFields, uint>();
         }

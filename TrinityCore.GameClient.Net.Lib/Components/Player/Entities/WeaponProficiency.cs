@@ -2,11 +2,11 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class WeaponProficiency : Proficiency
+    internal class WeaponProficiency : Proficiency
     {
-        public ItemSubclassWeapon Weapon => (ItemSubclassWeapon)SubItemClass;
+        internal ItemSubclassWeapon Weapon => (ItemSubclassWeapon)SubItemClass;
 
-        public WeaponProficiency(ItemClass itemClass, uint subItemClass) : base(itemClass, subItemClass)
+        internal WeaponProficiency(ItemClass itemClass, uint subItemClass) : base(itemClass, subItemClass)
         {
         }
 

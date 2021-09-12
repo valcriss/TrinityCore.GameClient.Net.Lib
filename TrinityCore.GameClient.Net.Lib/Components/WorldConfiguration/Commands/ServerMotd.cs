@@ -3,11 +3,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class ServerMotd : WorldReceivablePacket
+    internal class ServerMotd : WorldReceivablePacket
     {
-        public string Motd { get; set; }
+        internal string Motd { get; set; }
 
-        public ServerMotd(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal ServerMotd(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             uint lines = ReadUInt32();
             Motd = string.Empty;

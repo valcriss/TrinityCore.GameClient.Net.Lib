@@ -2,9 +2,9 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class KeepAlive : WorldSendablePacket
+    internal class KeepAlive : WorldSendablePacket
     {
-        public KeepAlive(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_KEEP_ALIVE)
+        internal KeepAlive(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_KEEP_ALIVE)
         {
         }
     }

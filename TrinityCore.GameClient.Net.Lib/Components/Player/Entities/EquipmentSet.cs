@@ -3,15 +3,15 @@ using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class EquipmentSet
+    internal class EquipmentSet
     {
-        public ulong Guid { get; set; }
-        public string Icon { get; set; }
-        public string Name { get; set; }
-        public uint SetId { get; set; }
-        public Dictionary<EquipmentSlots, ulong> SetSlotItem { get; set; }
+        internal ulong Guid { get; set; }
+        internal string Icon { get; set; }
+        internal string Name { get; set; }
+        internal uint SetId { get; set; }
+        internal Dictionary<EquipmentSlots, ulong> SetSlotItem { get; set; }
 
-        public EquipmentSet()
+        internal EquipmentSet()
         {
             SetSlotItem = new Dictionary<EquipmentSlots, ulong>();
         }

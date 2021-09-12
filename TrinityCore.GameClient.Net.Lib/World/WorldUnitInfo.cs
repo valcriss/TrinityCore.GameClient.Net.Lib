@@ -8,14 +8,14 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World
 {
-    public class WorldUnitInfo
+    internal class WorldUnitInfo
     {
-        public Dictionary<ulong, UnitInfo> WorldUnitInfos { get; set; }
+        internal Dictionary<ulong, UnitInfo> WorldUnitInfos { get; set; }
         private ManualResetEvent UnitQueryDone { get; }
         private ulong QueryGuid { get; set; }
         private WorldClient WorldClient { get; }
 
-        public WorldUnitInfo(WorldClient worldClient)
+        internal WorldUnitInfo(WorldClient worldClient)
         {
             WorldUnitInfos = new Dictionary<ulong, UnitInfo>();
             WorldClient = worldClient;
@@ -23,7 +23,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             UnitQueryDone = new ManualResetEvent(false);
         }
 
-        public async Task<UnitInfo> GetUnitInfo(uint creatureId, ulong guid)
+        internal async Task<UnitInfo> GetUnitInfo(uint creatureId, ulong guid)
         {
             return await Task.Run(() =>
             {

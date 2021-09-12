@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Enums
 {
-    public enum SplineMoveMode
+    internal enum SplineMoveMode
     {
         WALK,
         RUN

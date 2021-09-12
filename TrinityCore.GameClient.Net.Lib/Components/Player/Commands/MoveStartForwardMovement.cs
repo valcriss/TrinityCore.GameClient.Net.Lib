@@ -5,9 +5,9 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class MoveStartForwardMovement : WorldMovementPacket
+    internal class MoveStartForwardMovement : WorldMovementPacket
     {
-        public MoveStartForwardMovement(WorldSocket worldSocket, UInt64 guid, Position position) : base(worldSocket, WorldCommand.MSG_MOVE_START_FORWARD)
+        internal MoveStartForwardMovement(WorldSocket worldSocket, UInt64 guid, Position position) : base(worldSocket, WorldCommand.MSG_MOVE_START_FORWARD)
         {
             Guid = guid;
             Flags = MovementFlags.MOVEMENTFLAG_FORWARD;

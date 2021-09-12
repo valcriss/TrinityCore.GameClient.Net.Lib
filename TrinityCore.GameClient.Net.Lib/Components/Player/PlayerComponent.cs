@@ -14,18 +14,18 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player
 {
-    public class PlayerComponent : GameComponent
+    internal class PlayerComponent : GameComponent
     {
-        public BindPosition BindPosition { get; set; }
-        public uint? MapId => WorldClient?.Character?.MapId;
-        public ulong? Guid => WorldClient?.Character?.GUID;
-        public List<Faction> Factions { get; set; }       
-        public List<Faction> ForcedFactions { get; set; }
-        public List<Spell> Spells { get; set; }
-        public List<TalentInfo> PetTalents { get; set; }
-        public List<TalentInfo> Talents { get; set; }
-        public List<GlyphInfo> Glyphs { get; set; }
-        public Dictionary<ulong, GiverStatus> QuestsGiversStatus { get; set; }
+        internal BindPosition BindPosition { get; set; }
+        internal uint? MapId => WorldClient?.Character?.MapId;
+        internal ulong? Guid => WorldClient?.Character?.GUID;
+        internal List<Faction> Factions { get; set; }       
+        internal List<Faction> ForcedFactions { get; set; }
+        internal List<Spell> Spells { get; set; }
+        internal List<TalentInfo> PetTalents { get; set; }
+        internal List<TalentInfo> Talents { get; set; }
+        internal List<GlyphInfo> Glyphs { get; set; }
+        internal Dictionary<ulong, GiverStatus> QuestsGiversStatus { get; set; }
         private List<CompletedAchievement> CompletedAchievements { get; set; }
         private List<AchievementCriteria> AchievementCriteriaList { get; set; }
         private bool MovementsActivated { get; set; }
@@ -43,7 +43,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             MovementsActivated = false;
         }
 
-        public override void RegisterHandlers()
+        internal override void RegisterHandlers()
         {
             RegisterHandler(WorldCommand.SMSG_LEARNED_DANCE_MOVES, LearnedDanceMoves);
             RegisterHandler(WorldCommand.SMSG_BINDPOINTUPDATE, BindPointUpdate);
@@ -56,7 +56,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             RegisterHandler(WorldCommand.SMSG_SET_PROFICIENCY, UpdateProficiency);
             RegisterHandler(WorldCommand.SMSG_EQUIPMENT_SET_LIST, EquipmentSetList);
         }
-        public bool SendActivlyMoving()
+        internal bool SendActivlyMoving()
         {
             if (!MovementsActivated)
             {
@@ -71,7 +71,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return false;
         }
 
-        public bool FaceOrientation(float orientation)
+        internal bool FaceOrientation(float orientation)
         {
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player != null)
@@ -90,7 +90,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return true;
         }
 
-        public bool FacePosition(Position position)
+        internal bool FacePosition(Position position)
         {
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player != null)

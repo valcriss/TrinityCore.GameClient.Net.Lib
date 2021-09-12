@@ -5,12 +5,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class AccountDataTimes : WorldReceivablePacket
+    internal class AccountDataTimes : WorldReceivablePacket
     {
-        public Dictionary<AccountDataTypes, uint> DataTimes { get; }
-        public uint ServerTime { get; set; }
+        internal Dictionary<AccountDataTypes, uint> DataTimes { get; }
+        internal uint ServerTime { get; set; }
 
-        public AccountDataTimes(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal AccountDataTimes(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             ServerTime = ReadUInt32();
             DataTimes = new Dictionary<AccountDataTypes, uint>();

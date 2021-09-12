@@ -4,12 +4,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class InstanceDifficulty : WorldReceivablePacket
+    internal class InstanceDifficulty : WorldReceivablePacket
     {
-        public Difficulty Difficulty { get; set; }
-        public Difficulty RaidDynamicDifficulty { get; set; }
+        internal Difficulty Difficulty { get; set; }
+        internal Difficulty RaidDynamicDifficulty { get; set; }
 
-        public InstanceDifficulty(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal InstanceDifficulty(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Difficulty = (Difficulty)ReadUInt32();
             RaidDynamicDifficulty = (Difficulty)ReadUInt32();

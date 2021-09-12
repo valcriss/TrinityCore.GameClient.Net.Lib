@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Auth.Enums
 {
-    public enum AuthResult : byte
+    internal enum AuthResult : byte
     {
         SUCCESS = 0,
         FAILURE = 0x01,

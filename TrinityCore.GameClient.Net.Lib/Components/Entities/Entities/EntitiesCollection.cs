@@ -10,20 +10,20 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    public class EntitiesCollection
+    internal class EntitiesCollection
     {
-        public Dictionary<ulong, Creature> Creatures { get; set; }
-        public Dictionary<ulong, GameObject> GameObjects { get; set; }
-        public Dictionary<ulong, Item> Items { get; set; }
-        public Dictionary<ulong, Npc> Npc { get; set; }
-        public Dictionary<ulong, Player> Players { get; set; }
+        internal Dictionary<ulong, Creature> Creatures { get; set; }
+        internal Dictionary<ulong, GameObject> GameObjects { get; set; }
+        internal Dictionary<ulong, Item> Items { get; set; }
+        internal Dictionary<ulong, Npc> Npc { get; set; }
+        internal Dictionary<ulong, Player> Players { get; set; }
         private Dictionary<ulong, MapType> Map { get; set; }
         private Dictionary<ulong, Entity> UnCategorized { get; set; }
         private Dictionary<ulong, Entity> UnCategorizedUnit { get; set; }
         private Thread UpdateUnitThread { get; set; }
         private WorldClient WorldClient { get; set; }
 
-        public EntitiesCollection(WorldClient client)
+        internal EntitiesCollection(WorldClient client)
         {
             WorldClient = client;
             Players = new Dictionary<ulong, Player>();
@@ -38,7 +38,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             UpdateUnitThread.Start();
         }
 
-        public void Categorize(Entity entity, TypeID type)
+        internal void Categorize(Entity entity, TypeID type)
         {
             entity.Type = type;
             switch (type)
@@ -104,12 +104,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             DisplayStatus();
         } 
 
-        public void Close()
+        internal void Close()
         {
             UpdateUnitThread.Abort();
         }
 
-        public void DestroyEntity(ulong guid)
+        internal void DestroyEntity(ulong guid)
         {
             MapType type = MapType.UNKNOWN;
             lock (Map)
@@ -196,7 +196,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             DisplayStatus();
         }
 
-        public Player GetPlayer()
+        internal Player GetPlayer()
         {
             ulong? guid = WorldClient?.Character?.GUID;
             if (guid == null) return null;
@@ -204,7 +204,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             return Players[guid.Value];
         }
 
-        public Entity GetUnit(ulong guid)
+        internal Entity GetUnit(ulong guid)
         {
             MapType type = MapType.UNKNOWN;
             lock (Map)

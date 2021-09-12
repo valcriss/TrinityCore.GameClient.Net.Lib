@@ -5,68 +5,68 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class WorldMovementPacket : WorldSendablePacket
+    internal class WorldMovementPacket : WorldSendablePacket
     {
-        public ulong Guid
+        internal ulong Guid
         {
             get;
             set;
         }
 
-        public MovementFlags Flags
+        internal MovementFlags Flags
         {
             get;
             set;
         }
 
-        public MovementFlags2 Flags2
+        internal MovementFlags2 Flags2
         {
             get;
             set;
         }
 
-        public uint Time
+        internal uint Time
         {
             get;
             set;
         }
 
-        public float X
+        internal float X
         {
             get;
             set;
         }
 
-        public float Y
+        internal float Y
         {
             get;
             set;
         }
 
-        public float Z
+        internal float Z
         {
             get;
             set;
         }
 
-        public float O
+        internal float O
         {
             get;
             set;
         }
 
-        public uint FallTime
+        internal uint FallTime
         {
             get;
             set;
         }
 
-        public WorldMovementPacket(WorldSocket worldSocket, WorldCommand command) : base(worldSocket, command)
+        internal WorldMovementPacket(WorldSocket worldSocket, WorldCommand command) : base(worldSocket, command)
         {
             Time = (uint)(DateTime.Now - Process.GetCurrentProcess().StartTime).TotalMilliseconds;
         }
 
-        public override byte[] GetBuffer()
+        internal override byte[] GetBuffer()
         {
             AppendPacketGuid(Guid);
             Append((uint)Flags);

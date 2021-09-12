@@ -4,9 +4,9 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class LearnedDanceMoves : WorldReceivablePacket
+    internal class LearnedDanceMoves : WorldReceivablePacket
     {
-        public LearnedDanceMoves(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal LearnedDanceMoves(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             uint v1 = ReadUInt32();
             uint v2 = ReadUInt32();

@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum UnitMoveType : sbyte
+    internal enum UnitMoveType : sbyte
     {
         MOVE_WALK = 0,
         MOVE_RUN = 1,

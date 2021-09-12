@@ -3,11 +3,11 @@ using TrinityCore.GameClient.Net.Lib.Network.Core;
 
 namespace TrinityCore.GameClient.Net.Lib.Auth
 {
-    public class AuthSendablePacket : SendablePacket
+    internal class AuthSendablePacket : SendablePacket
     {
         private AuthCommand Command { get; }
 
-        public AuthSendablePacket(AuthCommand command) : base(new byte[0])
+        internal AuthSendablePacket(AuthCommand command) : base(new byte[0])
         {
             Command = command;
             Reset();

@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum CreatureType
+    internal enum CreatureType
     {
         CREATURE_TYPE_BEAST = 1,
         CREATURE_TYPE_DRAGONKIN = 2,

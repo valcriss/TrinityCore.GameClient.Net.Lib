@@ -7,11 +7,11 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands
 {
-    public class HandleMovement : WorldReceivablePacket
+    internal class HandleMovement : WorldReceivablePacket
     {
-        public UInt64 Guid { get; set; }
-        public MovementLiving MovementLiving { get; set; }
-        public HandleMovement(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal UInt64 Guid { get; set; }
+        internal MovementLiving MovementLiving { get; set; }
+        internal HandleMovement(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Guid = ReadPackedGuid();
             MovementLiving = new MovementLiving();

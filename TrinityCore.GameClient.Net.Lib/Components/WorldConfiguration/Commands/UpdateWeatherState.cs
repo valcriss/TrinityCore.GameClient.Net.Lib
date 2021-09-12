@@ -4,12 +4,12 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class UpdateWeatherState : WorldReceivablePacket
+    internal class UpdateWeatherState : WorldReceivablePacket
     {
-        public WeatherState State { get; set; }
-        public float Intensity { get; set; }
-        public byte Abrupt { get; set; }
-        public UpdateWeatherState(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal WeatherState State { get; set; }
+        internal float Intensity { get; set; }
+        internal byte Abrupt { get; set; }
+        internal UpdateWeatherState(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             State = (WeatherState)ReadUInt32();
             Intensity = ReadSingle();

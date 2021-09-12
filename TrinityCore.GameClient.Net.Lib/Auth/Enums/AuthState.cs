@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Auth.Enums
 {
-    public enum AuthState
+    internal enum AuthState
     {
         DISCONNECTED,
         ERROR,

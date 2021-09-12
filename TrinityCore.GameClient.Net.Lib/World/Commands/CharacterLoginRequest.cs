@@ -3,9 +3,9 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class CharacterLoginRequest : WorldSendablePacket
+    internal class CharacterLoginRequest : WorldSendablePacket
     {
-        public CharacterLoginRequest(WorldSocket worldSocket, Character character) : base(worldSocket,
+        internal CharacterLoginRequest(WorldSocket worldSocket, Character character) : base(worldSocket,
             WorldCommand.CMSG_PLAYER_LOGIN)
         {
             Append(character.GUID);

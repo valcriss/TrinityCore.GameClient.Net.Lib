@@ -6,9 +6,9 @@ using TrinityCore.GameClient.Net.Lib.Network.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 {
-    public class LogonChallengeRequest : AuthSendablePacket
+    internal class LogonChallengeRequest : AuthSendablePacket
     {
-        public LogonChallengeRequest(string username, IPAddress address) : base(AuthCommand.LOGON_CHALLENGE)
+        internal LogonChallengeRequest(string username, IPAddress address) : base(AuthCommand.LOGON_CHALLENGE)
         {
             Append(6);
             Append((ushort)(username.Length + 30));

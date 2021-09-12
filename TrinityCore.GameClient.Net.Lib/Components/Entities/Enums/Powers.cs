@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Enums
 {
-    public enum Powers : sbyte
+    internal enum Powers : sbyte
     {
         POWER_HEALTH = -2, // TITLE Health
         POWER_MANA = 0,  // TITLE Mana

@@ -1,8 +1,8 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Entities
 {
-    public class WorldStateVariable
+    internal class WorldStateVariable
     {
-        public uint Id { get; set; }
-        public uint Value { get; set; }
+        internal uint Id { get; set; }
+        internal uint Value { get; set; }
     }
 }

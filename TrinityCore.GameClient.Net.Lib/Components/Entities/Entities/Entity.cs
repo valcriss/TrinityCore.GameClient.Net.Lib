@@ -10,26 +10,26 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
     public class Entity
     {
-        protected string _name = null;
+        private string _name = null;
         public Dictionary<UpdateFields, uint> Fields { get; set; }
         public ulong Guid { get; set; }
         public Movement Movement { get; set; }
-        public Dictionary<Powers, uint> Powers { get; set; }
-        public SplineMoveMode SplineMoveMode { get; set; }
-        public TypeID Type { get; set; }
+        internal Dictionary<Powers, uint> Powers { get; set; }
+        internal SplineMoveMode SplineMoveMode { get; set; }
+        internal TypeID Type { get; set; }
         public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
 
         public Position GetPosition()
         {
             return Movement.Position;
         }
-        public void UpdatePosition(Position position)
+        internal void UpdatePosition(Position position)
         {
             Movement.Position = position;
             Logger.Log("Entity " + Name + " Position update : " + position, LogLevel.VERBOSE);
         }
 
-        public Entity(UInt64 guid)
+        internal Entity(UInt64 guid)
         {
             Guid = guid;
             SplineMoveMode = SplineMoveMode.RUN;
@@ -38,7 +38,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             Powers = new Dictionary<Powers, uint>();
         }
 
-        public void UpdateFields(Dictionary<UpdateFields, uint> fields)
+        internal void UpdateFields(Dictionary<UpdateFields, uint> fields)
         {
             foreach (KeyValuePair<UpdateFields, uint> field in fields)
             {
@@ -52,7 +52,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             }
         }
 
-        public void UpdateMovement(MovementInfo movementInfo)
+        internal void UpdateMovement(MovementInfo movementInfo)
         {
             if (movementInfo.MovementLiving != null)
             {
@@ -75,7 +75,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                 Movement.MovementRotation = movementInfo.MovementRotation;
         }
 
-        public void UpdateMovement(MovementLiving living)
+        internal void UpdateMovement(MovementLiving living)
         {
             if (living != null)
             {
@@ -86,7 +86,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             }
         }
 
-        public void UpdatePower(Powers power, uint value)
+        internal void UpdatePower(Powers power, uint value)
         {
             if (!Powers.ContainsKey(power))
             {

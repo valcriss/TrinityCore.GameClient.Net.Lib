@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands
 {
-    public class SplineMoveSetMode : WorldReceivablePacket
+    internal class SplineMoveSetMode : WorldReceivablePacket
     {
-        public UInt64 Guid { get; set; }
+        internal UInt64 Guid { get; set; }
 
-        public SplineMoveSetMode(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal SplineMoveSetMode(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Guid = ReadPackedGuid();
         }

@@ -9,16 +9,16 @@ namespace TrinityCore.GameClient.Net.Lib.World
 {
     public class WorldSocket : Network.Core.GameSocket
     {
-        public AuthenticationCrypto AuthenticationCrypto { get; set; }
+        internal AuthenticationCrypto AuthenticationCrypto { get; set; }
         protected WorldPacketsHandler PacketsHandler { get; set; }
 
-        public WorldSocket(string host, int port) : base(host, port)
+        internal WorldSocket(string host, int port) : base(host, port)
         {
             PacketsHandler = new WorldPacketsHandler();
             AuthenticationCrypto = new AuthenticationCrypto();
         }
 
-        public void AppendHandler(WorldCommand command, Network.Core.PacketHandler handler)
+        internal void AppendHandler(WorldCommand command, Network.Core.PacketHandler handler)
         {
             lock (PacketsHandler)
             {

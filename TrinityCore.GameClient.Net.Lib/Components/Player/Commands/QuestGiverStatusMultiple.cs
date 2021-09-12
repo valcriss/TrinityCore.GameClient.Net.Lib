@@ -6,11 +6,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class QuestGiverStatusMultiple : WorldReceivablePacket
+    internal class QuestGiverStatusMultiple : WorldReceivablePacket
     {
-        public List<GiverStatus> GiverStatuses { get; set; }
+        internal List<GiverStatus> GiverStatuses { get; set; }
 
-        public QuestGiverStatusMultiple(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal QuestGiverStatusMultiple(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             GiverStatuses = new List<GiverStatus>();
             uint count = ReadUInt32();

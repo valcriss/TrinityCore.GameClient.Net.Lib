@@ -8,14 +8,14 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class UpdateObject : WorldReceivablePacket
+    internal class UpdateObject : WorldReceivablePacket
     {
-        public List<UpdateMovement> Movements { get; set; }
-        public List<UpdateCreateObject> UpdateCreateObjects { get; set; }
-        public List<UpdateOutOfRange> UpdateOutOfRanges { get; set; }
-        public List<UpdateValues> UpdateValues { get; set; }
+        internal List<UpdateMovement> Movements { get; set; }
+        internal List<UpdateCreateObject> UpdateCreateObjects { get; set; }
+        internal List<UpdateOutOfRange> UpdateOutOfRanges { get; set; }
+        internal List<UpdateValues> UpdateValues { get; set; }
 
-        public UpdateObject(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal UpdateObject(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             try
             {

@@ -5,12 +5,12 @@ namespace TrinityCore.GameClient.Net.Lib.Auth
 {
     public class AuthPacketsHandler : PacketsHandler
     {
-        public void Handle(AuthReceivablePacket authReceivablePacket)
+        internal void Handle(AuthReceivablePacket authReceivablePacket)
         {
             base.Handle(authReceivablePacket);
         }
 
-        public void RegisterHandler(AuthCommand command, PacketHandler handler)
+        internal void RegisterHandler(AuthCommand command, PacketHandler handler)
         {
             RegisterHandler((uint)command, handler);
         }

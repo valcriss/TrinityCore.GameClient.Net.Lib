@@ -5,11 +5,11 @@ using TrinityCore.GameClient.Net.Lib.Components.Player.Entities;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
 {
-    public class BindPointUpdate : WorldReceivablePacket
+    internal class BindPointUpdate : WorldReceivablePacket
     {
-        public BindPosition BindPosition { get; set; }
+        internal BindPosition BindPosition { get; set; }
 
-        public BindPointUpdate(ReceivablePacket receivablePacket, int readIndex = 0) : base(receivablePacket, readIndex)
+        internal BindPointUpdate(ReceivablePacket receivablePacket, int readIndex = 0) : base(receivablePacket, readIndex)
         {
             Vector3 position = ReadVector3();
             uint mapId = ReadUInt32();

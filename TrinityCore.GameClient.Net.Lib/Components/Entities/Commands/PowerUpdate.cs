@@ -5,13 +5,13 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands
 {
-    public class PowerUpdate : WorldReceivablePacket
+    internal class PowerUpdate : WorldReceivablePacket
     {
-        public UInt64 Guid { get; set; }
-        public Powers Power { get; set; }
-        public UInt32 Value { get; set; }
+        internal UInt64 Guid { get; set; }
+        internal Powers Power { get; set; }
+        internal UInt32 Value { get; set; }
 
-        public PowerUpdate(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal PowerUpdate(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Guid = ReadPackedGuid();
             Power = (Powers)ReadSByte();

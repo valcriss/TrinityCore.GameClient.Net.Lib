@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Enums
 {
-    public enum MapType
+    internal enum MapType
     {
         UNKNOWN = 0,
         PLAYER = 1,

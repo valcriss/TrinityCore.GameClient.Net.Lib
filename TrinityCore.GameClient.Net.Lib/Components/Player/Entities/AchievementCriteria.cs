@@ -2,10 +2,10 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class AchievementCriteria
+    internal class AchievementCriteria
     {
-        public ulong Counter { get; set; }
-        public uint CriteriaId { get; set; }
-        public DateTime Date { get; set; }
+        internal ulong Counter { get; set; }
+        internal uint CriteriaId { get; set; }
+        internal DateTime Date { get; set; }
     }
 }

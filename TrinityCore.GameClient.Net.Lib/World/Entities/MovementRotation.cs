@@ -1,7 +1,7 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementRotation
+    internal class MovementRotation
     {
-        public long Rotation { get; set; }
+        internal long Rotation { get; set; }
     }
 }

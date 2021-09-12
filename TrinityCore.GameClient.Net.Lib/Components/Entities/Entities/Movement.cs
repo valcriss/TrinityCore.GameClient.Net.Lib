@@ -5,7 +5,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
     public class Movement
     {
-        public Movement()
+        internal Movement()
         {
             MovementLiving = new MovementLiving();
             MovementPosition = new MovementPosition();
@@ -13,11 +13,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             MovementHasTarget = new MovementHasTarget();
             MovementRotation = new MovementRotation();
         }
-        public MovementLiving MovementLiving { get; set; }
-        public MovementPosition MovementPosition { get; set; }
-        public MovementStationary MovementStationary { get; set; }
-        public MovementHasTarget MovementHasTarget { get; set; }
-        public MovementRotation MovementRotation { get; set; }
+        internal MovementLiving MovementLiving { get; set; }
+        internal MovementPosition MovementPosition { get; set; }
+        internal MovementStationary MovementStationary { get; set; }
+        internal MovementHasTarget MovementHasTarget { get; set; }
+        internal MovementRotation MovementRotation { get; set; }
 
         private Position _position;
         public Position Position

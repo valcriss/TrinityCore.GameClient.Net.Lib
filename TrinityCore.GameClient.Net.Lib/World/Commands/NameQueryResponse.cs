@@ -2,13 +2,13 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class NameQueryResponse : WorldReceivablePacket
+    internal class NameQueryResponse : WorldReceivablePacket
     {
-        public bool Found { get; set; }
-        public ulong Guid { get; set; }
-        public string Name { get; set; }
+        internal bool Found { get; set; }
+        internal ulong Guid { get; set; }
+        internal string Name { get; set; }
 
-        public NameQueryResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal NameQueryResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             Name = string.Empty;
             Guid = ReadPackedGuid();

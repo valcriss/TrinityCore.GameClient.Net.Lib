@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Enums
 {
-    public enum WeatherState : uint
+    internal enum WeatherState : uint
     {
         WEATHER_STATE_FINE = 0,
         WEATHER_STATE_FOG = 1,

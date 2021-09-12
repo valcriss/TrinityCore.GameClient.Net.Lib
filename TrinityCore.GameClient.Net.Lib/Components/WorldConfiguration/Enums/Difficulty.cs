@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Enums
 {
-    public enum Difficulty : uint
+    internal enum Difficulty : uint
     {
         DIFFICULTY_NORMAL = 0,
         DIFFICULTY_HEROIC = 1,

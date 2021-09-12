@@ -7,7 +7,7 @@ namespace TrinityCore.GameClient.Net.Lib.World.Entities
         public uint DisplayId { get; set; }
         public byte InventoryType { get; set; }
 
-        public Item(byte[] data, int readIndex = 0) : base(data, readIndex)
+        internal Item(byte[] data, int readIndex = 0) : base(data, readIndex)
         {
             DisplayId = ReadUInt32();
             InventoryType = ReadByte();

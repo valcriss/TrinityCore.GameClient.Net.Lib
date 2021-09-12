@@ -1,8 +1,8 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Navigation
 {
-    public static class PositionExtensions
+    internal static class PositionExtensions
     {
-        public static float GetPathLength(this Position[] positions)
+        internal static float GetPathLength(this Position[] positions)
         {
             float total = 0;
             for (int i = 0; i < positions.Length - 1; i++)

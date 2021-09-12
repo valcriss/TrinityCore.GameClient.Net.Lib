@@ -4,9 +4,9 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class CharactersListRequest : WorldSendablePacket
+    internal class CharactersListRequest : WorldSendablePacket
     {
-        public CharactersListRequest(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_CHAR_ENUM)
+        internal CharactersListRequest(WorldSocket worldSocket) : base(worldSocket, WorldCommand.CMSG_CHAR_ENUM)
         {
         }
     }

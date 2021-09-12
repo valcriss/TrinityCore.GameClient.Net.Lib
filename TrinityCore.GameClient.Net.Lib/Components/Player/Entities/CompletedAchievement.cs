@@ -2,9 +2,9 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class CompletedAchievement
+    internal class CompletedAchievement
     {
-        public uint AchievementId { get; set; }
-        public DateTime Date { get; set; }
+        internal uint AchievementId { get; set; }
+        internal DateTime Date { get; set; }
     }
 }

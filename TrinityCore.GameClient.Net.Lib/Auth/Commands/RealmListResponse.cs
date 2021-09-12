@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.Network.Entities;
 
 namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 {
-    public class RealmListResponse : AuthReceivablePacket
+    internal class RealmListResponse : AuthReceivablePacket
     {
-        public List<WorldServerInfo> Realms { get; set; }
+        internal List<WorldServerInfo> Realms { get; set; }
 
-        public RealmListResponse(ReceivablePacket receivable) : base(receivable)
+        internal RealmListResponse(ReceivablePacket receivable) : base(receivable)
         {
             Realms = new List<WorldServerInfo>();
             ReadUInt16();

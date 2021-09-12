@@ -2,11 +2,11 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class LogOutResponse : ReceivablePacket
+    internal class LogOutResponse : ReceivablePacket
     {
-        public bool LogOut { get; set; }
+        internal bool LogOut { get; set; }
 
-        public LogOutResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal LogOutResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             bool logoutOk = ReadUInt32() == 0;
             bool instant = ReadByte() != 0;

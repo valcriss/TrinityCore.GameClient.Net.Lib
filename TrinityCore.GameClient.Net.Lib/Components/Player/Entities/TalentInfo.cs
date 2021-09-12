@@ -1,9 +1,9 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class TalentInfo
+    internal class TalentInfo
     {
-        public int Group { get; set; }
-        public uint TalentId { get; set; }
-        public sbyte TalentRank { get; set; }
+        internal int Group { get; set; }
+        internal uint TalentId { get; set; }
+        internal sbyte TalentRank { get; set; }
     }
 }

@@ -10,12 +10,12 @@ using HashAlgorithm = TrinityCore.GameClient.Net.Lib.Network.Crypto.HashAlgorith
 
 namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 {
-    public class LogonChallengeResponse : AuthReceivablePacket
+    internal class LogonChallengeResponse : AuthReceivablePacket
     {
-        public AuthProofRequest AuthProofRequest { get; set; }
-        public AuthResult Error { get; set; }
-        public BigInteger Key { get; set; }
-        public byte[] Proof { get; set; }
+        internal AuthProofRequest AuthProofRequest { get; set; }
+        internal AuthResult Error { get; set; }
+        internal BigInteger Key { get; set; }
+        internal byte[] Proof { get; set; }
         private byte[] B { get; }
         private byte[] G { get; }
         private byte GLen { get; }
@@ -26,7 +26,7 @@ namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
         private byte Unk2 { get; }
         private byte[] Unk3 { get; }
 
-        public LogonChallengeResponse(ReceivablePacket receivable, string username, string password) : base(receivable)
+        internal LogonChallengeResponse(ReceivablePacket receivable, string username, string password) : base(receivable)
         {
             Unk2 = ReadByte();
             Error = (AuthResult)ReadByte();

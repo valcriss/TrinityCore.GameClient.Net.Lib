@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.World;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands
 {
-    public class InitWorldStates : WorldReceivablePacket
+    internal class InitWorldStates : WorldReceivablePacket
     {
-        public WorldState WorldState { get; set; }
+        internal WorldState WorldState { get; set; }
 
-        public InitWorldStates(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal InitWorldStates(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             WorldState = new WorldState { MapId = ReadInt32(), ZoneId = ReadInt32(), AreaId = ReadInt32() };
 

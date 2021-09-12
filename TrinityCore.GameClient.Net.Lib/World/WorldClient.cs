@@ -19,8 +19,8 @@ namespace TrinityCore.GameClient.Net.Lib.World
         private WorldPlayerState playerState;
         private WorldState state;
 
-        public Character Character { get; set; }
-        public Query Query { get; set; }
+        internal Character Character { get; set; }
+        internal Query Query { get; set; }
         private ManualResetEvent AuthenticateDone { get; }
         private ManualResetEvent CharacterListDone { get; }
         private ManualResetEvent CharacterLoginDone { get; }
@@ -51,7 +51,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
         private string Username { get; }
         private WorldServerInfo WorldServer { get; }
 
-        public WorldClient(WorldServerInfo worldServer, string username, BigInteger sessionKey) : base(
+        internal WorldClient(WorldServerInfo worldServer, string username, BigInteger sessionKey) : base(
             worldServer.Address, worldServer.Port)
         {
             State = WorldState.DISCONNECTED;
@@ -84,7 +84,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
 
         }
 
-        public void AppendInternalHandler(Internals command, InternalPacketHandler handler)
+        internal void AppendInternalHandler(Internals command, InternalPacketHandler handler)
         {
             lock (InternalsHandler)
             {
@@ -92,7 +92,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             }
         }
 
-        public virtual async Task<bool> Disconnect()
+        internal virtual async Task<bool> Disconnect()
         {
             return await Task.Run(() =>
             {
@@ -104,7 +104,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             });
         }
 
-        public virtual async Task<List<Character>> GetCharacters()
+        internal virtual async Task<List<Character>> GetCharacters()
         {
             return await Task.Run(() =>
             {
@@ -117,7 +117,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             });
         }
 
-        public virtual async Task<bool> LoginCharacter(Character character)
+        internal virtual async Task<bool> LoginCharacter(Character character)
         {
             return await Task.Run(() =>
             {
@@ -130,7 +130,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             });
         }
 
-        public virtual async Task<bool> Start()
+        internal virtual async Task<bool> Start()
         {
             return await Task.Run(() =>
             {

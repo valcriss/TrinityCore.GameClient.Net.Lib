@@ -2,8 +2,8 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class MovementStationary
+    internal class MovementStationary
     {
-        public Position Stationary { get; set; }
+        internal Position Stationary { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum SplineFlags : uint
+    internal enum SplineFlags : uint
     {
         None = 0x00000000,
 

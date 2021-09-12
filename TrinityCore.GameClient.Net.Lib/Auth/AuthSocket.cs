@@ -12,7 +12,7 @@ namespace TrinityCore.GameClient.Net.Lib.Auth
     {
         protected AuthPacketsHandler PacketsHandler { get; set; }
 
-        public AuthSocket(string host, int port) : base(host, port)
+        internal AuthSocket(string host, int port) : base(host, port)
         {
             PacketsHandler = new AuthPacketsHandler();
         }

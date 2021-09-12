@@ -3,16 +3,16 @@ using TrinityCore.GameClient.Net.Lib.Network.Core;
 
 namespace TrinityCore.GameClient.Net.Lib.Auth.Commands
 {
-    public class AuthProofResponse : AuthReceivablePacket
+    internal class AuthProofResponse : AuthReceivablePacket
     {
-        public AuthResult Error { get; set; }
-        public bool IsValid { get; set; }
+        internal AuthResult Error { get; set; }
+        internal bool IsValid { get; set; }
         private byte[] M2 { get; }
         private uint Unk1 { get; }
         private uint Unk2 { get; }
         private ushort Unk3 { get; }
 
-        public AuthProofResponse(ReceivablePacket receivable, byte[] m2) : base(receivable)
+        internal AuthProofResponse(ReceivablePacket receivable, byte[] m2) : base(receivable)
         {
             Error = (AuthResult)ReadByte();
             if (Error != AuthResult.SUCCESS)

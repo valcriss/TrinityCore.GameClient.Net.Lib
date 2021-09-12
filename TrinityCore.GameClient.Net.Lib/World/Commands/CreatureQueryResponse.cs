@@ -4,11 +4,11 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class CreatureQueryResponse : WorldReceivablePacket
+    internal class CreatureQueryResponse : WorldReceivablePacket
     {
-        public UnitInfo CreatureInfo { get; set; }
+        internal UnitInfo CreatureInfo { get; set; }
 
-        public CreatureQueryResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal CreatureQueryResponse(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             CreatureInfo = new UnitInfo();
             CreatureInfo.CreatureId = ReadUInt32();

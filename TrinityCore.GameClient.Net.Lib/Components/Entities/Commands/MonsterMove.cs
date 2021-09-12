@@ -7,12 +7,12 @@ using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands
 {
-    public class MonsterMove : WorldReceivablePacket
+    internal class MonsterMove : WorldReceivablePacket
     {
-        public UInt64 MonsterGuid { get; set; }
-        public Position Position { get; set; }
+        internal UInt64 MonsterGuid { get; set; }
+        internal Position Position { get; set; }
 
-        public MonsterMove(ReceivablePacket receivablePacket) : base(receivablePacket)
+        internal MonsterMove(ReceivablePacket receivablePacket) : base(receivablePacket)
         {
             MonsterGuid = ReadPackedGuid();
             sbyte zero = ReadSByte(); // = 0

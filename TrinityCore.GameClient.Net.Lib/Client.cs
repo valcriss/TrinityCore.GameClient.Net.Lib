@@ -11,15 +11,15 @@ namespace TrinityCore.GameClient.Net.Lib
 {
     public class Client : ExtendableClient
     {
-        public WorldConfigurationComponent WorldConfiguration { get; set; }
-        public PlayerComponent Player { get; set; }
-        public EntitiesComponent Entities { get; set; }
+        internal WorldConfigurationComponent WorldConfiguration { get; set; }
+        internal PlayerComponent Player { get; set; }
+        internal EntitiesComponent Entities { get; set; }
 
         public Client(string host, int port, string login, string password) : base(host, port, login, password)
         {
             Entities = AddComponent(new EntitiesComponent());
             WorldConfiguration = AddComponent(new WorldConfigurationComponent());
-            Player = AddComponent(new PlayerComponent());            
+            Player = AddComponent(new PlayerComponent());
         }
 
         public Player GetPlayer()
@@ -30,8 +30,7 @@ namespace TrinityCore.GameClient.Net.Lib
         public List<Player> GetOtherPlayers()
         {
             Player player = GetPlayer();
-            if (player == null) return null;
-            return Entities?.Collection.Players.Values.Where(c => c.Guid != player.Guid).ToList();
+            return (player != null) ? Entities.Collection.Players.Values.Where(c => c.Guid != player.Guid).ToList() : null;
         }
 
         public bool Face(float orientation)

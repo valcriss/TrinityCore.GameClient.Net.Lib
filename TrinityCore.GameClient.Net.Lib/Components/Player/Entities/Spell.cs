@@ -1,10 +1,10 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Entities
 {
-    public class Spell
+    internal class Spell
     {
-        public uint SpellId { get; set; }
+        internal uint SpellId { get; set; }
 
-        public Spell(uint spellId)
+        internal Spell(uint spellId)
         {
             SpellId = spellId;
         }

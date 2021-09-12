@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    public enum MonsterMoveType
+    internal enum MonsterMoveType
     {
         MonsterMoveNormal = 0,
         MonsterMoveStop = 1,

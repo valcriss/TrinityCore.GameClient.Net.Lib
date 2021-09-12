@@ -4,14 +4,14 @@ using TrinityCore.GameClient.Net.Lib.Network.Crypto;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    public enum CryptoAuthStatus
+    internal enum CryptoAuthStatus
     {
         UNINITIALIZED,
         PENDING,
         READY
     }
 
-    public class AuthenticationCrypto
+    internal class AuthenticationCrypto
     {
         private static readonly byte[] DecryptionKey =
         {
@@ -27,26 +27,26 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         private Arc4 _decryptionStream;
         private Arc4 _encryptionStream;
-        public CryptoAuthStatus Status { get; private set; }
+        internal CryptoAuthStatus Status { get; private set; }
 
-        public AuthenticationCrypto()
+        internal AuthenticationCrypto()
         {
             Status = CryptoAuthStatus.UNINITIALIZED;
         }
 
-        public void Decrypt(byte[] data, int start, int count)
+        internal void Decrypt(byte[] data, int start, int count)
         {
             if (Status == CryptoAuthStatus.READY)
                 _decryptionStream.Process(data, start, count);
         }
 
-        public void Encrypt(byte[] data, int start, int count)
+        internal void Encrypt(byte[] data, int start, int count)
         {
             if (Status == CryptoAuthStatus.READY)
                 _encryptionStream.Process(data, start, count);
         }
 
-        public void Initialize(byte[] sessionKey)
+        internal void Initialize(byte[] sessionKey)
         {
             // create RC4-drop[1024] stream
             using (HMACSHA1 outputHmac = new HMACSHA1(EncryptionKey))
@@ -68,7 +68,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         }
 
         [Obsolete("NYI", true)]
-        public void Pending()
+        internal void Pending()
         {
             Status = CryptoAuthStatus.PENDING;
         }

@@ -7,27 +7,27 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
     {
         private const int DEFAULT_BUFFER_SIZE = 128;
         private byte[] _receiveData;
-        public int Index { get; set; }
-        public byte[] ReceiveData => _receiveData;
-        public int ReceiveDataLength { get; set; }
-        public int Remaining { get; set; }
-        public SocketAsyncEventArgs SocketArgs { get; set; }
-        public object SocketAsyncState { get; set; }
-        public EventHandler<SocketAsyncEventArgs> SocketCallback { get; set; }
+        internal int Index { get; set; }
+        internal byte[] ReceiveData => _receiveData;
+        internal int ReceiveDataLength { get; set; }
+        internal int Remaining { get; set; }
+        internal SocketAsyncEventArgs SocketArgs { get; set; }
+        internal object SocketAsyncState { get; set; }
+        internal EventHandler<SocketAsyncEventArgs> SocketCallback { get; set; }
 
-        public GameSocketBuffer()
+        internal GameSocketBuffer()
         {
             _receiveData = new byte[DEFAULT_BUFFER_SIZE];
             SocketArgs = new SocketAsyncEventArgs();
             SocketArgs.Completed += CallSocketCallback;
         }
 
-        public void CallSocketCallback(object sender, SocketAsyncEventArgs e)
+        internal void CallSocketCallback(object sender, SocketAsyncEventArgs e)
         {
             SocketCallback?.Invoke(sender, e);
         }
 
-        public void ReserveData(int size, bool reset = false)
+        internal void ReserveData(int size, bool reset = false)
         {
             if (reset)
                 _receiveData = new byte[DEFAULT_BUFFER_SIZE];

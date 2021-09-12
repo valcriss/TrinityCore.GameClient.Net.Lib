@@ -10,9 +10,9 @@ using System.Security.Cryptography;
 
 namespace TrinityCore.GameClient.Net.Lib.World.Commands
 {
-    public class ClientAuthChallenge : WorldSendablePacket
+    internal class ClientAuthChallenge : WorldSendablePacket
     {
-        public ClientAuthChallenge(WorldSocket worldSocket, string username, uint serverSeed, BigInteger key,
+        internal ClientAuthChallenge(WorldSocket worldSocket, string username, uint serverSeed, BigInteger key,
             WorldServerInfo serverInfo) : base(worldSocket, WorldCommand.CLIENT_AUTH_SESSION)
         {
             var rand = RandomNumberGenerator.Create();

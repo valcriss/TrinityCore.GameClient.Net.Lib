@@ -12,7 +12,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
         private Dictionary<WorldCommand, WorldCommand> CompressedCommands { get; }
         private List<WorldCommand> UnhandledCommands { get; }
 
-        public WorldPacketsHandler()
+        internal WorldPacketsHandler()
         {
             CompressedCommands = new Dictionary<WorldCommand, WorldCommand>
             {
@@ -21,7 +21,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             UnhandledCommands = new List<WorldCommand>();
         }
 
-        public void Handle(WorldReceivablePacket worldReceivablePacket)
+        internal void Handle(WorldReceivablePacket worldReceivablePacket)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
 
         }
 
-        public void RegisterHandler(WorldCommand command, PacketHandler handler)
+        internal void RegisterHandler(WorldCommand command, PacketHandler handler)
         {
             RegisterHandler((uint)command, handler);
         }

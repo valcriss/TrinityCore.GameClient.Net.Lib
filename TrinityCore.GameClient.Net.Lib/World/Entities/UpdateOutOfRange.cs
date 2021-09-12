@@ -2,11 +2,11 @@
 
 namespace TrinityCore.GameClient.Net.Lib.World.Entities
 {
-    public class UpdateOutOfRange
+    internal class UpdateOutOfRange
     {
-        public List<ulong> GuidList { get; set; }
+        internal List<ulong> GuidList { get; set; }
 
-        public UpdateOutOfRange()
+        internal UpdateOutOfRange()
         {
             GuidList = new List<ulong>();
         }

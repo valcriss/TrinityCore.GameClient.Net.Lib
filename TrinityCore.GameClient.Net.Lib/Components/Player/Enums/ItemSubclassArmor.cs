@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Player.Enums
 {
-    public enum ItemSubclassArmor : uint
+    internal enum ItemSubclassArmor : uint
     {
         ITEM_SUBCLASS_ARMOR_MISC = 0,
         ITEM_SUBCLASS_ARMOR_CLOTH = 1,

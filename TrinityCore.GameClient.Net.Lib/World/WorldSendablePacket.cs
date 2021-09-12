@@ -6,19 +6,19 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.World
 {
-    public class WorldSendablePacket : SendablePacket
+    internal class WorldSendablePacket : SendablePacket
     {
         private WorldCommand Command { get; }
         private WorldSocket WorldSocket { get; }
 
-        public WorldSendablePacket(WorldSocket worldSocket, WorldCommand command)
+        internal WorldSendablePacket(WorldSocket worldSocket, WorldCommand command)
         {
             WorldSocket = worldSocket;
             Command = command;
             Reset();
         }
 
-        public byte[] EncryptedCommand()
+        internal byte[] EncryptedCommand()
         {
             byte[] encryptedCommand = BitConverter.GetBytes((uint)Command);
             WorldSocket.AuthenticationCrypto.Encrypt(encryptedCommand, 0, encryptedCommand.Length);
@@ -26,7 +26,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             return encryptedCommand;
         }
 
-        public byte[] EncryptedSize()
+        internal byte[] EncryptedSize()
         {
             byte[] encryptedSize = BitConverter.GetBytes(Buffer.Length + 4).SubArray(0, 2);
             Array.Reverse(encryptedSize);
@@ -35,7 +35,7 @@ namespace TrinityCore.GameClient.Net.Lib.World
             return encryptedSize;
         }
 
-        public override byte[] GetBuffer()
+        internal override byte[] GetBuffer()
         {
             byte[] data = new byte[6 + Buffer.Length];
             byte[] size = EncryptedSize();
