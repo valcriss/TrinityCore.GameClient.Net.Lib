@@ -13,7 +13,8 @@ _This library is therefore a piece of a bot system for TrinityCore, a system tha
 _Have a nice day_  
 
 ## What can i do with the library ?
-**For the moment here are the things you can do :**
+
+### For the moment here are the things you can do
 - [x] Authenticate with an existing account on authserver
 - [x] Get the list of world servers
 - [x] Connect to a world server
@@ -22,13 +23,23 @@ _Have a nice day_
 - [x] Stay connected
 - [x] Getting world properties
 - [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
+
 ---
-**What i am currently working on:**
-- [ ] Working on moving the player.
+### What i am currently working on :
+**Working on moving the player :**
+- [x] Facing a position or facing a specific angle
+- [ ] Moving forward, backward, strafe, walking, running and sending movement heartbeats
+- [ ] Sit and stand
+- [ ] Jumps
+
 ---
-**What will i do next:**
+### What will i do next :
 - [ ] Player melee attack.
 - [ ] Player joining a group.
 - [ ] Player chatting (say,group,shout,etc...)
+- [ ] Player doing emotes
+- [ ] Player casting spells
+- [ ] Player looting
+- [ ] Player interracting with npc
 
 
