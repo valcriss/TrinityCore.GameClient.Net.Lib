@@ -1,6 +1,8 @@
 ﻿using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.Network.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
@@ -23,7 +25,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 configuration.Save();
             }
 
-            
+
 
             Logger.Level = LogLevel.INFO;
             if (Enum.TryParse(configuration.LogLevel, out LogLevel level))
@@ -73,6 +75,16 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             while (true)
             {
                 System.Threading.Thread.Sleep(100);
+                Player player = Client.GetPlayer();
+                if (player != null)
+                {
+                    Entity closest = Client.GetOtherPlayers().OrderBy(c => (c.Movement.Position - player.Movement.Position).Length).FirstOrDefault();
+                    if (closest != null)
+                    {
+                        Client.Face(closest.GetPosition());
+                    }
+                }
+
             }
         }
 

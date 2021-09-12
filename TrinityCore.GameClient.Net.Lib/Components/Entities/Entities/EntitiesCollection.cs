@@ -196,6 +196,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
             DisplayStatus();
         }
 
+        public Player GetPlayer()
+        {
+            ulong? guid = WorldClient?.Character?.GUID;
+            if (guid == null) return null;
+            if (!Players.ContainsKey(guid.Value)) return null;
+            return Players[guid.Value];
+        }
+
         public Entity GetUnit(ulong guid)
         {
             MapType type = MapType.UNKNOWN;

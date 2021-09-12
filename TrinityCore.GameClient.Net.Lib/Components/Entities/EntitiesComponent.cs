@@ -13,11 +13,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 {
     public class EntitiesComponent : GameComponent
     {
-        private EntitiesCollection Collection { get; set; }
+        public static EntitiesComponent Instance { get; set; }
+        public EntitiesCollection Collection { get; set; }
 
         public EntitiesComponent()
         {
-
+            Instance = this;
         }
 
         public override void RegisterHandlers()
@@ -59,12 +60,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             RegisterInternalHandler(Internals.MOVEMENTS, UpdateMovements);
 
             RegisterHandler(WorldCommand.SMSG_NAME_QUERY_RESPONSE, HandleNameQueryReponse);
-        }
+        }        
 
         private void HandleNameQueryReponse(ReceivablePacket content)
         {
             NameQueryResponse nameQueryResponse = new NameQueryResponse(content);
-            if(nameQueryResponse.Found)
+            if (nameQueryResponse.Found)
             {
                 Entity entity = Collection.GetUnit(nameQueryResponse.Guid);
                 entity.Name = nameQueryResponse.Name;
@@ -98,10 +99,13 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
         private void HandleMovement(ReceivablePacket content)
         {
             HandleMovement handleMovement = new HandleMovement(content);
+            if (handleMovement.Guid == 3)
+            {
+                //Logger.Log(((WorldCommand)handleMovement.Command).ToString());
+            }
             Entity entity = Collection.GetUnit(handleMovement.Guid);
             entity.UpdateMovement(handleMovement.MovementLiving);
-            //if (entity.Type == TypeID.TYPEID_PLAYER)
-                Logger.Log("Entity " + entity.Name + " Update position " + entity.Movement.Position, LogLevel.VERBOSE);
+            Logger.Log("Entity " + entity.Name + " Update position " + entity.Movement.Position, LogLevel.VERBOSE);
         }
 
         private void SplineMoveSetWalkMode(ReceivablePacket content)

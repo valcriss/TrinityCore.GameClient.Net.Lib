@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Clients;
+using TrinityCore.GameClient.Net.Lib.Components.Entities;
+using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Commands;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
@@ -7,6 +10,7 @@ using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
+using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player
 {
@@ -15,16 +19,16 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         public BindPosition BindPosition { get; set; }
         public uint? MapId => WorldClient?.Character?.MapId;
         public ulong? Guid => WorldClient?.Character?.GUID;
-        public List<Faction> Factions { get; set; }
+        public List<Faction> Factions { get; set; }       
         public List<Faction> ForcedFactions { get; set; }
         public List<Spell> Spells { get; set; }
         public List<TalentInfo> PetTalents { get; set; }
         public List<TalentInfo> Talents { get; set; }
         public List<GlyphInfo> Glyphs { get; set; }
         public Dictionary<ulong, GiverStatus> QuestsGiversStatus { get; set; }
-
         private List<CompletedAchievement> CompletedAchievements { get; set; }
         private List<AchievementCriteria> AchievementCriteriaList { get; set; }
+        private bool MovementsActivated { get; set; }
         public PlayerComponent()
         {
             Factions = new List<Faction>();
@@ -36,6 +40,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             Glyphs = new List<GlyphInfo>();
             CompletedAchievements = new List<CompletedAchievement>();
             AchievementCriteriaList = new List<AchievementCriteria>();
+            MovementsActivated = false;
         }
 
         public override void RegisterHandlers()
@@ -50,6 +55,51 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             RegisterHandler(WorldCommand.SMSG_ALL_ACHIEVEMENT_DATA, AllAchievementData);
             RegisterHandler(WorldCommand.SMSG_SET_PROFICIENCY, UpdateProficiency);
             RegisterHandler(WorldCommand.SMSG_EQUIPMENT_SET_LIST, EquipmentSetList);
+        }
+        public bool SendActivlyMoving()
+        {
+            if (!MovementsActivated)
+            {
+                Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+                if (player != null)
+                {
+                    WorldClient.Send(new ActivlyMoving(WorldClient, player.Guid));
+                    MovementsActivated = true;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool FaceOrientation(float orientation)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player != null)
+            {
+                Position current = player.GetPosition();
+                float angle = orientation;
+                if (Math.Abs(current.O - angle) > 0.01f)
+                {
+                    SendActivlyMoving();
+                    Logger.Log("Sending FacingMovement " + current,LogLevel.VERBOSE);
+                    current.O = angle;
+                    player.UpdatePosition(current);
+                    WorldClient.Send(new FacingMovement(WorldClient, player.Guid, current, false));
+                }
+            }
+            return true;
+        }
+
+        public bool FacePosition(Position position)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player != null)
+            {
+                Position current = player.GetPosition();
+                float angle = (position - current).O;
+                return FaceOrientation(angle);
+            }
+            return true;
         }
 
         private void LearnedDanceMoves(ReceivablePacket content)
