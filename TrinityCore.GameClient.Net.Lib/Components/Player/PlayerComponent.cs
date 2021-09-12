@@ -43,6 +43,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             MovementsActivated = false;
         }
 
+        
+
         internal override void RegisterHandlers()
         {
             RegisterHandler(WorldCommand.SMSG_LEARNED_DANCE_MOVES, LearnedDanceMoves);
@@ -100,6 +102,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                 return FaceOrientation(angle);
             }
             return true;
+        }
+
+        internal bool MoveForward(PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
+        {
+            throw new NotImplementedException();
         }
 
         private void LearnedDanceMoves(ReceivablePacket content)

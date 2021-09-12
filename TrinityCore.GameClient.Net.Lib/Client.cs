@@ -4,6 +4,7 @@ using TrinityCore.GameClient.Net.Lib.Clients;
 using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player;
+using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
@@ -41,6 +42,16 @@ namespace TrinityCore.GameClient.Net.Lib
         public bool Face(Position position)
         {
             return Player.FacePosition(position);
+        }
+
+        public bool MoveForward(Position position = null, PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
+        {
+            if(position != null)
+            {
+                Player.FacePosition(position);
+            }
+
+            return Player.MoveForward(moveType);
         }
     }
 }
