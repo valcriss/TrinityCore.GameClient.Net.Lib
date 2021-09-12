@@ -41,5 +41,6 @@ _Have a nice day_
 - [ ] Player casting spells
 - [ ] Player looting
 - [ ] Player interracting with npc
+- [ ] Player begging for some gold or an item
 
 
