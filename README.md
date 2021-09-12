@@ -22,4 +22,13 @@ _Have a nice day_
 - [x] Stay connected
 - [x] Getting world properties
 - [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
-- [ ] Currently working on player moves.
+---
+**What i am currently working on:**
+- [ ] Working on moving the player.
+---
+**What will i do next:**
+- [ ] Player melee attack.
+- [ ] Player joining a group.
+- [ ] Player chatting (say,group,shout,etc...)
+
+
