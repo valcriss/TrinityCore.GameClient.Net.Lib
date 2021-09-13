@@ -79,7 +79,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                     Entity closest = Client.GetOtherPlayers().OrderBy(c => (c.Movement.Position - player.Movement.Position).Length).FirstOrDefault();
                     if (closest != null)
                     {
-                        Client.Face(closest.GetPosition());
+                        Client.MoveForward(closest.GetPosition());
                     }
                 }
 
