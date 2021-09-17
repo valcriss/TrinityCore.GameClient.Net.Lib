@@ -21,3 +21,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Publish TrinityCore.GameClient.Net.Lib
+      uses: brandedoutcast/publish-nuget@v2.5.5
+      with:
+          PROJECT_FILE_PATH: TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.csproj
+          NUGET_KEY: ${{secrets.nugetsAPIKEY}}
