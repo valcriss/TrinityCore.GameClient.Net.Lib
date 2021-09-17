@@ -28,6 +28,11 @@ namespace TrinityCore.GameClient.Net.Lib
             return Entities?.Collection?.GetPlayer();
         }
 
+        public uint? GetMapId()
+        {
+            return WorldClient?.Character?.MapId;
+        }
+
         public List<Player> GetOtherPlayers()
         {
             Player player = GetPlayer();
