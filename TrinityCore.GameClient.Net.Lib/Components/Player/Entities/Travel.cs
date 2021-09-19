@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
