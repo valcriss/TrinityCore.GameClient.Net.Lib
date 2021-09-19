@@ -3,11 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Authors>Daniel Silvestre</Authors>
-    <Description>TrinityCore mmap files manipulation library</Description>
+    <Description>A simple library to log a character into a TrinityCore Server (v3.3.5) and interract with the world.</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Copyright></Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Version>1.0.1</Version>
+    <PackageProjectUrl>https://github.com/valcriss/TrinityCore.GameClient.Net.Lib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/valcriss/TrinityCore.GameClient.Net.Lib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
