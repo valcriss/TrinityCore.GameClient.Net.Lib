@@ -24,6 +24,9 @@ _Have a nice day_
 - [x] Getting world properties
 - [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
 
+## How can i install the library ?
+You can install the library by its nuget package : [TrinityCore.GameClient.Net.Lib](https://www.nuget.org/packages/TrinityCore.GameClient.Net.Lib/)
+
 ---
 ### What i am currently working on :
 **Working on moving the player :**
