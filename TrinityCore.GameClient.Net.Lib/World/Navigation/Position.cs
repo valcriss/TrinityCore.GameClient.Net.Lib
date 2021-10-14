@@ -11,12 +11,12 @@ namespace TrinityCore.GameClient.Net.Lib.World.Navigation
         public float Z { get; set; }
 
         internal Vector3 Vector3 => new Vector3(X, Y, Z);
-        internal Position()
+        public Position()
         {
 
         }
 
-        internal Position(float x, float y, float z, float o)
+        public Position(float x, float y, float z, float o)
         {
             X = x;
             Y = y;

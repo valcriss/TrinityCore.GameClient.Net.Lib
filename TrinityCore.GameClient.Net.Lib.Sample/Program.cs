@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Log;
+using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
+using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
@@ -17,10 +19,11 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             Configuration configuration = Configuration.Load();
             while (!configuration.IsValid)
             {
-                configuration.Host = AnsiConsole.Ask<string>("[green]AuthServer Host  :[/]");
-                configuration.Port = AnsiConsole.Ask<int>("[green]AuthServer Port  :[/]");
-                configuration.Login = AnsiConsole.Ask<string>("[green]Account login    :[/]");
-                configuration.Password = AnsiConsole.Ask<string>("[green]Account password :[/]");
+                configuration.Host = AnsiConsole.Ask<string>("[green]AuthServer Host  :[/]", configuration.Host);
+                configuration.Port = AnsiConsole.Ask<int>("[green]AuthServer Port  :[/]", configuration.Port);
+                configuration.Login = AnsiConsole.Ask<string>("[green]Account login    :[/]", configuration.Login);
+                configuration.Password = AnsiConsole.Ask<string>("[green]Account password :[/]", configuration.Password);
+                configuration.DataPath = AnsiConsole.Ask<string>("[green]Data path        :[/]", configuration.DataPath);
                 configuration.LogLevel = Select(new List<string>() { "VERBOSE", "DETAIL", "INFO", "WARNING" }, "LogLevel");
                 configuration.Save();
             }
@@ -32,7 +35,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             }
 
             Logger.LogObject = new ConsoleLogger();
-            Client = new Client(configuration.Host, configuration.Port, configuration.Login, configuration.Password);
+            Client = new Client(configuration.Host, configuration.Port, configuration.Login, configuration.Password, configuration.DataPath);
 
             if (!Authenticate())
             {
@@ -69,19 +72,15 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 Console.ReadKey();
                 return;
             }
-
+            Path path = null;
             while (true)
             {
-                System.Threading.Thread.Sleep(100);
+                System.Threading.Thread.Sleep(5000);
                 Player player = Client.GetPlayer();
-                if (player != null)
-                {
-                    Entity closest = Client.GetOtherPlayers().OrderBy(c => (c.Movement.Position - player.Movement.Position).Length).FirstOrDefault();
-                    if (closest != null)
-                    {
-                        Client.MoveForward(closest.GetPosition());
-                    }
-                }
+                Logger.Log("Player Position, Map :" + Client.GetMapId() + " " + player.GetPosition());
+                Player other = Client.GetOtherPlayers().FirstOrDefault();
+                if (other != null)
+                    Logger.Log("Other Position, Map :" + Client.GetMapId() + " " + other.GetPosition());
 
             }
         }

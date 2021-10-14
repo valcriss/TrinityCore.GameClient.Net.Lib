@@ -167,9 +167,14 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         protected float ReadSingle()
         {
-            float value = BitConverter.ToSingle(Buffer, ReadIndex);
-            ReadIndex += 4;
-            return value;
+            if(Buffer.Length - 4 > ReadIndex)
+            {
+                float value = BitConverter.ToSingle(Buffer, ReadIndex);
+                ReadIndex += 4;
+                return value;
+            }
+            ReadIndex = Buffer.Length - 1;
+            return 0;
         }
 
         protected ushort ReadUInt16()

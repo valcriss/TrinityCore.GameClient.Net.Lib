@@ -11,6 +11,7 @@
     <PackageProjectUrl>https://github.com/valcriss/TrinityCore.GameClient.Net.Lib</PackageProjectUrl>
     <RepositoryUrl>https://github.com/valcriss/TrinityCore.GameClient.Net.Lib</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

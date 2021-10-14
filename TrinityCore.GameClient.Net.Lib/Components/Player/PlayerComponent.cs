@@ -29,7 +29,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         private List<CompletedAchievement> CompletedAchievements { get; set; }
         private List<AchievementCriteria> AchievementCriteriaList { get; set; }
         private bool MovementsActivated { get; set; }
-        private Travel Travel { get; set; }
         private System.Timers.Timer HeartBeatTimer { get; set; }
 
         public PlayerComponent()
@@ -44,23 +43,23 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             CompletedAchievements = new List<CompletedAchievement>();
             AchievementCriteriaList = new List<AchievementCriteria>();
             MovementsActivated = false;
+            /*
             HeartBeatTimer = new System.Timers.Timer(1000);
             HeartBeatTimer.Elapsed += HeartBeatTimerElapsed;
             HeartBeatTimer.Enabled = true;
             HeartBeatTimer.Start();
+            */
         }
-
+        /*
         private void HeartBeatTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            if (Travel == null) return;
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player == null) return;
-            Position position = Travel.HeartBeat();
             if (position == null) return;
             player.UpdatePosition(position);
-            MovementFlags flags = Travel.GetMovementFlags();
             WorldClient.Send(new HeartBeatMovement(WorldClient, player.Guid, player.GetPosition(), flags));
         }
+        */
 
         internal override void RegisterHandlers()
         {
@@ -82,9 +81,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                 Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
                 if (player != null)
                 {
-                    WorldClient.Send(new ActivlyMoving(WorldClient, player.Guid));
+                    WorldClient.Send(new ActivlyMoving (WorldClient, player.Guid));
                     MovementsActivated = true;
-                    Travel = new Travel(player.Movement.MovementLiving.Speeds);
                     return true;
                 }
             }
@@ -122,23 +120,37 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return true;
         }
 
-        internal bool MoveForward(PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
+        internal bool MoveStop(Position position)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player != null)
+            {
+                player.UpdatePosition(position);
+                return WorldClient.Send(new StopMovement(WorldClient, player.Guid, player.GetPosition()));
+            }
+            return false;
+        }
+
+        internal bool MoveForward(Position position, PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
         {
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player != null)
             {
                 SendActivlyMoving();
-                if (Travel.TravelInProgress())
-                {
-                    Position position = Travel.Stop();
-                    player.UpdatePosition(position);
-                    WorldClient.Send(new StopMovement(WorldClient, player.Guid, player.GetPosition()));
-                }
+                player.UpdatePosition(position);
+                return WorldClient.Send(new MoveStartForwardMovement(WorldClient, player.Guid, player.GetPosition()));
+            }
+            return false;
+        }
 
-                if (Travel.StartMovement(WorldCommand.MSG_MOVE_START_FORWARD, player.GetPosition(), moveType))
-                {
-                    WorldClient.Send(new MoveStartForwardMovement(WorldClient, player.Guid, player.GetPosition()));
-                }
+        internal bool MoveUpdate(Position position)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player != null)
+            {
+                SendActivlyMoving();
+                player.UpdatePosition(position);
+                return WorldClient.Send(new HeartBeatMovement(WorldClient, player.Guid, player.GetPosition(),MovementFlags.MOVEMENTFLAG_FORWARD));
             }
             return false;
         }

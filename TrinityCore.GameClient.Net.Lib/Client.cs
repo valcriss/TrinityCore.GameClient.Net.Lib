@@ -6,6 +6,8 @@ using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration;
+using TrinityCore.GameClient.Net.Lib.Map;
+using TrinityCore.GameClient.Net.Lib.World.Enums;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
 
 namespace TrinityCore.GameClient.Net.Lib
@@ -16,11 +18,20 @@ namespace TrinityCore.GameClient.Net.Lib
         internal PlayerComponent Player { get; set; }
         internal EntitiesComponent Entities { get; set; }
 
-        public Client(string host, int port, string login, string password) : base(host, port, login, password)
+        public Client(string host, int port, string login, string password, string dataDirectory) : base(host, port, login, password)
         {
             Entities = AddComponent(new EntitiesComponent());
             WorldConfiguration = AddComponent(new WorldConfigurationComponent());
             Player = AddComponent(new PlayerComponent());
+            Wase.Initialize(dataDirectory);
+        }
+
+        public Path CalculatePath(Position target)
+        {
+            uint? mapId = GetMapId();
+            Player player = GetPlayer();
+            if (mapId == null || player == null) return null;
+            return Wase.CalculatePath(player.GetPosition(), target, mapId.Value, player.Movement.MovementLiving.Speeds[UnitMoveType.MOVE_RUN]);
         }
 
         public Player GetPlayer()
@@ -49,14 +60,24 @@ namespace TrinityCore.GameClient.Net.Lib
             return Player.FacePosition(position);
         }
 
+        public bool MoveStop(Position position)
+        {
+            return Player.MoveStop(position);
+        }
+
+        public bool MoveUpdate(Position position)
+        {
+            return Player.MoveUpdate(position);
+        }
+
         public bool MoveForward(Position position = null, PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
         {
-            if(position != null)
+            if (position != null)
             {
                 Player.FacePosition(position);
             }
 
-            return Player.MoveForward(moveType);
+            return Player.MoveForward(position,moveType);
         }
     }
 }

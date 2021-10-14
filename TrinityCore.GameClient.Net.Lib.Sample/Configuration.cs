@@ -17,11 +17,14 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         [JsonProperty("password")]
         public string Password { get; set; }
 
+        [JsonProperty("dataPath")]
+        public string DataPath { get; set; }
+
         [JsonProperty("logLevel")]
         public string LogLevel { get; set; }
 
         [JsonIgnore]
-        public bool IsValid => !string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Login) && !string.IsNullOrEmpty(Password) && Port > 0;
+        public bool IsValid => !string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Login) && !string.IsNullOrEmpty(Password)&& !string.IsNullOrEmpty(DataPath) && Port > 0;
 
 
         private string Directory { get; set; }
