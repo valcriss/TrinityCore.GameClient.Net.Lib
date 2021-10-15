@@ -10,10 +10,21 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 {
     public class Waze
     {
+        public static bool StickToTerrain { get; set; }
         private static MmapFilesCollection Collection { get; set; }
+
         public static void Initialize(string dataDirectory)
         {
-            //Collection = MmapFilesCollection.Load(System.IO.Path.Combine(dataDirectory, "mmaps"));
+            Collection = MmapFilesCollection.Load(System.IO.Path.Combine(dataDirectory, "mmaps"));
+        }
+
+        public static Position GetSticked(int mapId, Position position)
+        {
+            if (!StickToTerrain) return position;
+            float? h = Collection.GetHeightAtPosition(mapId, position.Vector3);
+            if (h == null) return position;
+            position.Z = h.Value;
+            return position;
         }
 
         public static Path CalculatePath(Position start, Position end, uint mapId, float speed)

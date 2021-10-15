@@ -135,6 +135,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             {
                 Moving = true;
                 if (position == null) position = player.GetPosition();
+                position = Waze.GetSticked((int)CurrentMapId, position);
                 player.UpdatePosition(position);
                 WorldClient?.Send(new FacingMovement(WorldClient, player.Guid, position, true));
                 WorldClient?.Send(new MoveStartForwardMovement(WorldClient, player.Guid, position));
@@ -150,6 +151,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             if (player != null)
             {
                 if (position == null) position = player.GetPosition();
+                position = Waze.GetSticked((int)CurrentMapId, position);
                 player.UpdatePosition(position);              
                 WorldClient?.Send(new HeartBeatMovement(WorldClient, player.Guid, position, MovementFlags.MOVEMENTFLAG_FORWARD));
             }

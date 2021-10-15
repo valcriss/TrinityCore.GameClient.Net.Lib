@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Display.Models;
 using TrinityCore.GameClient.Net.Lib.Log;
+using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
@@ -69,6 +70,8 @@ namespace TrinityCore.GameClient.Net.Lib.Display
         private void Form1_Load(object sender, EventArgs e)
         {
             toolStripButton1.Enabled = Program.Configuration.IsValid;
+            toolStripComboBox1.SelectedIndex = 0;
+            Waze.StickToTerrain = false;
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
@@ -223,6 +226,18 @@ namespace TrinityCore.GameClient.Net.Lib.Display
                         Orders.Add(order);
                     }
                 }
+            }
+        }
+
+        private void toolStripComboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if(toolStripComboBox1.SelectedIndex == 0)
+            {
+                Waze.StickToTerrain = false;
+            }
+            else
+            {
+                Waze.StickToTerrain = true;
             }
         }
     }
