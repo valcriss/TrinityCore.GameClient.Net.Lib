@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    internal enum TypeID
+    public enum TypeID
     {
         TYPEID_OBJECT = 0,
         TYPEID_ITEM = 1,

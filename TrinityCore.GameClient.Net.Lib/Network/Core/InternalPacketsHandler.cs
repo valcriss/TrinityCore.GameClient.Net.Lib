@@ -2,15 +2,15 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    internal enum Internals
+    public enum Internals
     {
         UPDATE_FIELDS,
         CREATE_OBJECTS,
         MOVEMENTS,
         OUT_OF_RANGES
     }
-    
-    internal delegate void InternalPacketHandler(object content);
+
+    public delegate void InternalPacketHandler(object content);
 
     internal class InternalPacketsHandler
     {

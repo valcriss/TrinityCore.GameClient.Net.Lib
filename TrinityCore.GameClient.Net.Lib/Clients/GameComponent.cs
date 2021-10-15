@@ -4,7 +4,7 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Clients
 {
-    internal abstract class GameComponent
+    public abstract class GameComponent
     {
         protected WorldClient WorldClient { get; set; }
 

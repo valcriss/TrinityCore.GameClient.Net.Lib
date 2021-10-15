@@ -2,7 +2,7 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    internal class Npc : Entity
+    public class Npc : Entity
     {
         internal UnitInfo Infos { get; set; }
 

@@ -16,7 +16,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
         public Movement Movement { get; set; }
         internal Dictionary<Powers, uint> Powers { get; set; }
         internal SplineMoveMode SplineMoveMode { get; set; }
-        internal TypeID Type { get; set; }
+        public TypeID Type { get; set; }
         public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
 
         public Position GetPosition()

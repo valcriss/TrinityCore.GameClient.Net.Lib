@@ -11,10 +11,10 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 {
-    internal class EntitiesComponent : GameComponent
+    public class EntitiesComponent : GameComponent
     {
-        internal static EntitiesComponent Instance { get; set; }
-        internal EntitiesCollection Collection { get; set; }
+        public static EntitiesComponent Instance { get; set; }
+        public EntitiesCollection Collection { get; set; }
 
         public EntitiesComponent()
         {

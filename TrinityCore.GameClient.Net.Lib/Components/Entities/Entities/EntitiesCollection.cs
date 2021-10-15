@@ -10,13 +10,13 @@ using TrinityCore.GameClient.Net.Lib.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    internal class EntitiesCollection
+    public class EntitiesCollection
     {
-        internal Dictionary<ulong, Creature> Creatures { get; set; }
-        internal Dictionary<ulong, GameObject> GameObjects { get; set; }
-        internal Dictionary<ulong, Item> Items { get; set; }
-        internal Dictionary<ulong, Npc> Npc { get; set; }
-        internal Dictionary<ulong, Player> Players { get; set; }
+        public Dictionary<ulong, Creature> Creatures { get; set; }
+        public Dictionary<ulong, GameObject> GameObjects { get; set; }
+        public Dictionary<ulong, Item> Items { get; set; }
+        public Dictionary<ulong, Npc> Npc { get; set; }
+        public Dictionary<ulong, Player> Players { get; set; }
         private Dictionary<ulong, MapType> Map { get; set; }
         private Dictionary<ulong, Entity> UnCategorized { get; set; }
         private Dictionary<ulong, Entity> UnCategorizedUnit { get; set; }

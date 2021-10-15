@@ -4,10 +4,10 @@ using TrinityCore.GameClient.Net.Lib.World.Entities;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    internal class Creature : Entity
+    public class Creature : Entity
     {
         internal UnitInfo Infos { get; set; }
-        internal int Level
+        public int Level
         {
             get
             {
@@ -22,7 +22,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 
         internal bool IsAlive => Health > 0;
 
-        internal uint Health
+        public uint Health
         {
             get
             {
@@ -34,7 +34,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
                 return 0;
             }
         }
-        internal int PctHealth
+        public int PctHealth
         {
             get
             {

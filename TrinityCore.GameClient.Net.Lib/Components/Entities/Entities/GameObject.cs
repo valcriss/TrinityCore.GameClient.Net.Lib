@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Entities
 {
-    internal class GameObject : Entity
+    public class GameObject : Entity
     {
         internal GameObject(Entity entity) : base(entity.Guid)
         {

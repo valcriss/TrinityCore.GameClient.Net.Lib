@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.World.Enums
 {
-    internal enum WorldCommand : uint
+    public enum WorldCommand : uint
     {
         MSG_NULL_ACTION = 0,
         CMSG_BOOTME = 1,

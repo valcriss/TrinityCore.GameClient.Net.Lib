@@ -13,7 +13,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         private static MmapFilesCollection Collection { get; set; }
         public static void Initialize(string dataDirectory)
         {
-            Collection = MmapFilesCollection.Load(System.IO.Path.Combine(dataDirectory, "mmaps"));
+            //Collection = MmapFilesCollection.Load(System.IO.Path.Combine(dataDirectory, "mmaps"));
         }
 
         public static Path CalculatePath(Position start, Position end, uint mapId, float speed)

@@ -2,7 +2,7 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    internal delegate void PacketHandler(ReceivablePacket content);
+    public delegate void PacketHandler(ReceivablePacket content);
     public class PacketsHandler
     {
         private Dictionary<uint, List<PacketHandler>> Handlers { get; }
