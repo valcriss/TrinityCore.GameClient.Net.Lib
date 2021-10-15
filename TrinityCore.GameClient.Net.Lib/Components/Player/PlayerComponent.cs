@@ -8,9 +8,12 @@ using TrinityCore.GameClient.Net.Lib.Components.Player.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration.Commands;
 using TrinityCore.GameClient.Net.Lib.Log;
+using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
+using TrinityCore.GameClient.Net.Lib.World;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
+using TrinityCore.Map.Net.IO;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player
 {
@@ -28,8 +31,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         internal Dictionary<ulong, GiverStatus> QuestsGiversStatus { get; set; }
         private List<CompletedAchievement> CompletedAchievements { get; set; }
         private List<AchievementCriteria> AchievementCriteriaList { get; set; }
-        private bool MovementsActivated { get; set; }
-        private System.Timers.Timer HeartBeatTimer { get; set; }
+        private Travel Travel { get; set; }
 
         public PlayerComponent()
         {
@@ -42,24 +44,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             Glyphs = new List<GlyphInfo>();
             CompletedAchievements = new List<CompletedAchievement>();
             AchievementCriteriaList = new List<AchievementCriteria>();
-            MovementsActivated = false;
-            /*
-            HeartBeatTimer = new System.Timers.Timer(1000);
-            HeartBeatTimer.Elapsed += HeartBeatTimerElapsed;
-            HeartBeatTimer.Enabled = true;
-            HeartBeatTimer.Start();
-            */
         }
-        /*
-        private void HeartBeatTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+
+        public override void SetWorldClient(WorldClient worldClient)
         {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player == null) return;
-            if (position == null) return;
-            player.UpdatePosition(position);
-            WorldClient.Send(new HeartBeatMovement(WorldClient, player.Guid, player.GetPosition(), flags));
+            base.SetWorldClient(worldClient);
+            Travel = new Travel(worldClient);
         }
-        */
+
+        internal TravelState MoveTo(Entity entity, float speed)
+        {
+            if (MapId == null || Travel == null) return TravelState.ERROR;
+            return Travel.MoveTo(MapId.Value, entity.GetPosition(), speed);
+        }
 
         internal override void RegisterHandlers()
         {
@@ -74,20 +71,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             RegisterHandler(WorldCommand.SMSG_SET_PROFICIENCY, UpdateProficiency);
             RegisterHandler(WorldCommand.SMSG_EQUIPMENT_SET_LIST, EquipmentSetList);
         }
-        internal bool SendActivlyMoving()
-        {
-            if (!MovementsActivated)
-            {
-                Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-                if (player != null)
-                {
-                    WorldClient.Send(new ActivlyMoving (WorldClient, player.Guid));
-                    MovementsActivated = true;
-                    return true;
-                }
-            }
-            return false;
-        }
+
 
         internal bool FaceOrientation(float orientation)
         {
@@ -98,7 +82,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                 float angle = orientation;
                 if (Math.Abs(current.O - angle) > 0.01f)
                 {
-                    SendActivlyMoving();
                     Logger.Log("Sending FacingMovement " + current, LogLevel.VERBOSE);
                     current.O = angle;
                     player.UpdatePosition(current);
@@ -106,53 +89,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                 }
             }
             return true;
-        }
-
-        internal bool FacePosition(Position position)
-        {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player != null)
-            {
-                Position current = player.GetPosition();
-                float angle = (position - current).O;
-                return FaceOrientation(angle);
-            }
-            return true;
-        }
-
-        internal bool MoveStop(Position position)
-        {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player != null)
-            {
-                player.UpdatePosition(position);
-                return WorldClient.Send(new StopMovement(WorldClient, player.Guid, player.GetPosition()));
-            }
-            return false;
-        }
-
-        internal bool MoveForward(Position position, PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
-        {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player != null)
-            {
-                SendActivlyMoving();
-                player.UpdatePosition(position);
-                return WorldClient.Send(new MoveStartForwardMovement(WorldClient, player.Guid, player.GetPosition()));
-            }
-            return false;
-        }
-
-        internal bool MoveUpdate(Position position)
-        {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player != null)
-            {
-                SendActivlyMoving();
-                player.UpdatePosition(position);
-                return WorldClient.Send(new HeartBeatMovement(WorldClient, player.Guid, player.GetPosition(),MovementFlags.MOVEMENTFLAG_FORWARD));
-            }
-            return false;
         }
 
         private void LearnedDanceMoves(ReceivablePacket content)

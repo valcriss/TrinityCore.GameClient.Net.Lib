@@ -150,6 +150,12 @@ namespace TrinityCore.GameClient.Net.Lib.World
             AuthenticationCrypto.Initialize(SessionKey.ToCleanByteArray());
         }
 
+        public override bool Send(SendablePacket sendablePacket)
+        {
+            Logger.Log("Sending : " + sendablePacket.GetType().Name);
+            return base.Send(sendablePacket);
+        }
+
         private void AuthChallengeResponse(ReceivablePacket content)
         {
             AuthChallengeResponse authChallengeResponse = new AuthChallengeResponse(content);

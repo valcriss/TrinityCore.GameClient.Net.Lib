@@ -64,6 +64,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands
         internal WorldMovementPacket(WorldSocket worldSocket, WorldCommand command) : base(worldSocket, command)
         {
             Time = (uint)(DateTime.Now - Process.GetCurrentProcess().StartTime).TotalMilliseconds;
+            Flags2 = MovementFlags2.MOVEMENTFLAG2_NONE;
         }
 
         internal override byte[] GetBuffer()

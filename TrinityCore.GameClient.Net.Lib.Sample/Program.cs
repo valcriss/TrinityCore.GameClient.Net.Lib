@@ -8,6 +8,7 @@ using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
+using TrinityCore.Map.Net.IO;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
@@ -72,16 +73,19 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 Console.ReadKey();
                 return;
             }
-            Path path = null;
+
             while (true)
             {
-                System.Threading.Thread.Sleep(5000);
+                System.Threading.Thread.Sleep(100);
                 Player player = Client.GetPlayer();
-                Logger.Log("Player Position, Map :" + Client.GetMapId() + " " + player.GetPosition());
-                Player other = Client.GetOtherPlayers().FirstOrDefault();
-                if (other != null)
-                    Logger.Log("Other Position, Map :" + Client.GetMapId() + " " + other.GetPosition());
-
+                if (player != null)
+                {
+                    Player other = Client.GetOtherPlayers().FirstOrDefault();
+                    if (other != null)
+                    {
+                        Client.MoveTo(other);
+                    }
+                }
             }
         }
 

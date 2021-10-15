@@ -89,12 +89,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #region Sending
 
-        internal bool Send(SendablePacket sendablePacket)
+        public virtual bool Send(SendablePacket sendablePacket)
         {
             return Send(sendablePacket.GetBuffer());
         }
 
-        protected bool Send(byte[] data)
+        public bool Send(byte[] data)
         {
             try
             {

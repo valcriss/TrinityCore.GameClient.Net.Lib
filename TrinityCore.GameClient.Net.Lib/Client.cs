@@ -9,6 +9,7 @@ using TrinityCore.GameClient.Net.Lib.Components.WorldConfiguration;
 using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
+using TrinityCore.Map.Net.IO;
 
 namespace TrinityCore.GameClient.Net.Lib
 {
@@ -23,7 +24,7 @@ namespace TrinityCore.GameClient.Net.Lib
             Entities = AddComponent(new EntitiesComponent());
             WorldConfiguration = AddComponent(new WorldConfigurationComponent());
             Player = AddComponent(new PlayerComponent());
-            Wase.Initialize(dataDirectory);
+            Waze.Initialize(dataDirectory);
         }
 
         public Path CalculatePath(Position target)
@@ -31,12 +32,18 @@ namespace TrinityCore.GameClient.Net.Lib
             uint? mapId = GetMapId();
             Player player = GetPlayer();
             if (mapId == null || player == null) return null;
-            return Wase.CalculatePath(player.GetPosition(), target, mapId.Value, player.Movement.MovementLiving.Speeds[UnitMoveType.MOVE_RUN]);
+            return Waze.CalculatePath(player.GetPosition(), target, mapId.Value, player.Movement.MovementLiving.Speeds[UnitMoveType.MOVE_RUN]);
         }
 
         public Player GetPlayer()
         {
             return Entities?.Collection?.GetPlayer();
+        }
+
+        public float? GetRunSpeed()
+        {
+            Player player = GetPlayer();
+            return player?.Movement.MovementLiving.Speeds[UnitMoveType.MOVE_RUN];
         }
 
         public uint? GetMapId()
@@ -50,34 +57,16 @@ namespace TrinityCore.GameClient.Net.Lib
             return (player != null) ? Entities.Collection.Players.Values.Where(c => c.Guid != player.Guid).ToList() : null;
         }
 
+        public TravelState MoveTo(Entity entity)
+        {
+            float? speed = GetRunSpeed();
+            if (speed == null) return TravelState.ERROR;
+            return Player.MoveTo(entity, speed.Value);
+        }
+
         public bool Face(float orientation)
         {
             return Player.FaceOrientation(orientation);
-        }
-
-        public bool Face(Position position)
-        {
-            return Player.FacePosition(position);
-        }
-
-        public bool MoveStop(Position position)
-        {
-            return Player.MoveStop(position);
-        }
-
-        public bool MoveUpdate(Position position)
-        {
-            return Player.MoveUpdate(position);
-        }
-
-        public bool MoveForward(Position position = null, PlayerMoveType moveType = PlayerMoveType.MOVE_RUN)
-        {
-            if (position != null)
-            {
-                Player.FacePosition(position);
-            }
-
-            return Player.MoveForward(position,moveType);
         }
     }
 }

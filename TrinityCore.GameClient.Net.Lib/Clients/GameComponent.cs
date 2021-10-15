@@ -8,7 +8,7 @@ namespace TrinityCore.GameClient.Net.Lib.Clients
     {
         protected WorldClient WorldClient { get; set; }
 
-        internal void SetWorldClient(WorldClient worldClient)
+        public virtual void SetWorldClient(WorldClient worldClient)
         {
             WorldClient = worldClient;
         }
