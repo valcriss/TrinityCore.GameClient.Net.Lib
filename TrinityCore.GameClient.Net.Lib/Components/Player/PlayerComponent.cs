@@ -52,6 +52,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             Travel = new Travel(worldClient);
         }
 
+        internal TravelState MoveTo(Position position, float speed)
+        {
+            if (MapId == null || Travel == null) return TravelState.ERROR;
+            return Travel.MoveTo(MapId.Value, position, speed);
+        }
+
         internal TravelState MoveTo(Entity entity, float speed)
         {
             if (MapId == null || Travel == null) return TravelState.ERROR;

@@ -57,6 +57,15 @@ namespace TrinityCore.GameClient.Net.Lib
             return (player != null) ? Entities.Collection.Players.Values.Where(c => c.Guid != player.Guid).ToList() : null;
         }
 
+
+
+        public TravelState MoveTo(Position position)
+        {
+            float? speed = GetRunSpeed();
+            if (speed == null) return TravelState.ERROR;
+            return Player.MoveTo(position, speed.Value);
+        }
+
         public TravelState MoveTo(Entity entity)
         {
             float? speed = GetRunSpeed();
