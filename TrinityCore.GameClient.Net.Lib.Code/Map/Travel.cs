@@ -67,7 +67,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
             if (distance < distanceToPoint)
             {
-                MoveStop(currentPosition);
+                MoveStop(currentPosition, true);
                 State = TravelState.DESTINATION_REACH;
                 return State;
             }
@@ -82,7 +82,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
                 Path calculate = Waze.CalculatePath(currentPosition, destination, mapId, speed);
                 if (calculate == null)
                 {
-                    MoveStop(currentPosition);
+                    MoveStop(currentPosition, true);
                     State = TravelState.ERROR;
                     return State;
                 }
@@ -111,12 +111,12 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             return State;
         }
 
-        public bool MoveStop(Position position)
+        public bool MoveStop(Position position, bool force = false)
         {
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player != null)
             {
-                if (Moving)
+                if (Moving || force)
                 {
                     player.UpdatePosition(position);
                     WorldClient.Send(new StopMovement(WorldClient, player.Guid, player.GetPosition()));
