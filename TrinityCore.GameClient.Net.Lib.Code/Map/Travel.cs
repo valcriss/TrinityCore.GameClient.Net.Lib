@@ -116,12 +116,12 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
             if (player != null)
             {
-                if(Moving)
+                if (Moving)
                 {
                     player.UpdatePosition(position);
                     WorldClient.Send(new StopMovement(WorldClient, player.Guid, player.GetPosition()));
                 }
-                Moving = false;              
+                Moving = false;
                 return true;
             }
             return false;
@@ -152,7 +152,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             {
                 if (position == null) position = player.GetPosition();
                 position = Waze.GetSticked((int)CurrentMapId, position);
-                player.UpdatePosition(position);              
+                player.UpdatePosition(position);
                 WorldClient?.Send(new HeartBeatMovement(WorldClient, player.Guid, position, MovementFlags.MOVEMENTFLAG_FORWARD));
             }
         }

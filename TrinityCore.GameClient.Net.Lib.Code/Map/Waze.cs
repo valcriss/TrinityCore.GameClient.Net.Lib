@@ -29,8 +29,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         public static Path CalculatePath(Position start, Position end, uint mapId, float speed)
         {
-            return new Path(new List<Point>() { new Point(start.X, start.Y, start.Z), new Point(end.X, end.Y, end.Z) }, speed, (int)mapId);
-            //return Collection.PathFinding.FindPath((int)mapId, start.Vector3, end.Vector3, speed);
+            return Collection.PathFinding.FindPath((int)mapId, start.Vector3, end.Vector3, speed);
         }
 
     }
