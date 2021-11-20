@@ -44,7 +44,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
             if (!Moving)
             {
-                MoveStop(player.GetPosition());
+                MoveStop(player.GetPosition(),true);
             }
         }
 
