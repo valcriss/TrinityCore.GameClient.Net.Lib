@@ -23,14 +23,29 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         public TravelState State { get; set; }
         private WorldClient WorldClient { get; set; }
         private bool MovementsActivated { get; set; }
+        private System.Timers.Timer UpdateTimer { get; set; }
 
 
         public Travel(WorldClient worldClient)
         {
             MovementsActivated = false;
             WorldClient = worldClient;
-
+            UpdateTimer = new System.Timers.Timer(200);
+            UpdateTimer.Elapsed += Update;
+            UpdateTimer.Enabled = true;
+            UpdateTimer.Start();
             Reset();
+        }
+
+        private void Update(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player == null) return;
+
+            if (!Moving)
+            {
+                MoveStop(player.GetPosition());
+            }
         }
 
         public void Reset()
