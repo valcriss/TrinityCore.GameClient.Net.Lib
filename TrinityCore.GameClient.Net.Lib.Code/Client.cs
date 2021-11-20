@@ -77,5 +77,10 @@ namespace TrinityCore.GameClient.Net.Lib
         {
             return Player.FaceOrientation(orientation);
         }
+
+        public bool Face(Position position)
+        {
+            return Player.FacePosition(position);
+        }
     }
 }

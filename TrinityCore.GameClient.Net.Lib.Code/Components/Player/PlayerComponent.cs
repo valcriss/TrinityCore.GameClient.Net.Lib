@@ -97,6 +97,23 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return true;
         }
 
+        internal bool FacePosition(Position destination)
+        {
+            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
+            if (player != null)
+            {
+                Position current = player.GetPosition();
+                float angle = (destination - current).Direction.O;
+                if (Math.Abs(current.O - angle) > 0.01f)
+                {
+                    Logger.Log("Sending FacingMovement " + current, LogLevel.VERBOSE);
+                    current.O = angle;
+                    player.UpdatePosition(current);
+                    WorldClient.Send(new FacingMovement(WorldClient, player.Guid, current, false));
+                }
+            }
+            return true;
+        }
         private void LearnedDanceMoves(ReceivablePacket content)
         {
             LearnedDanceMoves learnedDanceMoves = new LearnedDanceMoves(content);
