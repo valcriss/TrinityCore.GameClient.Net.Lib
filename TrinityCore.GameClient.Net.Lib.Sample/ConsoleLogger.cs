@@ -40,7 +40,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                     break;
             }
             AnsiConsole.MarkupLine("[bold " + color + "]" + level.ToString().EnsureLength(7) + " : " + message + "[/]");
-            WriteToFile(level.ToString().EnsureLength(7) + " : " + message);
+            //WriteToFile(level.ToString().EnsureLength(7) + " : " + message);
         }
 
         public void LogException(Exception e)

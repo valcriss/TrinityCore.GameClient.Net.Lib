@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Commands;
-using TrinityCore.GameClient.Net.Lib.Log;
 using TrinityCore.GameClient.Net.Lib.World;
 using TrinityCore.GameClient.Net.Lib.World.Enums;
 using TrinityCore.GameClient.Net.Lib.World.Navigation;
@@ -22,30 +19,13 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         private DateTime PreviousMovingTime { get; set; }
         public TravelState State { get; set; }
         private WorldClient WorldClient { get; set; }
-        private bool MovementsActivated { get; set; }
-        private System.Timers.Timer UpdateTimer { get; set; }
-
+        private bool MovementsActivated { get; set; }   
 
         public Travel(WorldClient worldClient)
         {
             MovementsActivated = false;
             WorldClient = worldClient;
-            UpdateTimer = new System.Timers.Timer(200);
-            UpdateTimer.Elapsed += Update;
-            UpdateTimer.Enabled = true;
-            UpdateTimer.Start();
             Reset();
-        }
-
-        private void Update(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            Entity player = EntitiesComponent.Instance?.Collection.GetPlayer();
-            if (player == null) return;
-
-            if (!Moving)
-            {
-                MoveStop(player.GetPosition(),true);
-            }
         }
 
         public void Reset()
@@ -82,10 +62,15 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
             if (distance < distanceToPoint)
             {
-                MoveStop(currentPosition, true);
-                State = TravelState.DESTINATION_REACH;
+                if (Moving)
+                {
+                    MoveStop(currentPosition, true);
+                    State = TravelState.DESTINATION_REACH;
+                    Moving = false;
+                }
                 return State;
             }
+
 
             if (CurrentDestination == null || CurrentMapId != mapId || (CurrentDestination - destination).Length > RECALCULTATE_DISTANCE)
             {

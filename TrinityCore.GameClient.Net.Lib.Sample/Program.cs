@@ -4,11 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Entities;
 using TrinityCore.GameClient.Net.Lib.Log;
-using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.Entities;
 using TrinityCore.GameClient.Net.Lib.World.Entities;
-using TrinityCore.GameClient.Net.Lib.World.Navigation;
-using TrinityCore.Map.Net.IO;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
