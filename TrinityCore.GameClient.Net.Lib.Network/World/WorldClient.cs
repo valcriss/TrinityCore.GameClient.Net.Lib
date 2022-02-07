@@ -96,7 +96,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             });
         }
 
-        public new void Dispose()
+        public override void Dispose()
         {
             KeepAliveTimer.Dispose();
             base.Dispose();

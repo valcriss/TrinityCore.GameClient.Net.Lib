@@ -65,6 +65,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
             });
         }
 
+        public override void Dispose()
+        {
+            AuthenticateDone.Dispose();
+            RealmListDone.Dispose();
+            base.Dispose();
+        }
+
         public async Task<List<WorldServerInfo>> GetRealms()
         {
             return await Task.Run(() =>
@@ -79,17 +86,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
         }
 
         #endregion Public Methods
-
-        #region Protected Methods
-
-        protected new void Dispose()
-        {
-            AuthenticateDone.Dispose();
-            RealmListDone.Dispose();
-            base.Dispose();
-        }
-
-        #endregion Protected Methods
 
         #region Private Methods
 

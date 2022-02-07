@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Logging.Enums;
-using TrinityCore.GameClient.Net.Lib.Network.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
@@ -96,7 +95,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             }
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             Close();
         }
