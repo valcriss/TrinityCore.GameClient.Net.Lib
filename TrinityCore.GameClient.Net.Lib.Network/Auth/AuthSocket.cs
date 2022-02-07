@@ -61,8 +61,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
                 ReceiveData();
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ex)
             {
+                Logger.Append(Logging.Enums.LogCategory.NETWORK, ex);
             }
             catch (SocketException ex)
             {

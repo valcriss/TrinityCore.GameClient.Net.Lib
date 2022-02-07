@@ -83,8 +83,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                     WorldPacketRead(ReadHeaderCallback);
                 }
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ex)
             {
+                Logger.Append(Logging.Enums.LogCategory.NETWORK, ex);
             }
             catch (NullReferenceException ex)
             {
@@ -124,8 +125,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                     WorldPacketRead(ReadPayloadCallback, SocketBuffer.SocketAsyncState);
                 }
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ex)
             {
+                Logger.Append(Logging.Enums.LogCategory.NETWORK, ex);
             }
             catch (NullReferenceException ex)
             {
@@ -202,8 +204,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                     callback(this, SocketBuffer.SocketArgs);
                 }
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException ex)
             {
+                Logger.Append(Logging.Enums.LogCategory.NETWORK, ex);
             }
         }
 
