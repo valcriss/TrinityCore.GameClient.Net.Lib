@@ -27,12 +27,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #endregion Private Properties
 
-        #region Public Fields
+        #region Private Fields
 
-        public static int AUTHENTIFICATION_TIMEOUT = 5000;
-        public static int REALM_LIST_TIMEOUT = 5000;
+        private const int AUTHENTIFICATION_TIMEOUT = 5000;
+        private const int REALM_LIST_TIMEOUT = 5000;
 
-        #endregion Public Fields
+        #endregion Private Fields
 
         #region Public Constructors
 

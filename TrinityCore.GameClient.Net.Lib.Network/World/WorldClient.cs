@@ -33,21 +33,21 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private ManualResetEvent CharacterLoginDone { get; }
         private List<Character> Characters { get; set; }
         private AuthCredentials Credentials { get; set; }
+        private System.Timers.Timer KeepAliveTimer { get; }
         private ManualResetEvent LogOutDone { get; }
         private WorldPlayerState PlayerState { get; set; }
         private WorldState State { get; set; }
         private WorldServerInfo WorldServer { get; set; }
-        private System.Timers.Timer KeepAliveTimer { get; }
 
         #endregion Private Properties
 
-        #region Public Fields
+        #region Private Fields
 
-        public static int AUTHENTIFICATION_TIMEOUT = 3000;
-        public static int CHARACTER_LOGIN_TIMEOUT = 3000;
-        public static int CHARACTERS_LIST_TIMEOUT = 2000;
+        private const int AUTHENTIFICATION_TIMEOUT = 3000;
+        private const int CHARACTER_LOGIN_TIMEOUT = 3000;
+        private const int CHARACTERS_LIST_TIMEOUT = 2000;
 
-        #endregion Public Fields
+        #endregion Private Fields
 
         #region Public Constructors
 
@@ -94,6 +94,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                 AuthenticateDone.WaitOne(AUTHENTIFICATION_TIMEOUT);
                 return State == WorldState.AUTHENTICATED;
             });
+        }
+
+        public new void Dispose()
+        {
+            KeepAliveTimer.Dispose();
+            base.Dispose();
         }
 
         public async Task<List<Character>> GetCharacters()
@@ -170,6 +176,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             }
         }
 
+        private void HandleKeepAlive(object sender, ElapsedEventArgs e)
+        {
+            if (State != WorldState.AUTHENTICATED) return;
+            if (PlayerState != WorldPlayerState.LOGGED_IN) return;
+            Send(new ClientKeepAliveRequest());
+        }
+
         private void LoginCharacterResponse(ReceivablePacket<WorldCommand> content)
         {
             LoginCharacterResponse loginCharacterResponse = new LoginCharacterResponse(content);
@@ -203,19 +216,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             ServerAuthChallengeRequest serverAuthChallengeRequest = new ServerAuthChallengeRequest(content);
             Send(new ClientAuthChallengeRequest(Credentials, WorldServer, serverAuthChallengeRequest.ServerSeed));
             AuthenticationCrypto.Instance.Initialize(Credentials.SessionKey.ToCleanByteArray());
-        }
-
-        private void HandleKeepAlive(object sender, ElapsedEventArgs e)
-        {
-            if (State != WorldState.AUTHENTICATED) return;
-            if (PlayerState != WorldPlayerState.LOGGED_IN) return;
-            Send(new ClientKeepAliveRequest());
-        }
-
-        public new void Dispose()
-        {
-            KeepAliveTimer.Dispose();
-            base.Dispose();
         }
 
         #endregion Private Methods
