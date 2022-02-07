@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Outgoing.AuthProofRequest" Collapsed="true">
+    <Position X="5.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Auth\Commands\Outgoing\AuthProofRequest.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Outgoing.LogonChallengeRequest" Collapsed="true">
+    <Position X="0.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Auth\Commands\Outgoing\LogonChallengeRequest.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Outgoing.RealmListRequest" Collapsed="true">
+    <Position X="3" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Auth\Commands\Outgoing\RealmListRequest.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.AuthClient" Collapsed="true">
+    <Position X="3" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAGABAAAAAAAAAAIAAAAEAAAAgAQARRAAEBE=</HashCode>
+      <FileName>Auth\AuthClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.AuthSendablePacket" Collapsed="true">
+    <Position X="3" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Auth\AuthSendablePacket.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.Auth.AuthSocket" Collapsed="true">
+    <Position X="3" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAA=</HashCode>
+      <FileName>Auth\AuthSocket.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing.ClientAuthChallengeRequest" Collapsed="true">
+    <Position X="7.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>World\Commands\Outgoing\ClientAuthChallengeRequest.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.World.WorldClient" Collapsed="true">
+    <Position X="0.75" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAEABAAAAEAAAAAIAAAAFAAAAgQAABAAAEAA=</HashCode>
+      <FileName>World\WorldClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.World.WorldSendablePacket" Collapsed="true">
+    <Position X="7.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAAAAAAEAAIABAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>World\WorldSendablePacket.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrinityCore.GameClient.Net.Lib.Network.World.WorldSocket" Collapsed="true">
+    <Position X="0.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAIAAEAAAAAAAAAAACAAAAgABAAAAAAAAAAA=</HashCode>
+      <FileName>World\WorldSocket.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

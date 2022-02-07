@@ -1,0 +1,47 @@
+﻿using System.Collections.Generic;
+
+namespace TrinityCore.GameClient.Net.Lib.Network.Core
+{
+    internal class PacketsHandler<T>
+    {
+        #region Internal Delegates
+
+        internal delegate void PacketHandler(ReceivablePacket<T> content);
+
+        #endregion Internal Delegates
+
+        #region Internal Properties
+
+        internal Dictionary<T, List<PacketHandler>> Handlers { get; }
+
+        #endregion Internal Properties
+
+        #region Internal Constructors
+
+        internal PacketsHandler()
+        {
+            Handlers = new Dictionary<T, List<PacketHandler>>();
+        }
+
+        #endregion Internal Constructors
+
+        #region Internal Methods
+
+        internal bool Handle(ReceivablePacket<T> packet)
+        {
+            if (!Handlers.ContainsKey(packet.Command)) return false;
+            foreach (PacketHandler handler in Handlers[packet.Command]) handler(packet);
+            return true;
+        }
+
+        internal void RegisterHandler(T command, PacketHandler handler)
+        {
+            if (Handlers.ContainsKey(command))
+                Handlers[command].Add(handler);
+            else
+                Handlers.Add(command, new List<PacketHandler> { handler });
+        }
+
+        #endregion Internal Methods
+    }
+}
