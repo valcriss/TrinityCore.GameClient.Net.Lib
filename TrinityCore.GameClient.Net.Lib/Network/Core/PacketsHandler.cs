@@ -17,11 +17,14 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #endregion Internal Properties
 
+        private List<T> Ignored { get; set; }
+
         #region Internal Constructors
 
         internal PacketsHandler()
         {
             Handlers = new Dictionary<T, List<PacketHandler>>();
+            Ignored = new List<T>();
         }
 
         #endregion Internal Constructors
@@ -32,7 +35,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         {
             if (!Handlers.ContainsKey(packet.Command))
             {
-                Logger.Append(Logging.Enums.LogCategory.NETWORK, Logging.Enums.LogLevel.WARNING, "Unhandled OpCode : " + packet.Command + " (" + packet.Content.Length + ")");
+                if (!Ignored.Contains(packet.Command))
+                {
+                    Logger.Append(Logging.Enums.LogCategory.NETWORK, Logging.Enums.LogLevel.WARNING, "Unhandled OpCode : " + packet.Command + " (" + packet.Content.Length + ")");
+                    Ignored.Add(packet.Command);
+                }
                 return false;
             }
             foreach (PacketHandler handler in Handlers[packet.Command]) handler(packet);
