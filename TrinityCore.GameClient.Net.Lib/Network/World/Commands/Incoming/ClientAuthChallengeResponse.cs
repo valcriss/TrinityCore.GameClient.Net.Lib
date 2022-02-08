@@ -11,9 +11,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal ClientAuthChallengeResponse(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             CommandDetail detail = (CommandDetail)ReadByte();
 
@@ -23,8 +23,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
             ReadByte();
 
             Success = detail == CommandDetail.AUTH_OK;
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
     }
 }

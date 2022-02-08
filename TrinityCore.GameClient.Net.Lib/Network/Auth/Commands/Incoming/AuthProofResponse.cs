@@ -8,13 +8,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
         #region Internal Properties
 
         internal AuthResult Error { get; set; }
-        internal byte[] M2 { get; }
+        internal byte[] M2 { get; set; }
 
         #endregion Internal Properties
 
         #region Internal Constructors
 
-        internal AuthProofResponse(ReceivablePacket<AuthCommand> receivable) : base(receivable)
+        internal override void LoadData()
         {
             Error = (AuthResult)ReadByte();
             if (Error != AuthResult.SUCCESS)
@@ -24,6 +24,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
             ReadUInt32();
             ReadUInt32();
             ReadUInt16();
+            base.LoadData();
         }
 
         #endregion Internal Constructors

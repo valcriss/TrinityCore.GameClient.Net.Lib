@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Timers;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
-using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.Security;
 using TrinityCore.GameClient.Net.Lib.Network.Tools;
 using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming;
@@ -67,13 +66,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
             AuthenticationCrypto.Reset();
 
-            PacketsHandler.RegisterHandler(WorldCommand.SERVER_AUTH_CHALLENGE, ServerAuthChallengeRequest);
-            PacketsHandler.RegisterHandler(WorldCommand.SERVER_AUTH_RESPONSE, ClientAuthChallengeResponse);
-            PacketsHandler.RegisterHandler(WorldCommand.SMSG_CHAR_ENUM, CharactersListResponse);
-            PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGIN_VERIFY_WORLD, LoginCharacterResponse);
-            PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGOUT_RESPONSE, ClientLogOutResponse);
-            PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGOUT_COMPLETE, ClientLogOutComplete);
-            PacketsHandler.RegisterHandler(WorldCommand.SMSG_TIME_SYNC_REQ, ServerTimeSyncRequest);
+            PacketsHandler.RegisterHandler<ServerAuthChallengeRequest>(WorldCommand.SERVER_AUTH_CHALLENGE, ServerAuthChallengeRequest);
+            PacketsHandler.RegisterHandler<ClientAuthChallengeResponse>(WorldCommand.SERVER_AUTH_RESPONSE, ClientAuthChallengeResponse);
+            PacketsHandler.RegisterHandler<CharactersListResponse>(WorldCommand.SMSG_CHAR_ENUM, CharactersListResponse);
+            PacketsHandler.RegisterHandler<LoginCharacterResponse>(WorldCommand.SMSG_LOGIN_VERIFY_WORLD, LoginCharacterResponse);
+            PacketsHandler.RegisterHandler<ClientLogOutResponse>(WorldCommand.SMSG_LOGOUT_RESPONSE, ClientLogOutResponse);
+            PacketsHandler.RegisterHandler<ClientLogOutComplete>(WorldCommand.SMSG_LOGOUT_COMPLETE, ClientLogOutComplete);
+            PacketsHandler.RegisterHandler<ServerTimeSyncRequest>(WorldCommand.SMSG_TIME_SYNC_REQ, ServerTimeSyncRequest);
 
             KeepAliveTimer = new System.Timers.Timer(15000) { Enabled = true };
             KeepAliveTimer.Elapsed += HandleKeepAlive;
@@ -158,36 +157,34 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #region Private Methods
 
-        private void CharactersListResponse(ReceivablePacket<WorldCommand> content)
+        private bool CharactersListResponse(CharactersListResponse charactersListResponse)
         {
-            CharactersListResponse charactersListResponse = new CharactersListResponse(content);
             Characters = charactersListResponse.Characters.ToList();
-            CharacterListDone.Set();
+            return CharacterListDone.Set();
         }
 
-        private void ClientAuthChallengeResponse(ReceivablePacket<WorldCommand> content)
+        private bool ClientAuthChallengeResponse(ClientAuthChallengeResponse authChallengeResponse)
         {
-            ClientAuthChallengeResponse authChallengeResponse = new ClientAuthChallengeResponse(content);
             State = (authChallengeResponse.Success) ? WorldState.AUTHENTICATED : WorldState.ERROR;
-            AuthenticateDone.Set();
+            return AuthenticateDone.Set();
         }
 
-        private void ClientLogOutComplete(ReceivablePacket<WorldCommand> content)
+        private bool ClientLogOutComplete(ClientLogOutComplete clientLogOutComplete)
         {
             Character = null;
             PlayerState = WorldPlayerState.NOT_LOGGED_IN;
-            LogOutDone.Set();
+            return LogOutDone.Set();
         }
 
-        private void ClientLogOutResponse(ReceivablePacket<WorldCommand> content)
+        private bool ClientLogOutResponse(ClientLogOutResponse logOutResponse)
         {
-            ClientLogOutResponse response = new ClientLogOutResponse(content);
-            if (response.LogOut)
+            if (logOutResponse.LogOut)
             {
                 Character = null;
                 PlayerState = WorldPlayerState.NOT_LOGGED_IN;
-                LogOutDone.Set();
+                return LogOutDone.Set();
             }
+            return true;
         }
 
         private void HandleKeepAlive(object sender, ElapsedEventArgs e)
@@ -197,9 +194,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             Send(new ClientKeepAliveRequest());
         }
 
-        private void LoginCharacterResponse(ReceivablePacket<WorldCommand> content)
+        private bool LoginCharacterResponse(LoginCharacterResponse loginCharacterResponse)
         {
-            LoginCharacterResponse loginCharacterResponse = new LoginCharacterResponse(content);
             Character.MapId = loginCharacterResponse.MapId;
             Character.X = loginCharacterResponse.X;
             Character.Y = loginCharacterResponse.Y;
@@ -207,7 +203,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             Character.O = loginCharacterResponse.O;
             PlayerState = WorldPlayerState.LOGGED_IN;
             CharacterLoggedIn?.Invoke(Character);
-            CharacterLoginDone.Set();
+            return CharacterLoginDone.Set();
         }
 
         private void OnGameSocketConnected()
@@ -225,17 +221,16 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             CharacterLoggedOut?.Invoke();
         }
 
-        private void ServerAuthChallengeRequest(ReceivablePacket<WorldCommand> content)
+        private bool ServerAuthChallengeRequest(ServerAuthChallengeRequest serverAuthChallengeRequest)
         {
-            ServerAuthChallengeRequest serverAuthChallengeRequest = new ServerAuthChallengeRequest(content);
             Send(new ClientAuthChallengeRequest(Credentials, WorldServer, serverAuthChallengeRequest.ServerSeed));
             AuthenticationCrypto.Instance.Initialize(Credentials.SessionKey.ToCleanByteArray());
+            return true;
         }
 
-        private void ServerTimeSyncRequest(ReceivablePacket<WorldCommand> content)
+        private bool ServerTimeSyncRequest(ServerTimeSyncRequest timeSyncRequest)
         {
-            ServerTimeSyncRequest timeSyncRequest = new ServerTimeSyncRequest(content);
-            Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
+            return Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
         }
 
         #endregion Private Methods

@@ -5,7 +5,6 @@ using TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Outgoing;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
-using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.Security;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Auth
@@ -44,9 +43,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
             State = AuthState.DISCONNECTED;
             GameSocketConnected += OnGameSocketConnected;
             GameSocketDisconnected += OnGameSocketDisconnected;
-            PacketsHandler.RegisterHandler(AuthCommand.LOGON_CHALLENGE, LogonChallengeResult);
-            PacketsHandler.RegisterHandler(AuthCommand.LOGON_PROOF, AuthProofResult);
-            PacketsHandler.RegisterHandler(AuthCommand.REALM_LIST, RealmListResult);
+            PacketsHandler.RegisterHandler<LogonChallengeResponse>(AuthCommand.LOGON_CHALLENGE, LogonChallengeResult);
+            PacketsHandler.RegisterHandler<AuthProofResponse>(AuthCommand.LOGON_PROOF, AuthProofResult);
+            PacketsHandler.RegisterHandler<RealmListResponse>(AuthCommand.REALM_LIST, RealmListResult);
         }
 
         #endregion Public Constructors
@@ -102,29 +101,27 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Private Methods
 
-        private void AuthProofResult(ReceivablePacket<AuthCommand> content)
+        private bool AuthProofResult(AuthProofResponse authProofResponse)
         {
-            AuthProofResponse response = new AuthProofResponse(content);
-            State = AuthProof.IsProofValid(response.M2, Credentials.SessionProof) ? AuthState.AUTHENTICATED : AuthState.ERROR;
-            AuthenticateDone.Set();
+            State = AuthProof.IsProofValid(authProofResponse.M2, Credentials.SessionProof) ? AuthState.AUTHENTICATED : AuthState.ERROR;
+            return AuthenticateDone.Set();
         }
 
-        private void LogonChallengeResult(ReceivablePacket<AuthCommand> content)
+        private bool LogonChallengeResult(LogonChallengeResponse logonChallengeResponse)
         {
-            LogonChallengeResponse response = new LogonChallengeResponse(content);
-            if (response.Error != AuthResult.SUCCESS)
+            if (logonChallengeResponse.Error != AuthResult.SUCCESS)
             {
                 State = AuthState.ERROR;
                 AuthenticateDone.Set();
-                return;
+                return false;
             }
 
-            AuthProof proof = AuthProof.ComputeAuthProof(Credentials, response);
+            AuthProof proof = AuthProof.ComputeAuthProof(Credentials, logonChallengeResponse);
 
             Credentials.SessionKey = proof.Key;
             Credentials.SessionProof = proof.Proof;
 
-            Send(new AuthProofRequest(proof.Y, proof.M1Hash, new byte[20]));
+            return Send(new AuthProofRequest(proof.Y, proof.M1Hash, new byte[20]));
         }
 
         private void OnGameSocketConnected()
@@ -139,11 +136,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
             State = AuthState.DISCONNECTED;
         }
 
-        private void RealmListResult(ReceivablePacket<AuthCommand> content)
+        private bool RealmListResult(RealmListResponse realmList)
         {
-            RealmListResponse response = new RealmListResponse(content);
-            Realms = response.Realms;
-            RealmListDone.Set();
+            Realms = realmList.Realms;
+            return RealmListDone.Set();
         }
 
         #endregion Private Methods

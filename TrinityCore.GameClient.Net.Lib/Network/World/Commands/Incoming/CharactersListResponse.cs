@@ -13,9 +13,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal CharactersListResponse(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             byte count = ReadByte();
             if (count == 0)
@@ -32,8 +32,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
                     ReadIndex = Characters[i].ReadIndex;
                 }
             }
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
+
     }
 }

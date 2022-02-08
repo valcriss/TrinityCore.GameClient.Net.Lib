@@ -11,13 +11,15 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal ServerTimeSyncRequest(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             SyncNextCounter = ReadUInt32();
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
+
     }
 }

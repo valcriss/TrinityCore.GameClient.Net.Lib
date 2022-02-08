@@ -11,15 +11,16 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal ClientLogOutResponse(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             bool logoutOk = ReadUInt32() == 0;
             bool instant = ReadByte() != 0;
             LogOut = instant || !logoutOk;
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
     }
 }

@@ -1,19 +1,28 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Logging;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
     internal class PacketsHandler<T>
     {
-        #region Internal Delegates
+        #region Internal Classes
 
-        internal delegate void PacketHandler(ReceivablePacket<T> content);
+        internal class PacketsHandlerItem
+        {
+            #region Internal Properties
 
-        #endregion Internal Delegates
+            internal dynamic Handler { get; set; }
+            internal Type Type { get; set; }
+
+            #endregion Internal Properties
+        }
+
+        #endregion Internal Classes
 
         #region Internal Properties
 
-        internal Dictionary<T, List<PacketHandler>> Handlers { get; }
+        internal Dictionary<T, List<PacketsHandlerItem>> Handlers { get; }
 
         #endregion Internal Properties
 
@@ -27,7 +36,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         internal PacketsHandler()
         {
-            Handlers = new Dictionary<T, List<PacketHandler>>();
+            Handlers = new Dictionary<T, List<PacketsHandlerItem>>();
             Ignored = new List<T>();
         }
 
@@ -46,19 +55,26 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 }
                 return false;
             }
-            foreach (PacketHandler handler in Handlers[packet.Command])
+            foreach (PacketsHandlerItem item in Handlers[packet.Command])
             {
-                handler(packet);
+                dynamic obj = Activator.CreateInstance(item.Type);
+                obj.Load(packet);
+                item.Handler(obj);
             }
             return true;
         }
 
-        internal void RegisterHandler(T command, PacketHandler handler)
+        internal void RegisterHandler<U>(T command, Func<U, bool> handler)
         {
+            PacketsHandlerItem item = new PacketsHandlerItem()
+            {
+                Handler = handler,
+                Type = typeof(U)
+            };
             if (Handlers.ContainsKey(command))
-                Handlers[command].Add(handler);
+                Handlers[command].Add(item);
             else
-                Handlers.Add(command, new List<PacketHandler> { handler });
+                Handlers.Add(command, new List<PacketsHandlerItem> { item });
         }
 
         #endregion Internal Methods

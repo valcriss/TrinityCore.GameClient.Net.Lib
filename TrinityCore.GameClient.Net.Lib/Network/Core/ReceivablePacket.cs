@@ -11,6 +11,10 @@
 
         #region Internal Constructors
 
+        internal ReceivablePacket()
+        {
+        }
+
         internal ReceivablePacket(T command, byte[] content, int readIndex = 0)
         {
             Command = command;
@@ -26,5 +30,21 @@
         }
 
         #endregion Internal Constructors
+
+        #region Internal Methods
+
+        internal void Load(ReceivablePacket<T> receivablePacket)
+        {
+            Command = receivablePacket.Command;
+            Buffer = receivablePacket.Content;
+            ReadIndex = 0;
+            LoadData();
+        }
+
+        internal virtual void LoadData()
+        {
+        }
+
+        #endregion Internal Methods
     }
 }

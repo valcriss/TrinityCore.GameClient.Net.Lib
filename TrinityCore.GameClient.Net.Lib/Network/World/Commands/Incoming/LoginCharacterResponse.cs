@@ -15,17 +15,18 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal LoginCharacterResponse(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             MapId = ReadUInt32();
             X = ReadSingle();
             Y = ReadSingle();
             Z = ReadSingle();
             O = ReadSingle();
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
     }
 }

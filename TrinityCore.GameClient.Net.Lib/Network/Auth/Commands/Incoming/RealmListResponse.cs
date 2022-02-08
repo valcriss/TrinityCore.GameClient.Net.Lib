@@ -16,7 +16,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
 
         #region Internal Constructors
 
-        internal RealmListResponse(ReceivablePacket<AuthCommand> receivable) : base(receivable)
+        internal override void LoadData()
         {
             Realms = new List<WorldServerInfo>();
             ReadUInt16();
@@ -68,7 +68,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
                     Build = build
                 });
             }
-        }
+            base.LoadData();
+        }    
 
         #endregion Internal Constructors
     }

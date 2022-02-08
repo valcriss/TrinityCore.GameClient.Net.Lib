@@ -11,16 +11,17 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
-        internal ServerAuthChallengeRequest(ReceivablePacket<WorldCommand> receivablePacket) : base(receivablePacket)
+        internal override void LoadData()
         {
             ReadUInt32();
             ServerSeed = ReadUInt32();
             ReadBytes(16);
             ReadBytes(16);
+            base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
     }
 }
