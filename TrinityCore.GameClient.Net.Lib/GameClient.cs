@@ -8,6 +8,7 @@ namespace TrinityCore.GameClient.Net.Lib
 {
     class GameClient : IDisposable
     {
+        private bool _disposed;
         public GameClient(string username, string password, string hostname, int port = 3724)
         {
 
@@ -40,7 +41,20 @@ namespace TrinityCore.GameClient.Net.Lib
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    
+                }
+                _disposed = true;
+            }
         }
     }
 }
