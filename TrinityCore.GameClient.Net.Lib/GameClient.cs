@@ -1,42 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
+using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
+using TrinityCore.GameClient.Net.Lib.Network.World;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib
 {
-    class GameClient : IDisposable
+    public class GameClient : IDisposable
     {
+        #region Private Properties
+
+        private AuthClient AuthClient { get; set; }
+        private string Hostname { get; set; }
+        private string Password { get; set; }
+        private int Port { get; set; }
+        private string Username { get; set; }
+        private WorldClient WorldClient { get; set; }
+
+        #endregion Private Properties
+
+        #region Private Fields
+
         private bool _disposed;
+
+        #endregion Private Fields
+
+        #region Public Constructors
+
         public GameClient(string username, string password, string hostname, int port = 3724)
         {
+            Username = username;
+            Password = password;
+            Hostname = hostname;
+            Port = port;
 
+            AuthClient = new AuthClient();
+            WorldClient = new WorldClient();
         }
 
-        public bool Authenticate()
+        #endregion Public Constructors
+
+        #region Public Methods
+
+        public async Task<bool> Authenticate()
         {
-            throw new System.NotImplementedException();
+            return await AuthClient.Authenticate(Hostname, Port, Username, Password);
         }
 
-        public List<WorldServerInfo> GetRealms()
+        public async Task<bool> ConnectToRealm(WorldServerInfo realm)
         {
-            throw new System.NotImplementedException();
-        }
-
-        public bool ConnectToRealm(WorldServerInfo realm)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public List<Character> GetCharacters()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public bool EnterRealm(Character character)
-        {
-            throw new System.NotImplementedException();
+            return await WorldClient.Authenticate(realm, AuthClient.Credentials);
         }
 
         public void Dispose()
@@ -45,12 +60,38 @@ namespace TrinityCore.GameClient.Net.Lib
             GC.SuppressFinalize(this);
         }
 
+        public async Task<bool> EnterRealm(Character character)
+        {
+            return await WorldClient.LoginCharacter(character);
+        }
+
+        public async Task<List<Character>> GetCharacters()
+        {
+            return await WorldClient.GetCharacters();
+        }
+
+        public async Task<List<WorldServerInfo>> GetRealms()
+        {
+            return await AuthClient.GetRealms();
+        }
+
+        public async Task<bool> LogOut()
+        {
+            return await WorldClient.LogOut();
+        }
+
+        #endregion Public Methods
+
+        #region Protected Methods
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
-            {                
+            {
                 _disposed = true;
             }
         }
+
+        #endregion Protected Methods
     }
 }
