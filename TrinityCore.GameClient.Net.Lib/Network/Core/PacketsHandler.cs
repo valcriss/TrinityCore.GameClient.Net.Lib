@@ -42,7 +42,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 }
                 return false;
             }
-            foreach (PacketHandler handler in Handlers[packet.Command]) handler(packet);
+            foreach (PacketHandler handler in Handlers[packet.Command])
+            {
+                handler(packet);
+            }
             return true;
         }
 
