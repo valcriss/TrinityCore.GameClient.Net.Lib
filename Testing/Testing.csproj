@@ -13,8 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TrinityCore.GameClient.Net.Lib.Logging\TrinityCore.GameClient.Net.Lib.Logging.csproj" />
-    <ProjectReference Include="..\TrinityCore.GameClient.Net.Lib.Network\TrinityCore.GameClient.Net.Lib.Network.csproj" />
+    <ProjectReference Include="..\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.csproj" />
   </ItemGroup>
 
 </Project>

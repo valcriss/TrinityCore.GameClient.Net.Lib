@@ -3,13 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.32106.194
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityCore.GameClient.Net.Lib.Network", "TrinityCore.GameClient.Net.Lib.Network\TrinityCore.GameClient.Net.Lib.Network.csproj", "{18FD0EBE-A3D7-4ACE-9EED-FA29EA7FD08F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Testing", "Testing\Testing.csproj", "{0AEF97C7-481F-4A15-9D98-BE996710EB1F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityCore.GameClient.Net.Lib.Logging", "TrinityCore.GameClient.Net.Lib.Logging\TrinityCore.GameClient.Net.Lib.Logging.csproj", "{AA01AB51-BD84-412F-B2AA-A0DFC2B3503F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityCore.GameClient.Net.Lib.Sample", "TrinityCore.GameClient.Net.Lib.Sample\TrinityCore.GameClient.Net.Lib.Sample.csproj", "{4F95418B-7A89-4B87-8F6D-9041B6151EFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Testing", "Testing\Testing.csproj", "{0AEF97C7-481F-4A15-9D98-BE996710EB1F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityCore.GameClient.Net.Lib.Sample", "TrinityCore.GameClient.Net.Lib.Sample\TrinityCore.GameClient.Net.Lib.Sample.csproj", "{4F95418B-7A89-4B87-8F6D-9041B6151EFF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityCore.GameClient.Net.Lib", "TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.csproj", "{A4378127-E6B2-4239-811A-CBE597D6780F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,14 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{18FD0EBE-A3D7-4ACE-9EED-FA29EA7FD08F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{18FD0EBE-A3D7-4ACE-9EED-FA29EA7FD08F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{18FD0EBE-A3D7-4ACE-9EED-FA29EA7FD08F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{18FD0EBE-A3D7-4ACE-9EED-FA29EA7FD08F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AA01AB51-BD84-412F-B2AA-A0DFC2B3503F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AA01AB51-BD84-412F-B2AA-A0DFC2B3503F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AA01AB51-BD84-412F-B2AA-A0DFC2B3503F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AA01AB51-BD84-412F-B2AA-A0DFC2B3503F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0AEF97C7-481F-4A15-9D98-BE996710EB1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0AEF97C7-481F-4A15-9D98-BE996710EB1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0AEF97C7-481F-4A15-9D98-BE996710EB1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -33,6 +23,10 @@ Global
 		{4F95418B-7A89-4B87-8F6D-9041B6151EFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F95418B-7A89-4B87-8F6D-9041B6151EFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F95418B-7A89-4B87-8F6D-9041B6151EFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4378127-E6B2-4239-811A-CBE597D6780F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4378127-E6B2-4239-811A-CBE597D6780F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4378127-E6B2-4239-811A-CBE597D6780F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4378127-E6B2-4239-811A-CBE597D6780F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
