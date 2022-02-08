@@ -73,6 +73,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGIN_VERIFY_WORLD, LoginCharacterResponse);
             PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGOUT_RESPONSE, ClientLogOutResponse);
             PacketsHandler.RegisterHandler(WorldCommand.SMSG_LOGOUT_COMPLETE, ClientLogOutComplete);
+            PacketsHandler.RegisterHandler(WorldCommand.SMSG_TIME_SYNC_REQ, ServerTimeSyncRequest);
 
             KeepAliveTimer = new System.Timers.Timer(15000) { Enabled = true };
             KeepAliveTimer.Elapsed += HandleKeepAlive;
@@ -155,8 +156,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #endregion Protected Methods
 
-
-
         #region Private Methods
 
         private void CharactersListResponse(ReceivablePacket<WorldCommand> content)
@@ -209,6 +208,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             PlayerState = WorldPlayerState.LOGGED_IN;
             CharacterLoggedIn?.Invoke(Character);
             CharacterLoginDone.Set();
+        }
+
+        private void ServerTimeSyncRequest(ReceivablePacket<WorldCommand> content)
+        {
+            ServerTimeSyncRequest timeSyncRequest = new ServerTimeSyncRequest(content);
+            Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
         }
 
         private void OnGameSocketConnected()

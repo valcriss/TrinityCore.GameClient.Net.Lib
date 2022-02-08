@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
 using TrinityCore.GameClient.Net.Lib.Network.World;
@@ -23,17 +24,18 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         static void Main(string[] args)
         {
             Running = new ManualResetEvent(false);
+            Logger.RegisterHandler("spectre", new SpectreLoggerHandler());
             Console.CancelKeyPress += ConsoleCancelKeyPress;
             AnsiConsole.MarkupLine("[underline white]TrinityCore GameClient .Net Lib Sample[/]");
 
             bool login = LoginCharacter();
-            if(!login) return;
+            if (!login) return;
 
             Running.WaitOne();
 
             AnsiConsole.MarkupLine("[white]Sending logout[/]");
             bool logout = WorldClient.LogOut().Result;
-            if(!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
+            if (!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
         }
 
         private static void ConsoleCancelKeyPress(object sender, ConsoleCancelEventArgs e)

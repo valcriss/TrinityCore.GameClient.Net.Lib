@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using TrinityCore.GameClient.Net.Lib.Logging;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
@@ -29,7 +30,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         internal bool Handle(ReceivablePacket<T> packet)
         {
-            if (!Handlers.ContainsKey(packet.Command)) return false;
+            if (!Handlers.ContainsKey(packet.Command))
+            {
+                Logger.Append(Logging.Enums.LogCategory.NETWORK, Logging.Enums.LogLevel.WARNING, "Unhandled OpCode : " + packet.Command + " (" + packet.Content.Length + ")");
+                return false;
+            }
             foreach (PacketHandler handler in Handlers[packet.Command]) handler(packet);
             return true;
         }
