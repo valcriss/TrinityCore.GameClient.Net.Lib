@@ -96,12 +96,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             });
         }
 
-        public override void Dispose()
-        {
-            KeepAliveTimer.Dispose();
-            base.Dispose();
-        }
-
         public async Task<List<Character>> GetCharacters()
         {
             return await Task.Run(() =>
@@ -141,6 +135,27 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         }
 
         #endregion Public Methods
+
+        #region Protected Methods
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    KeepAliveTimer.Dispose();
+                }
+
+                _disposed = true;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        #endregion Protected Methods
+
+
 
         #region Private Methods
 

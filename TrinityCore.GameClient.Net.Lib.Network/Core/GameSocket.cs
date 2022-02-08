@@ -49,27 +49,33 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #endregion Private Properties
 
+        #region Protected Fields
+
+        protected bool _disposed;
+
+        #endregion Protected Fields
+
         #region Private Fields
 
         private const int CONNECTION_TIMEOUT = 5000;
 
         #endregion Private Fields
 
-        #region Internal Constructors
+        #region Protected Constructors
 
         /// <summary>
         /// GameSocket constructor
         /// </summary>
         /// <param name="host">Remote hostname</param>
         /// <param name="port">Remote port</param>
-        private protected GameSocket(string host, int port)
+        protected GameSocket(string host, int port)
         {
             SocketBuffer = new GameSocketBuffer();
             Host = host;
             Port = port;
         }
 
-        #endregion Internal Constructors
+        #endregion Protected Constructors
 
         #region Public Methods
 
@@ -95,9 +101,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             }
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            Close();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion Public Methods
@@ -161,6 +168,18 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         #endregion Internal Methods
 
         #region Protected Methods
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Close();
+                }
+                _disposed = true;
+            }
+        }
 
         protected IPAddress GetIpAddress()
         {
