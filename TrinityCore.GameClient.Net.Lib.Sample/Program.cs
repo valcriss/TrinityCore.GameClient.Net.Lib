@@ -26,12 +26,14 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             Console.CancelKeyPress += ConsoleCancelKeyPress;
             AnsiConsole.MarkupLine("[underline white]TrinityCore GameClient .Net Lib Sample[/]");
 
-            LoginCharacter();
+            bool login = LoginCharacter();
+            if(!login) return;
 
             Running.WaitOne();
 
             AnsiConsole.MarkupLine("[white]Sending logout[/]");
             bool logout = WorldClient.LogOut().Result;
+            if(!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
         }
 
         private static void ConsoleCancelKeyPress(object sender, ConsoleCancelEventArgs e)
