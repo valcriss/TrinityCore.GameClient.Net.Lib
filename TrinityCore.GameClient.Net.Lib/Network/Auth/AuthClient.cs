@@ -35,11 +35,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Public Constructors
 
-        public AuthClient(string host, int port, string username, string password) : base(host, port)
+        public AuthClient()
         {
             AuthenticateDone = new ManualResetEvent(false);
             RealmListDone = new ManualResetEvent(false);
-            Credentials = new AuthCredentials(username, password);
             State = AuthState.DISCONNECTED;
             GameSocketConnected += OnGameSocketConnected;
             GameSocketDisconnected += OnGameSocketDisconnected;
@@ -52,12 +51,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Public Methods
 
-        public async Task<bool> Authenticate()
+        public async Task<bool> Authenticate(string host, int port, string username, string password)
         {
             return await Task.Run(() =>
             {
+                Credentials = new AuthCredentials(username, password);
                 State = AuthState.DISCONNECTED;
-                if (!Connect()) return false;
+                if (!Connect(host, port)) return false;
                 AuthenticateDone.Reset();
                 AuthenticateDone.WaitOne(AUTHENTIFICATION_TIMEOUT);
                 return State == AuthState.AUTHENTICATED;

@@ -46,8 +46,8 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool LoginCharacter()
         {
-            AuthClient = new AuthClient(HOSTNAME, PORT, USERNAME, PASSWORD);
-            bool authAuthenticate = AuthClient.Authenticate().Result;
+            AuthClient = new AuthClient();
+            bool authAuthenticate = AuthClient.Authenticate(HOSTNAME, PORT, USERNAME, PASSWORD).Result;
 
             if (!authAuthenticate)
             {
@@ -70,8 +70,8 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 AnsiConsole.MarkupLine("Retreive realms list         [green]OK[/]");
             }
 
-            WorldClient = new WorldClient(realms[0], AuthClient.Credentials);
-            bool worldAuthenticate = WorldClient.Authenticate().Result;
+            WorldClient = new WorldClient();
+            bool worldAuthenticate = WorldClient.Authenticate(realms[0], AuthClient.Credentials).Result;
             if (!worldAuthenticate)
             {
                 AnsiConsole.MarkupLine("WorldClient authentification [red]FAILED[/]");

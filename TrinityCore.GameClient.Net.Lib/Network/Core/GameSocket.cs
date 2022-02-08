@@ -68,11 +68,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         /// </summary>
         /// <param name="host">Remote hostname</param>
         /// <param name="port">Remote port</param>
-        protected GameSocket(string host, int port)
+        protected GameSocket()
         {
             SocketBuffer = new GameSocketBuffer();
-            Host = host;
-            Port = port;
         }
 
         #endregion Protected Constructors
@@ -115,11 +113,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         /// Starts the connection to the remote peer
         /// </summary>
         /// <returns>returns true if successed</returns>
-        internal bool Connect()
+        internal bool Connect(string host, int port)
         {
             try
             {
                 Close();
+                Host = host;
+                Port = port;
                 Closing = false;
                 Logger.Append(LogCategory.NETWORK, LogLevel.DEBUG, $"Socket Connecting to {Host}:{Port}");
                 Socket = new TcpClient();

@@ -18,7 +18,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Internal Constructors
 
-        internal AuthSocket(string host, int port) : base(host, port)
+        internal AuthSocket()
         {
             PacketsHandler = new PacketsHandler<AuthCommand>();
         }

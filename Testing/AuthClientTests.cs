@@ -28,8 +28,8 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthLoginSuccess()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD).Result;
             Assert.IsTrue(result);
         }
 
@@ -37,8 +37,8 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthLoginFailed()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_GOOD, USERNAME_BAD, PASSWORD_BAD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_GOOD, PORT_GOOD, USERNAME_BAD, PASSWORD_BAD).Result;
             Assert.IsFalse(result);
         }
 
@@ -46,8 +46,8 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthLoginTimeOut()
         {
-            AuthClient client = new AuthClient(HOSTNAME_BAD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_BAD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD).Result;
             Assert.IsFalse(result);
         }
 
@@ -55,8 +55,8 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthLoginBadPort()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_BAD, USERNAME_GOOD, PASSWORD_GOOD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_GOOD, PORT_BAD, USERNAME_GOOD, PASSWORD_GOOD).Result;
             Assert.IsFalse(result);
         }
 
@@ -64,7 +64,7 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthRealmsListNotLogedIn()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD);
+            AuthClient client = new AuthClient();
             List<WorldServerInfo> result = client.GetRealms().Result;
             Assert.IsNull(result);
         }
@@ -73,8 +73,8 @@ namespace Testing
         [Category("AuthServer")]
         public void AuthRealmsListLoginSuccess()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD).Result;
             Assert.IsTrue(result);
             List<WorldServerInfo> realms = client.GetRealms().Result;
             Assert.AreEqual(1,realms.Count);

@@ -50,12 +50,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #region Public Constructors
 
-        public WorldClient(WorldServerInfo worldServer, AuthCredentials credentials) : base(
-            worldServer.Address, worldServer.Port)
+        public WorldClient()
         {
-            WorldServer = worldServer;
-            Credentials = credentials;
-
             AuthenticateDone = new ManualResetEvent(false);
             CharacterListDone = new ManualResetEvent(false);
             CharacterLoginDone = new ManualResetEvent(false);
@@ -83,13 +79,16 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #region Public Methods
 
-        public async Task<bool> Authenticate()
+        public async Task<bool> Authenticate(WorldServerInfo worldServer, AuthCredentials credentials)
         {
             return await Task.Run(() =>
             {
+                WorldServer = worldServer;
+                Credentials = credentials;
+
                 State = WorldState.DISCONNECTED;
                 PlayerState = WorldPlayerState.NOT_LOGGED_IN;
-                if (!Connect()) return false;
+                if (!Connect(worldServer.Address, worldServer.Port)) return false;
                 AuthenticateDone.Reset();
                 AuthenticateDone.WaitOne(AUTHENTIFICATION_TIMEOUT);
                 return State == WorldState.AUTHENTICATED;

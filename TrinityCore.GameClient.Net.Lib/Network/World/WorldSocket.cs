@@ -19,7 +19,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #region Internal Constructors
 
-        internal WorldSocket(string host, int port) : base(host, port)
+        internal WorldSocket()
         {
             PacketsHandler = new PacketsHandler<WorldCommand>();
         }

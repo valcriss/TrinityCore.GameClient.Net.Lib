@@ -14,7 +14,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Internal Constructors
 
-        internal AuthSendablePacket(AuthCommand command) : base()
+        internal AuthSendablePacket(AuthCommand command)
         {
             Command = command;
         }

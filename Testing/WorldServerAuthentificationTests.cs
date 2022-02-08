@@ -29,8 +29,8 @@ namespace Testing
         public void AuthLoginSuccess()
         {
             AuthInformation authInformation = LoginAndGetFirstRealm();
-            WorldClient client = new WorldClient(authInformation.WorldServer, authInformation.Credentials);
-            bool result = client.Authenticate().Result;
+            WorldClient client = new WorldClient();
+            bool result = client.Authenticate(authInformation.WorldServer, authInformation.Credentials).Result;
             Assert.IsTrue(result);
             client.Close();
         }
@@ -40,8 +40,8 @@ namespace Testing
         public void AuthLoginCharactersList()
         {
             AuthInformation authInformation = LoginAndGetFirstRealm();
-            WorldClient client = new WorldClient(authInformation.WorldServer, authInformation.Credentials);
-            bool result = client.Authenticate().Result;
+            WorldClient client = new WorldClient();
+            bool result = client.Authenticate(authInformation.WorldServer, authInformation.Credentials).Result;
             Assert.IsTrue(result);
             List<Character> characters = client.GetCharacters().Result;
             Assert.AreEqual(1, characters.Count);
@@ -53,8 +53,8 @@ namespace Testing
         public void AuthLoginCharactersInWorld()
         {
             AuthInformation authInformation = LoginAndGetFirstRealm();
-            WorldClient client = new WorldClient(authInformation.WorldServer, authInformation.Credentials);
-            bool result = client.Authenticate().Result;
+            WorldClient client = new WorldClient();
+            bool result = client.Authenticate(authInformation.WorldServer, authInformation.Credentials).Result;
             Assert.IsTrue(result);
             List<Character> characters = client.GetCharacters().Result;
             Assert.AreEqual(1, characters.Count);
@@ -69,8 +69,8 @@ namespace Testing
         public void AuthLoginCharactersInWorldAndLogOut()
         {
             AuthInformation authInformation = LoginAndGetFirstRealm();
-            WorldClient client = new WorldClient(authInformation.WorldServer, authInformation.Credentials);
-            bool result = client.Authenticate().Result;
+            WorldClient client = new WorldClient();
+            bool result = client.Authenticate(authInformation.WorldServer, authInformation.Credentials).Result;
             Assert.IsTrue(result);
             List<Character> characters = client.GetCharacters().Result;
             Assert.AreEqual(1, characters.Count);
@@ -83,8 +83,8 @@ namespace Testing
 
         private AuthInformation LoginAndGetFirstRealm()
         {
-            AuthClient client = new AuthClient(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD);
-            bool result = client.Authenticate().Result;
+            AuthClient client = new AuthClient();
+            bool result = client.Authenticate(HOSTNAME_GOOD, PORT_GOOD, USERNAME_GOOD, PASSWORD_GOOD).Result;
             Assert.IsTrue(result);
             List<WorldServerInfo> realms = client.GetRealms().Result;
             Assert.AreEqual(1, realms.Count);

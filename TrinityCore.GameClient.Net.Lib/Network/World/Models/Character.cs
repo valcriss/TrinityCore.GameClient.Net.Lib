@@ -33,7 +33,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 
         #region Internal Constructors
 
-        internal Character() : base()
+        internal Character()
         {
             Items = new Item[19];
         }
