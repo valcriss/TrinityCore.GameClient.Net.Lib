@@ -6,20 +6,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components
 {
     public class Environment
     {
-        public uint Version
-        {
-            get => default;
-            set
-            {
-            }
-        }
-
-        public bool VoiceChatEnabled
-        {
-            get => default;
-            set
-            {
-            }
-        }
+        public uint Version { get; set; }
+        public bool VoiceChatEnabled { get; set; }
     }
 }
