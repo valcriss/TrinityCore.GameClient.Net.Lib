@@ -210,12 +210,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             CharacterLoginDone.Set();
         }
 
-        private void ServerTimeSyncRequest(ReceivablePacket<WorldCommand> content)
-        {
-            ServerTimeSyncRequest timeSyncRequest = new ServerTimeSyncRequest(content);
-            Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
-        }
-
         private void OnGameSocketConnected()
         {
             State = WorldState.CONNECTED;
@@ -236,6 +230,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             ServerAuthChallengeRequest serverAuthChallengeRequest = new ServerAuthChallengeRequest(content);
             Send(new ClientAuthChallengeRequest(Credentials, WorldServer, serverAuthChallengeRequest.ServerSeed));
             AuthenticationCrypto.Instance.Initialize(Credentials.SessionKey.ToCleanByteArray());
+        }
+
+        private void ServerTimeSyncRequest(ReceivablePacket<WorldCommand> content)
+        {
+            ServerTimeSyncRequest timeSyncRequest = new ServerTimeSyncRequest(content);
+            Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
         }
 
         #endregion Private Methods

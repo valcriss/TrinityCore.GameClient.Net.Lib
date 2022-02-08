@@ -2,13 +2,13 @@
 {
     internal abstract class SendablePacket : Packet
     {
-        #region Internal Constructors
+        #region Protected Constructors
 
-        private protected SendablePacket() : base(new byte[0])
+        protected SendablePacket() : base(new byte[0])
         {
         }
 
-        #endregion Internal Constructors
+        #endregion Protected Constructors
 
         #region Internal Methods
 

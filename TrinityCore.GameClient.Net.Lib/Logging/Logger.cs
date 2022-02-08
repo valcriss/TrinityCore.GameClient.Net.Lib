@@ -46,7 +46,7 @@ namespace TrinityCore.GameClient.Net.Lib.Logging
                 if (!Handlers.ContainsKey(name))
                 {
                     Handlers.Add(name, handler);
-                }              
+                }
             }
         }
 

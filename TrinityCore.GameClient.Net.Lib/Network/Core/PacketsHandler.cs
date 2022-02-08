@@ -17,7 +17,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #endregion Internal Properties
 
+        #region Private Properties
+
         private List<T> Ignored { get; set; }
+
+        #endregion Private Properties
 
         #region Internal Constructors
 
