@@ -48,11 +48,7 @@ namespace TrinityCore.GameClient.Net.Lib
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
-            {
-                if (disposing)
-                {
-                    
-                }
+            {                
                 _disposed = true;
             }
         }
