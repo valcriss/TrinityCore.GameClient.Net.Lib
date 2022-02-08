@@ -49,11 +49,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #endregion Private Properties
 
-        #region Public Fields
+        #region Private Fields
 
-        public static int CONNECTION_TIMEOUT = 5000;
+        private const int CONNECTION_TIMEOUT = 5000;
 
-        #endregion Public Fields
+        #endregion Private Fields
 
         #region Internal Constructors
 
@@ -62,7 +62,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         /// </summary>
         /// <param name="host">Remote hostname</param>
         /// <param name="port">Remote port</param>
-        internal GameSocket(string host, int port)
+        private protected GameSocket(string host, int port)
         {
             SocketBuffer = new GameSocketBuffer();
             Host = host;

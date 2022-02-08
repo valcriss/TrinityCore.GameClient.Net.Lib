@@ -4,7 +4,7 @@
     {
         #region Internal Constructors
 
-        internal SendablePacket() : base(new byte[0])
+        private protected SendablePacket() : base(new byte[0])
         {
         }
 

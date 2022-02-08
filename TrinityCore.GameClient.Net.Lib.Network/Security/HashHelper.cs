@@ -15,18 +15,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Security
 
         #region Private Fields
 
-        private static readonly Dictionary<HashAlgorithm, HashFunction> HashFunctions;
+        private static readonly Dictionary<HashAlgorithm, HashFunction> HashFunctions = new Dictionary<HashAlgorithm, HashFunction> { [HashAlgorithm.SHA1] = Sha1 };
 
         #endregion Private Fields
-
-        #region Public Constructors
-
-        static HashHelper()
-        {
-            HashFunctions = new Dictionary<HashAlgorithm, HashFunction> { [HashAlgorithm.SHA1] = Sha1 };
-        }
-
-        #endregion Public Constructors
 
         #region Internal Methods
 

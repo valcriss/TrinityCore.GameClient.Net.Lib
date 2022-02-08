@@ -135,8 +135,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Security
             if (receivedProof == null) return false;
             bool equal = receivedProof.Length == 20;
             for (int i = 0; i < receivedProof.Length && equal; ++i)
-                if (!(equal = receivedProof[i] == computedProof[i]))
+            {
+                equal = receivedProof[i] == computedProof[i];
+                if (!equal)
                     break;
+            }
             return equal;
         }
 

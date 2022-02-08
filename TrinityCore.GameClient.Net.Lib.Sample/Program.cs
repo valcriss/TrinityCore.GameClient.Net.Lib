@@ -9,7 +9,7 @@ using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
-    class Program
+    static class Program
     {
         private const string HOSTNAME = "danielsilvestre.fr";
         private const int PORT = 3724;

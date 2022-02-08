@@ -9,6 +9,7 @@
         public byte Flags { get; set; }
         public uint Id { get; set; }
         public byte Load { get; set; }
+        public byte Locked { get; set; }
         public string Name { get; set; }
         public float Population { get; set; }
         public int Port { get; set; }
@@ -19,12 +20,6 @@
         public byte VersionMinor { get; set; }
 
         #endregion Public Properties
-
-        #region Public Fields
-
-        public byte Locked;
-
-        #endregion Public Fields
 
         #region Public Methods
 

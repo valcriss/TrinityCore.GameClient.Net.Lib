@@ -21,9 +21,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
                 return;
 
             M2 = ReadBytes(20);
-            uint unk1 = ReadUInt32();
-            uint unk2 = ReadUInt32();
-            uint unk3 = ReadUInt16();
+            ReadUInt32();
+            ReadUInt32();
+            ReadUInt16();
         }
 
         #endregion Internal Constructors
