@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Environment;
+using TrinityCore.GameClient.Net.Lib.Components.Zone;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
 using TrinityCore.GameClient.Net.Lib.Network.World;
@@ -12,7 +13,7 @@ namespace TrinityCore.GameClient.Net.Lib
     public class GameClient : IDisposable
     {
         public EnvironmentComponent Environment { get; set; }
-
+        public ZoneComponent Zone { get; set; }
 
         #region Private Properties
 
@@ -45,6 +46,7 @@ namespace TrinityCore.GameClient.Net.Lib
 
             // Components
             Environment = new EnvironmentComponent(WorldClient);
+            Zone = new ZoneComponent(WorldClient);
         }
 
         #endregion Public Constructors
