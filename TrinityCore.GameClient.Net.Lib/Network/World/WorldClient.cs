@@ -50,7 +50,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #region Public Constructors
 
-        public WorldClient()
+        internal WorldClient()
         {
             AuthenticateDone = new ManualResetEvent(false);
             CharacterListDone = new ManualResetEvent(false);

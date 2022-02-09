@@ -2,6 +2,7 @@
 {
     public enum LogCategory
     {
-        NETWORK
+        NETWORK,
+        ENVIRONMENT
     }
 }
