@@ -9,6 +9,28 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
 {
     public class EnvironmentComponent : Component
     {
+        #region Public Properties
+
+        public AccountDataTimes AccountDataTimes { get; set; }
+
+        public Difficulty DungeonDifficulty { get; set; }
+
+        public DateTime GameTime { get; set; }
+
+        public Difficulty InstanceDifficulty { get; set; }
+
+        public string Motd { get; set; }
+
+        public TutorialFlags TutorialFlags { get; set; }
+
+        public uint Version { get; set; }
+
+        public bool VoiceChatEnabled { get; set; }
+
+        #endregion Public Properties
+
+        #region Internal Constructors
+
         internal EnvironmentComponent(WorldClient worldClient) : base(worldClient)
         {
             WorldClient.PacketsHandler.RegisterHandler<ClientCacheVersionInfo>(Network.World.Enums.WorldCommand.SMSG_CLIENTCACHE_VERSION, ClientCacheVersionInfo);
@@ -21,14 +43,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             WorldClient.PacketsHandler.RegisterHandler<LoginSetTimeSpeedInfo>(Network.World.Enums.WorldCommand.SMSG_LOGIN_SETTIMESPEED, LoginSetTimeSpeedInfo);
         }
 
-        public uint Version { get; set; }
-        public bool VoiceChatEnabled { get; set; }
-        public string Motd { get; set; }
-        public Difficulty DungeonDifficulty { get; set; }
-        public Difficulty InstanceDifficulty { get; set; }
-        public TutorialFlags TutorialFlags { get; set; }
-        public AccountDataTimes AccountDataTimes { get; set; }
-        public DateTime GameTime { get; set; }
+        #endregion Internal Constructors
+
+        #region Private Methods
 
         private bool AccountDataTimesInfo(AccountDataTimesInfo accountDataTimes)
         {
@@ -36,47 +53,56 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"AccountDataTimes : {AccountDataTimes}");
             return true;
         }
+
         private bool ClientCacheVersionInfo(ClientCacheVersionInfo clientCacheVersion)
         {
             Version = clientCacheVersion.Version;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"Version : {Version}");
             return true;
         }
-        private bool FeatureSystemStatusInfo(FeatureSystemStatusInfo clientCacheVersion)
-        {
-            VoiceChatEnabled = clientCacheVersion.VoiceChatEnabled;
-            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"VoiceChatEnabled : {VoiceChatEnabled}");
-            return true;
-        }
+
         private bool DungeonDifficultyInfo(DungeonDifficultyInfo dungeonDifficulty)
         {
             DungeonDifficulty = dungeonDifficulty.Difficulty;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"DungeonDifficulty : {DungeonDifficulty}");
             return true;
         }
+
+        private bool FeatureSystemStatusInfo(FeatureSystemStatusInfo clientCacheVersion)
+        {
+            VoiceChatEnabled = clientCacheVersion.VoiceChatEnabled;
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"VoiceChatEnabled : {VoiceChatEnabled}");
+            return true;
+        }
+
         private bool InstanceDifficultyInfo(InstanceDifficultyInfo instanceDifficulty)
         {
             InstanceDifficulty = instanceDifficulty.Difficulty;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"InstanceDifficulty : {InstanceDifficulty}");
             return true;
         }
-        private bool TutorialFlagsInfo(TutorialFlagsInfo tutorialFlags)
-        {
-            TutorialFlags = tutorialFlags.TutorialFlags;
-            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"TutorialFlags : {TutorialFlags}");
-            return true;
-        }
+
         private bool LoginSetTimeSpeedInfo(LoginSetTimeSpeedInfo loginSetTimeSpeed)
         {
             GameTime = loginSetTimeSpeed.GameTime;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"GameTime : {GameTime}");
             return true;
         }
+
         private bool ServerMotdInfo(ServerMotdInfo serverMotd)
         {
             Motd = serverMotd.Motd;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"Motd : {Motd}");
             return true;
         }
+
+        private bool TutorialFlagsInfo(TutorialFlagsInfo tutorialFlags)
+        {
+            TutorialFlags = tutorialFlags.TutorialFlags;
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"TutorialFlags : {TutorialFlags}");
+            return true;
+        }
+
+        #endregion Private Methods
     }
 }

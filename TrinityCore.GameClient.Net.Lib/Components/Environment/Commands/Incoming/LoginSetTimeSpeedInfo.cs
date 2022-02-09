@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
@@ -8,14 +6,23 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incomin
 {
     internal class LoginSetTimeSpeedInfo : ReceivablePacket<WorldCommand>
     {
-        internal float TimeSpeed { get; set; }
+        #region Internal Properties
+
         internal DateTime GameTime { get; set; }
         internal int TimeHolidayOffset { get; set; }
+        internal float TimeSpeed { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
+
         internal override void LoadData()
         {
             GameTime = ReadPackedDate();
             TimeSpeed = ReadSingle();
             TimeHolidayOffset = ReadInt32();
         }
+
+        #endregion Internal Methods
     }
 }

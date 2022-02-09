@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TrinityCore.GameClient.Net.Lib.Components.Environment.Enums;
+﻿using TrinityCore.GameClient.Net.Lib.Components.Environment.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Environment.Models;
-using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
@@ -11,8 +7,15 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incomin
 {
     internal class AccountDataTimesInfo : ReceivablePacket<WorldCommand>
     {
+        #region Internal Properties
+
         internal AccountDataTimes DataTimes { get; set; }
         internal uint ServerTime { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
+
         internal override void LoadData()
         {
             ServerTime = ReadUInt32();
@@ -26,5 +29,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incomin
                 index++;
             }
         }
+
+        #endregion Internal Methods
     }
 }

@@ -48,7 +48,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #endregion Private Fields
 
-        #region Public Constructors
+        #region Internal Constructors
 
         internal WorldClient()
         {
@@ -75,7 +75,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             KeepAliveTimer.Start();
         }
 
-        #endregion Public Constructors
+        #endregion Internal Constructors
 
         #region Public Methods
 

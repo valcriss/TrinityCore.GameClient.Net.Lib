@@ -36,6 +36,5 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
         }
 
         #endregion Internal Methods
-
     }
 }

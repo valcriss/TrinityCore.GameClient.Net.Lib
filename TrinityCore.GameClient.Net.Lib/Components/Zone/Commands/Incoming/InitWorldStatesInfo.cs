@@ -1,14 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TrinityCore.GameClient.Net.Lib.Components.Zone.Models;
+﻿using TrinityCore.GameClient.Net.Lib.Components.Zone.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Commands.Incoming
 {
     internal class InitWorldStatesInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
+        #region Internal Properties
+
         internal WorldState WorldState { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
+
         internal override void LoadData()
         {
             WorldState = new WorldState();
@@ -25,5 +29,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Commands.Incoming
                 WorldState.Variables.Add(id, value);
             }
         }
+
+        #endregion Internal Methods
     }
 }

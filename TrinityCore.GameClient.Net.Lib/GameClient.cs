@@ -12,8 +12,12 @@ namespace TrinityCore.GameClient.Net.Lib
 {
     public class GameClient : IDisposable
     {
+        #region Public Properties
+
         public EnvironmentComponent Environment { get; set; }
         public ZoneComponent Zone { get; set; }
+
+        #endregion Public Properties
 
         #region Private Properties
 

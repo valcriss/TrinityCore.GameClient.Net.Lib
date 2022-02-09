@@ -12,7 +12,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
 
         #endregion Internal Properties
 
-        #region Internal Constructors
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -27,6 +27,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
             base.LoadData();
         }
 
-        #endregion Internal Constructors
+        #endregion Internal Methods
     }
 }
