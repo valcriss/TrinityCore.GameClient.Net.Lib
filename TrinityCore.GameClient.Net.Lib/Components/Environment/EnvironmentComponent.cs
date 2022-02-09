@@ -1,4 +1,5 @@
-﻿using TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incoming;
+﻿using System;
+using TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Environment.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Environment.Models;
 using TrinityCore.GameClient.Net.Lib.Logging;
@@ -16,6 +17,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             WorldClient.PacketsHandler.RegisterHandler<InstanceDifficultyInfo>(Network.World.Enums.WorldCommand.SMSG_INSTANCE_DIFFICULTY, InstanceDifficultyInfo);
             WorldClient.PacketsHandler.RegisterHandler<TutorialFlagsInfo>(Network.World.Enums.WorldCommand.SMSG_TUTORIAL_FLAGS, TutorialFlagsInfo);
             WorldClient.PacketsHandler.RegisterHandler<ServerMotdInfo>(Network.World.Enums.WorldCommand.SMSG_MOTD, ServerMotdInfo);
+            WorldClient.PacketsHandler.RegisterHandler<AccountDataTimesInfo>(Network.World.Enums.WorldCommand.SMSG_ACCOUNT_DATA_TIMES, AccountDataTimesInfo);
+            WorldClient.PacketsHandler.RegisterHandler<LoginSetTimeSpeedInfo>(Network.World.Enums.WorldCommand.SMSG_LOGIN_SETTIMESPEED, LoginSetTimeSpeedInfo);
         }
 
         public uint Version { get; set; }
@@ -24,7 +27,15 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
         public Difficulty DungeonDifficulty { get; set; }
         public Difficulty InstanceDifficulty { get; set; }
         public TutorialFlags TutorialFlags { get; set; }
+        public AccountDataTimes AccountDataTimes { get; set; }
+        public DateTime GameTime { get; set; }
 
+        private bool AccountDataTimesInfo(AccountDataTimesInfo accountDataTimes)
+        {
+            AccountDataTimes = accountDataTimes.DataTimes;
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"AccountDataTimes : {AccountDataTimes}");
+            return true;
+        }
         private bool ClientCacheVersionInfo(ClientCacheVersionInfo clientCacheVersion)
         {
             Version = clientCacheVersion.Version;
@@ -49,18 +60,23 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"InstanceDifficulty : {InstanceDifficulty}");
             return true;
         }
-        private bool TutorialFlagsInfo(TutorialFlagsInfo tutorialFlagsInfo)
+        private bool TutorialFlagsInfo(TutorialFlagsInfo tutorialFlags)
         {
-            TutorialFlags = tutorialFlagsInfo.TutorialFlags;
+            TutorialFlags = tutorialFlags.TutorialFlags;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"TutorialFlags : {TutorialFlags}");
             return true;
         }
-
-        private bool ServerMotdInfo(ServerMotdInfo serverMotdInfo)
+        private bool LoginSetTimeSpeedInfo(LoginSetTimeSpeedInfo loginSetTimeSpeed)
         {
-            Motd = serverMotdInfo.Motd;
+            GameTime = loginSetTimeSpeed.GameTime;
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"GameTime : {GameTime}");
+            return true;
+        }
+        private bool ServerMotdInfo(ServerMotdInfo serverMotd)
+        {
+            Motd = serverMotd.Motd;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"Motd : {Motd}");
             return true;
-        }       
+        }
     }
 }

@@ -133,6 +133,19 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             return value;
         }
 
+        protected DateTime ReadPackedDate()
+        {
+            uint packed = ReadUInt32();
+            
+            int min = (int)(packed & 0x3F);
+            int hour = (int)((packed >> 6) & 0x1F);
+            int day = (int)(((packed >> 14) & 0x3F) + 1);
+            int mon = (int)(((packed >> 20) & 0xF) + 1);
+            int year = (int)(((packed >> 24) & 0x1F) + 2000);
+
+            return new DateTime(year, mon, day, hour, min, 0);
+        }
+
         protected float ReadSingle()
         {
             if (Buffer.Length - 4 > ReadIndex)
