@@ -17,7 +17,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Models
 
         #region Public Constructors
 
-        public Friend(UInt64 guid, string note, FriendStatus status, UInt32? areaId, UInt32? level, Class? @class) : base(guid, note)
+        public Friend(UInt64 guid, string note, FriendStatus status, UInt32? areaId = null, UInt32? level = null, Class? @class = null) : base(guid, note)
         {
             Status = status;
             AreaId = areaId;

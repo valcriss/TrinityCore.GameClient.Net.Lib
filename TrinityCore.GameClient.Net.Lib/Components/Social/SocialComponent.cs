@@ -19,6 +19,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
         {
             WorldClient.PacketsHandler.RegisterHandler<LearnedDanceMovesInfo>(WorldCommand.SMSG_LEARNED_DANCE_MOVES, LearnedDanceMovesInfo);
             WorldClient.PacketsHandler.RegisterHandler<ContactListInfo>(WorldCommand.SMSG_CONTACT_LIST, ContactListInfo);
+            WorldClient.PacketsHandler.RegisterHandler<FriendStatusUpdateInfo>(WorldCommand.SMSG_FRIEND_STATUS, FriendStatusUpdateInfo);
+
         }
 
         #endregion Public Constructors
@@ -29,6 +31,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
         {
             Contacts = contactList.Contacts;
             return true;
+        }
+
+        private bool FriendStatusUpdateInfo(FriendStatusUpdateInfo friendStatusUpdate)
+        {
+            return Contacts.UpdateFriend(friendStatusUpdate.Friend);
         }
 
         private bool LearnedDanceMovesInfo(LearnedDanceMovesInfo learnedDanceMoves)
