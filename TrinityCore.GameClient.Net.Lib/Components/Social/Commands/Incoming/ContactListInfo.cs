@@ -19,7 +19,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
         internal override void LoadData()
         {
             Contacts = new Contacts();
-            ContactListAction action = (ContactListAction)ReadUInt32();
+            ReadUInt32();
             uint count = ReadUInt32();
             for (int i = 0; i < count; i++)
             {
