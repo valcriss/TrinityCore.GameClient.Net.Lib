@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Environment;
+using TrinityCore.GameClient.Net.Lib.Components.Social;
 using TrinityCore.GameClient.Net.Lib.Components.Zone;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
@@ -16,6 +17,7 @@ namespace TrinityCore.GameClient.Net.Lib
 
         public EnvironmentComponent Environment { get; set; }
         public ZoneComponent Zone { get; set; }
+        public SocialComponent Social { get; set; }
 
         #endregion Public Properties
 
@@ -51,6 +53,7 @@ namespace TrinityCore.GameClient.Net.Lib
             // Components
             Environment = new EnvironmentComponent(WorldClient);
             Zone = new ZoneComponent(WorldClient);
+            Social = new SocialComponent(WorldClient);
         }
 
         #endregion Public Constructors

@@ -4,6 +4,7 @@
     {
         NETWORK,
         ENVIRONMENT,
-        ZONE
+        ZONE,
+        SOCIAL
     }
 }
