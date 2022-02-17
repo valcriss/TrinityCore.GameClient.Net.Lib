@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrinityCore.GameClient.Net.Lib.Components.Social.Enums
+﻿namespace TrinityCore.GameClient.Net.Lib.Components.Social.Enums
 {
     internal enum FriendsResult
     {

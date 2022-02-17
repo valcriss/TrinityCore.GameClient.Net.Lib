@@ -15,10 +15,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Commands.Incoming
 
         internal override void LoadData()
         {
-            WorldState = new WorldState();
-            WorldState.MapId = ReadInt32();
-            WorldState.ZoneId = ReadInt32();
-            WorldState.AreaId = ReadInt32();
+            WorldState = new WorldState
+            {
+                MapId = ReadInt32(),
+                ZoneId = ReadInt32(),
+                AreaId = ReadInt32()
+            };
 
             ushort count = ReadUInt16();
 

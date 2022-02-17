@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Environment;
+using TrinityCore.GameClient.Net.Lib.Components.Factions;
+using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
 using TrinityCore.GameClient.Net.Lib.Components.Zone;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
@@ -16,8 +18,10 @@ namespace TrinityCore.GameClient.Net.Lib
         #region Public Properties
 
         public EnvironmentComponent Environment { get; set; }
-        public ZoneComponent Zone { get; set; }
+        public FactionsComponent Factions { get; set; }
+        public PlayerComponent Player { get; set; }
         public SocialComponent Social { get; set; }
+        public ZoneComponent Zone { get; set; }
 
         #endregion Public Properties
 
@@ -52,8 +56,10 @@ namespace TrinityCore.GameClient.Net.Lib
 
             // Components
             Environment = new EnvironmentComponent(WorldClient);
-            Zone = new ZoneComponent(WorldClient);
+            Factions = new FactionsComponent(WorldClient);
+            Player = new PlayerComponent(WorldClient);
             Social = new SocialComponent(WorldClient);
+            Zone = new ZoneComponent(WorldClient);
         }
 
         #endregion Public Constructors

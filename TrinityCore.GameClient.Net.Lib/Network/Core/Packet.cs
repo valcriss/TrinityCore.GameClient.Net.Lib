@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Network.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
@@ -177,6 +178,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             ulong value = BitConverter.ToUInt64(Buffer, ReadIndex);
             ReadIndex += 8;
             return value;
+        }
+
+        protected Vector3 ReadVector3()
+        {
+            return new Vector3(ReadSingle(), ReadSingle(), ReadSingle());
         }
 
         #endregion Protected Methods

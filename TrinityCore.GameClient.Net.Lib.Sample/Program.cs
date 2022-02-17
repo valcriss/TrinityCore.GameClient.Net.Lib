@@ -95,7 +95,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             return true;
         }
 
-        private static void Main(string[] args)
+        private static void Main()
         {
             Running = new ManualResetEvent(false);
             Logger.RegisterHandler("spectre", new SpectreLoggerHandler());

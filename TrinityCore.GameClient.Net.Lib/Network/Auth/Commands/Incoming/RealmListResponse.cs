@@ -72,6 +72,5 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Commands.Incoming
         }
 
         #endregion Internal Methods
-
     }
 }

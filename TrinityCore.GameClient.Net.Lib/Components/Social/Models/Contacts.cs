@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Logging;
 
@@ -24,6 +23,10 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Models
             Friends = new List<Friend>();
         }
 
+        #endregion Public Constructors
+
+        #region Internal Methods
+
         internal bool UpdateFriend(Friend update)
         {
             lock (Friends)
@@ -43,6 +46,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Models
             }
         }
 
-        #endregion Public Constructors
+        #endregion Internal Methods
     }
 }

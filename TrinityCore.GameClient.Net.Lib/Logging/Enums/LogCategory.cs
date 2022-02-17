@@ -5,6 +5,7 @@
         NETWORK,
         ENVIRONMENT,
         ZONE,
-        SOCIAL
+        SOCIAL,
+        PLAYER
     }
 }

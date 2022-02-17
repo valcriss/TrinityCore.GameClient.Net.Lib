@@ -51,10 +51,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Security
 
         private static byte[] Sha1(params byte[][] data)
         {
-            using (CryptoNS.SHA1 alg = CryptoNS.SHA1.Create())
-            {
-                return alg.ComputeHash(Combine(data));
-            }
+            using CryptoNS.SHA1 alg = CryptoNS.SHA1.Create();
+            return alg.ComputeHash(Combine(data));
         }
 
         #endregion Private Methods

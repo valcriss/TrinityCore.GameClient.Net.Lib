@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Components.Social.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Social.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
@@ -10,11 +8,16 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
 {
     internal class FriendStatusUpdateInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
+        #region Internal Properties
+
         internal Friend Friend { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
-
             FriendsResult result = (FriendsResult)ReadByte();
             UInt64 guid = ReadUInt64();
             string note = string.Empty;
@@ -29,6 +32,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
                 case FriendsResult.FRIEND_ADDED_ONLINE:
                     note = ReadCString();
                     break;
+
                 default:
                     break;
             }
@@ -42,11 +46,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
                     level = ReadUInt32();
                     @class = (Class)ReadUInt32();
                     break;
+
                 default:
                     break;
             }
 
             Friend = new Friend(guid, note, status, areaId, level, @class);
         }
+
+        #endregion Internal Methods
     }
 }

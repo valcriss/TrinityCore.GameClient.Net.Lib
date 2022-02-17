@@ -72,7 +72,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
         internal static BigInteger ToBigInteger(this byte[] array)
         {
             byte[] temp;
-            if ((array[array.Length - 1] & 0x80) == 0x80)
+            if ((array[^1] & 0x80) == 0x80)
             {
                 temp = new byte[array.Length + 1];
                 temp[array.Length] = 0;
@@ -89,7 +89,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
         internal static byte[] ToCleanByteArray(this BigInteger b)
         {
             byte[] array = b.ToByteArray();
-            if (array[array.Length - 1] != 0)
+            if (array[^1] != 0)
                 return array;
 
             byte[] temp = new byte[array.Length - 1];
@@ -102,7 +102,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             byte[] utf8StringBytes = Encoding.UTF8.GetBytes(str);
             byte[] data = new byte[utf8StringBytes.Length + 1];
             Array.Copy(utf8StringBytes, data, utf8StringBytes.Length);
-            data[data.Length - 1] = 0;
+            data[^1] = 0;
             return data;
         }
 
