@@ -121,7 +121,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
                 Host = host;
                 Port = port;
                 Closing = false;
-                Logger.Append(LogCategory.NETWORK, LogLevel.DEBUG, $"Socket Connecting to {Host}:{Port}");
+                Logger.Append(LogCategory.NETWORK, LogLevel.VERBOSE, $"Socket Connecting to {Host}:{Port}");
                 Socket = new TcpClient();
                 IAsyncResult result = Socket.BeginConnect(Host, Port, null, null);
                 bool success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(CONNECTION_TIMEOUT));
@@ -191,7 +191,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         /// </summary>
         protected void RaiseSocketConnected()
         {
-            Logger.Append(LogCategory.NETWORK, LogLevel.DEBUG, "Socket Connected");
+            Logger.Append(LogCategory.NETWORK, LogLevel.VERBOSE, "Socket Connected");
             GameSocketConnected?.Invoke();
         }
 

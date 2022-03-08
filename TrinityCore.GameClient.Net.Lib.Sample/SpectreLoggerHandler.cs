@@ -9,12 +9,25 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 {
     public class SpectreLoggerHandler : ILoggerHandler
     {
+        private LogLevel MinLevel {get;set;}
+
+        public SpectreLoggerHandler(LogLevel minLevel)
+        {
+            MinLevel = minLevel;
+        }
+
+
         public void Append(LogCategory category, LogLevel level, string message)
         {
+            if(MinLevel < level) return;
+
             string color = "grey";
             switch (level)
             {
                 case LogLevel.DEBUG:
+                    color = "grey";
+                    break;
+                case LogLevel.VERBOSE:
                     color = "grey";
                     break;
                 case LogLevel.INFORMATION:

@@ -92,7 +92,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
         private bool ServerMotdInfo(ServerMotdInfo serverMotd)
         {
             Motd = serverMotd.Motd;
-            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"Motd : {Motd}");
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.INFORMATION, $"Motd : {Motd}");
             return true;
         }
 

@@ -98,7 +98,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         private static void Main()
         {
             Running = new ManualResetEvent(false);
-            Logger.RegisterHandler("spectre", new SpectreLoggerHandler());
+            Logger.RegisterHandler("spectre", new SpectreLoggerHandler(Logging.Enums.LogLevel.INFORMATION));
             Console.CancelKeyPress += ConsoleCancelKeyPress;
             AnsiConsole.MarkupLine("[underline white]TrinityCore GameClient .Net Lib Sample[/]");
 
