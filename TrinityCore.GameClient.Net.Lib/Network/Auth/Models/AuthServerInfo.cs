@@ -1,17 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Models
+﻿namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Models
 {
     public class AuthServerInfo
     {
-        public string Hostname { get; set; }
-        public int Port { get; set; }   
+        #region Public Properties
 
-        public AuthServerInfo(string hostname) : this(hostname, 3724) { }
+        public string Hostname { get; set; }
+        public int Port { get; set; }
+
+        #endregion Public Properties
+
+
+
+        #region Public Constructors
+
+        public AuthServerInfo(string hostname) : this(hostname, 3724)
+        {
+        }
 
         public AuthServerInfo(string hostname, int port)
         {
@@ -19,6 +23,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Models
             Port = port;
         }
 
-
+        #endregion Public Constructors
     }
 }

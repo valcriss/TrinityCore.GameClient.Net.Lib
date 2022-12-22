@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
+﻿namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 {
     internal static class PositionExtensions
     {
+        #region Internal Methods
+
         internal static float GetPathLength(this Position[] positions)
         {
             float total = 0;
@@ -20,5 +16,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 
             return total;
         }
+
+        #endregion Internal Methods
     }
 }

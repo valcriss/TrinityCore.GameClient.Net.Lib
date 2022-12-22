@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.Tools;
-using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
@@ -29,6 +28,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         #endregion Internal Properties
 
         #region Private Properties
+
         private Dictionary<T, T> CompressedCommands { get; }
         private List<T> Ignored { get; set; }
 
@@ -47,14 +47,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #region Internal Methods
 
-        internal void AddCompressed(T source,T target)
+        internal void AddCompressed(T source, T target)
         {
             CompressedCommands.Add(source, target);
         }
 
         internal bool Handle(ReceivablePacket<T> packet)
         {
-
             if (CompressedCommands.ContainsKey(packet.Command))
             {
                 byte[] decompressed = packet.Content.Decompress();

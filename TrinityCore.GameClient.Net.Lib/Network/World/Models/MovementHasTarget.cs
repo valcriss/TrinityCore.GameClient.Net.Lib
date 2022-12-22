@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 {
     internal class MovementHasTarget
     {
+        #region Internal Properties
+
         internal UInt64 Target { get; set; }
+
+        #endregion Internal Properties
     }
 }

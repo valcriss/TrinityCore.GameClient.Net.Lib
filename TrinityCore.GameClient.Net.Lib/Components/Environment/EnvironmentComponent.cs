@@ -55,6 +55,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             return true;
         }
 
+        private bool AddonInfo(AddonInfo addonInfo)
+        {
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"AddonInfo : Data Ignored");
+            return true;
+        }
+
         private bool ClientCacheVersionInfo(ClientCacheVersionInfo clientCacheVersion)
         {
             Version = clientCacheVersion.Version;
@@ -101,12 +107,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
         {
             TutorialFlags = tutorialFlags.TutorialFlags;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"TutorialFlags : {TutorialFlags}");
-            return true;
-        }
-
-        private bool AddonInfo(AddonInfo addonInfo)
-        {
-            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"AddonInfo : Data Ignored");
             return true;
         }
 

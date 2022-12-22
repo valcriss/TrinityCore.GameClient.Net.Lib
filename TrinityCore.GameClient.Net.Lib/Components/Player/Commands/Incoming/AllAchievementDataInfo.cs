@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
@@ -10,8 +7,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
 {
     internal class AllAchievementDataInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
+        #region Internal Properties
+
         internal List<AchievementCriteria> AchievementCriteriaList { get; set; }
         internal List<CompletedAchievement> CompletedAchievements { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -52,5 +55,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
                 });
             }
         }
+
+        #endregion Internal Methods
     }
 }

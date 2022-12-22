@@ -18,12 +18,12 @@ namespace TrinityCore.GameClient.Net.Lib
     {
         #region Public Properties
 
+        public EntitiesComponent Entities { get; set; }
         public EnvironmentComponent Environment { get; set; }
         public FactionsComponent Factions { get; set; }
         public PlayerComponent Player { get; set; }
         public SocialComponent Social { get; set; }
         public ZoneComponent Zone { get; set; }
-        public EntitiesComponent Entities { get; set; }
 
         #endregion Public Properties
 
@@ -94,7 +94,7 @@ namespace TrinityCore.GameClient.Net.Lib
         public async Task<bool> LogOut()
         {
             bool result = await WorldClient.LogOut();
-            if(result)
+            if (result)
             {
                 Entities.Close();
             }

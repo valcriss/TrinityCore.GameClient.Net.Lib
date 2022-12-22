@@ -1,7 +1,5 @@
 ﻿using Spectre.Console;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Logging.Enums;
 
@@ -9,17 +7,26 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 {
     public class SpectreLoggerHandler : ILoggerHandler
     {
-        private LogLevel MinLevel {get;set;}
+        #region Private Properties
+
+        private LogLevel MinLevel { get; set; }
+
+        #endregion Private Properties
+
+        #region Public Constructors
 
         public SpectreLoggerHandler(LogLevel minLevel)
         {
             MinLevel = minLevel;
         }
 
+        #endregion Public Constructors
+
+        #region Public Methods
 
         public void Append(LogCategory category, LogLevel level, string message)
         {
-            if(MinLevel < level) return;
+            if (MinLevel < level) return;
 
             string color = "grey";
             switch (level)
@@ -27,15 +34,19 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 case LogLevel.DEBUG:
                     color = "grey";
                     break;
+
                 case LogLevel.VERBOSE:
                     color = "grey";
                     break;
+
                 case LogLevel.INFORMATION:
                     color = "white";
                     break;
+
                 case LogLevel.WARNING:
                     color = "orange1";
                     break;
+
                 case LogLevel.ERROR:
                     color = "red";
                     break;
@@ -48,5 +59,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
         {
             AnsiConsole.MarkupLine($"[red]{DateTime.Now.ToLongTimeString()} - {category.ToString().ToUpper()} : {exception.Message}[/]");
         }
+
+        #endregion Public Methods
     }
 }

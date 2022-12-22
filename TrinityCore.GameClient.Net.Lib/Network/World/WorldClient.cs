@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +24,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         #endregion Public Events
 
+        #region Internal Properties
+
+        internal Query Query { get; set; }
+
+        #endregion Internal Properties
+
         #region Private Properties
 
         private ManualResetEvent AuthenticateDone { get; }
@@ -38,7 +43,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private WorldPlayerState PlayerState { get; set; }
         private WorldState State { get; set; }
         private WorldServerInfo WorldServer { get; set; }
-        internal Query Query { get; set; }
+
         #endregion Private Properties
 
         #region Private Fields
@@ -149,7 +154,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             return this.Character;
         }
 
-        #endregion
+        #endregion Internal Methods
 
         #region Protected Methods
 
@@ -209,6 +214,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             Send(new ClientKeepAliveRequest());
         }
 
+        private bool IgnoredMessage(IgnoredMessage ignoredMessage)
+        {
+            return true;
+        }
+
         private bool LoginCharacterResponse(LoginCharacterResponse loginCharacterResponse)
         {
             Character.MapId = loginCharacterResponse.MapId;
@@ -246,13 +256,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private bool ServerTimeSyncRequest(ServerTimeSyncRequest timeSyncRequest)
         {
             return Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
-        }      
-        
-        private bool IgnoredMessage(IgnoredMessage ignoredMessage)
-        {
-            return true;
         }
 
         #endregion Private Methods
+
     }
 }

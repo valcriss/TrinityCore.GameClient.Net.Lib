@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
+﻿using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
@@ -12,7 +7,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 {
     internal class CreatureQueryResponse : ReceivablePacket<WorldCommand>
     {
+        #region Internal Properties
+
         internal UnitInfo CreatureInfo { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -38,5 +39,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
             CreatureInfo.CreatureMovementInfoId = ReadUInt32();
         }
+
+        #endregion Internal Methods
     }
 }

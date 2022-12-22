@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Logging;
-using TrinityCore.GameClient.Net.Lib.Logging.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.World;
 using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
@@ -17,8 +12,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 {
     public class EntitiesComponent : Component
     {
+        #region Public Properties
+
         public EntitiesCollection Collection { get; set; }
+
+        #endregion Public Properties
+
+        #region Private Properties
+
         private PlayerComponent Player { get; set; }
+
+        #endregion Private Properties
+
+        #region Public Constructors
 
         public EntitiesComponent(WorldClient worldClient, PlayerComponent player) : base(worldClient)
         {
@@ -56,6 +62,55 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             WorldClient.PacketsHandler.RegisterHandler<MonsterMove>(WorldCommand.SMSG_MONSTER_MOVE, MonsterMove);
         }
 
+        #endregion Public Constructors
+
+        #region Public Methods
+
+        public override void Close()
+        {
+            Collection.Close();
+            base.Close();
+        }
+
+        #endregion Public Methods
+
+        #region Private Methods
+
+        private void CreateObjects(List<UpdateCreateObject> values)
+        {
+            foreach (UpdateCreateObject updateCreateObject in values)
+            {
+                Entity entity = Collection.GetUnit(updateCreateObject.Guid);
+                entity.UpdateFields(updateCreateObject.Fields);
+                entity.UpdateMovement(updateCreateObject.Movement);
+                Collection.Categorize(entity, updateCreateObject.ObjectType);
+            }
+        }
+
+        private bool HandleMovement(HandleMovement handleMovement)
+        {
+            Entity entity = Collection.GetUnit(handleMovement.Guid);
+            entity.UpdateMovement(handleMovement.MovementLiving);
+            return true;
+        }
+
+        private bool HandleNameQueryReponse(HandleNameQueryReponse nameQueryResponse)
+        {
+            if (nameQueryResponse.Found)
+            {
+                Entity entity = Collection.GetUnit(nameQueryResponse.Guid);
+                entity.Name = nameQueryResponse.Name;
+            }
+            return true;
+        }
+
+        private bool MonsterMove(MonsterMove monsterMove)
+        {
+            Entity entity = Collection.GetUnit(monsterMove.MonsterGuid);
+            entity.UpdatePosition(monsterMove.Position);
+            return true;
+        }
+
         private bool PowerUpdateInfo(PowerUpdateInfo powerUpdateInfo)
         {
             if (Player.Guid.Equals(powerUpdateInfo.Guid))
@@ -65,6 +120,24 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             }
             Logger.Append(Logging.Enums.LogCategory.PLAYER, Logging.Enums.LogLevel.DEBUG, $"Update entity {powerUpdateInfo.Guid}  Power : {powerUpdateInfo.Power} = {powerUpdateInfo.Value}");
             return true;
+        }
+
+        private void UpdateFields(List<UpdateValues> values)
+        {
+            foreach (UpdateValues updateValues in values)
+            {
+                Entity entity = Collection.GetUnit(updateValues.Guid);
+                entity.UpdateFields(updateValues.Fields);
+            }
+        }
+
+        private void UpdateMovements(List<UpdateMovement> values)
+        {
+            foreach (UpdateMovement updateMovement in values)
+            {
+                Entity entity = Collection.GetUnit(updateMovement.Guid);
+                entity.UpdateMovement(updateMovement.Movement);
+            }
         }
 
         private bool UpdateObjectInfo(UpdateObjectInfo updateObject)
@@ -92,63 +165,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             return true;
         }
 
-        private bool HandleMovement(HandleMovement handleMovement)
-        {
-            Entity entity = Collection.GetUnit(handleMovement.Guid);
-            entity.UpdateMovement(handleMovement.MovementLiving);            
-            return true;
-        }
-
-        private bool HandleNameQueryReponse(HandleNameQueryReponse nameQueryResponse)
-        {
-            if (nameQueryResponse.Found)
-            {
-                Entity entity = Collection.GetUnit(nameQueryResponse.Guid);
-                entity.Name = nameQueryResponse.Name;
-            }
-            return true;
-        }
-
-        private bool MonsterMove(MonsterMove monsterMove)
-        {
-            Entity entity = Collection.GetUnit(monsterMove.MonsterGuid);
-            entity.UpdatePosition(monsterMove.Position);
-            return true;
-        }
-
-        private void UpdateFields(List<UpdateValues> values)
-        {
-            foreach (UpdateValues updateValues in values)
-            {
-                Entity entity = Collection.GetUnit(updateValues.Guid);
-                entity.UpdateFields(updateValues.Fields);
-            }
-        }
-
-        private void CreateObjects(List<UpdateCreateObject> values)
-        {
-            foreach (UpdateCreateObject updateCreateObject in values)
-            {
-                Entity entity = Collection.GetUnit(updateCreateObject.Guid);
-                entity.UpdateFields(updateCreateObject.Fields);
-                entity.UpdateMovement(updateCreateObject.Movement);
-                Collection.Categorize(entity, updateCreateObject.ObjectType);
-            }
-        }
-
-        private void UpdateMovements(List<UpdateMovement> values)
-        {
-            foreach (UpdateMovement updateMovement in values)
-            {
-                Entity entity = Collection.GetUnit(updateMovement.Guid);
-                entity.UpdateMovement(updateMovement.Movement);
-            }
-        }
-
-        public override void Close()
-        {
-            Collection.Close();
-            base.Close();
-        }
+        #endregion Private Methods
     }
 }

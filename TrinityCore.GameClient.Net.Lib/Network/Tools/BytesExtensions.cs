@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Numerics;
 using System.Text;
-using TrinityCore.GameClient.Net.Lib.Logging;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Tools
 {
@@ -35,29 +34,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             return BitConverter.ToString(value).Replace("-", "");
         }
 
-        internal static BigInteger ModPow(this BigInteger value, BigInteger pow, BigInteger mod)
-        {
-            return BigInteger.ModPow(value, pow, mod);
-        }
-
-        internal static string ReadCString(this byte[] data, int start, out int length)
-        {
-            StringBuilder builder = new StringBuilder();
-            length = 0;
-            while (true)
-            {
-                byte letter = data[start];
-                start++;
-                length++;
-                if (letter == 0)
-                    break;
-
-                builder.Append((char)letter);
-            }
-
-            return builder.ToString();
-        }
-
         internal static byte[] Decompress(this byte[] data)
         {
             try
@@ -82,6 +58,29 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             {
                 return null;
             }
+        }
+
+        internal static BigInteger ModPow(this BigInteger value, BigInteger pow, BigInteger mod)
+        {
+            return BigInteger.ModPow(value, pow, mod);
+        }
+
+        internal static string ReadCString(this byte[] data, int start, out int length)
+        {
+            StringBuilder builder = new StringBuilder();
+            length = 0;
+            while (true)
+            {
+                byte letter = data[start];
+                start++;
+                length++;
+                if (letter == 0)
+                    break;
+
+                builder.Append((char)letter);
+            }
+
+            return builder.ToString();
         }
 
         internal static byte[] Split(this byte[] data, int startIndex, int length)

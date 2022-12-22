@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
+﻿using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
@@ -11,14 +6,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
 {
     internal class UpdateProficiencyInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
+        #region Internal Properties
+
         internal ItemClass ItemClass { get; set; }
+
+        #endregion Internal Properties
+
+        #region Private Properties
+
         private uint ItemSubclass { get; set; }
 
-        internal override void LoadData()
-        {
-            ItemClass = (ItemClass)ReadSByte();
-            ItemSubclass = ReadUInt32();
-        }
+        #endregion Private Properties
+
+        #region Internal Methods
 
         internal ArmorProficiency GetArmorProficiency()
         {
@@ -29,5 +29,13 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
         {
             return new WeaponProficiency(ItemClass, ItemSubclass);
         }
+
+        internal override void LoadData()
+        {
+            ItemClass = (ItemClass)ReadSByte();
+            ItemSubclass = ReadUInt32();
+        }
+
+        #endregion Internal Methods
     }
 }

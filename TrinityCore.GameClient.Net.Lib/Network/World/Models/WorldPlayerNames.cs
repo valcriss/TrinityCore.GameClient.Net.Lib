@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Outgoing;
-using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
@@ -13,9 +9,20 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 {
     internal class WorldPlayerNames
     {
+        #region Internal Properties
+
         internal Dictionary<ulong, string> PlayerNames { get; set; }
+
+        #endregion Internal Properties
+
+        #region Private Properties
+
         private ManualResetEvent CharacterNameQueryDone { get; }
         private WorldClient WorldClient { get; }
+
+        #endregion Private Properties
+
+        #region Internal Constructors
 
         internal WorldPlayerNames(WorldClient worldClient)
         {
@@ -24,6 +31,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
             WorldClient.PacketsHandler.RegisterHandler<NameQueryResponse>(WorldCommand.SMSG_NAME_QUERY_RESPONSE, NameQueryResponse);
             CharacterNameQueryDone = new ManualResetEvent(false);
         }
+
+        #endregion Internal Constructors
+
+        #region Internal Methods
 
         internal async Task<string> GetPlayerName(ulong guid)
         {
@@ -46,6 +57,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
             });
         }
 
+        #endregion Internal Methods
+
+        #region Private Methods
+
         private bool NameQueryResponse(NameQueryResponse response)
         {
             lock (PlayerNames)
@@ -57,5 +72,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 
             return true;
         }
+
+        #endregion Private Methods
     }
 }

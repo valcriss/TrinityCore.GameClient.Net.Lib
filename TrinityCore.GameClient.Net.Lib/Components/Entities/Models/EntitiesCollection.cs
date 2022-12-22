@@ -1,31 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Logging.Enums;
-using TrinityCore.GameClient.Net.Lib.Logging;
-using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
-using TrinityCore.GameClient.Net.Lib.Network.World;
-using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Outgoing;
+using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
+using TrinityCore.GameClient.Net.Lib.Network.World;
+using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class EntitiesCollection
     {
+        #region Public Properties
+
         public Dictionary<ulong, Creature> Creatures { get; set; }
         public Dictionary<ulong, GameObject> GameObjects { get; set; }
         public Dictionary<ulong, Item> Items { get; set; }
         public Dictionary<ulong, Npc> Npc { get; set; }
         public Dictionary<ulong, Player> Players { get; set; }
+
+        #endregion Public Properties
+
+        #region Private Properties
+
         private Dictionary<ulong, MapType> Map { get; set; }
         private Dictionary<ulong, Entity> UnCategorized { get; set; }
         private Dictionary<ulong, Entity> UnCategorizedUnit { get; set; }
         private Thread UpdateUnitThread { get; set; }
         private WorldClient WorldClient { get; set; }
+
+        #endregion Private Properties
+
+        #region Internal Constructors
 
         internal EntitiesCollection(WorldClient client)
         {
@@ -41,6 +46,10 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             UpdateUnitThread = new Thread(UpdateUnit);
             UpdateUnitThread.Start();
         }
+
+        #endregion Internal Constructors
+
+        #region Internal Methods
 
         internal void Categorize(Entity entity, TypeID type)
         {
@@ -290,6 +299,10 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             return AddEntity(guid);
         }
 
+        #endregion Internal Methods
+
+        #region Private Methods
+
         private Entity AddEntity(ulong guid)
         {
             Entity entity = new Entity(guid);
@@ -385,5 +398,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             {
             }
         }
+
+        #endregion Private Methods
     }
 }

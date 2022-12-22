@@ -15,17 +15,29 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
     public class PlayerComponent : Component
     {
         #region Public Properties
-        public UInt64? Guid { get { if (WorldClient.GetCharacter() != null) { return WorldClient.GetCharacter().GUID; } return null; } }
+
         public WorldPoint BindPoint { get; set; }
+        public List<EquipmentSet> EquipmentSets { get; set; }
+        public UInt64? Guid
+        { get { if (WorldClient.GetCharacter() != null) { return WorldClient.GetCharacter().GUID; } return null; } }
+        public TalentCollection PetTalents { get; set; }
+        public PlayerTalentCollection PlayerTalents { get; set; }
         public List<Spell> Spells { get; set; }
         public List<Spell> UnlearnedSpells { get; set; }
-        public PlayerTalentCollection PlayerTalents { get; set; }
-        public TalentCollection PetTalents { get; set; }
-        public List<EquipmentSet> EquipmentSets { get; set; }
-        private Dictionary<Powers, UInt32> Powers { get; set; }
-        internal List<GiverStatus> QuestsGiverStatuses { get; set; }
 
         #endregion Public Properties
+
+        #region Internal Properties
+
+        internal List<GiverStatus> QuestsGiverStatuses { get; set; }
+
+        #endregion Internal Properties
+
+        #region Private Properties
+
+        private Dictionary<Powers, UInt32> Powers { get; set; }
+
+        #endregion Private Properties
 
         #region Public Constructors
 
@@ -50,6 +62,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         #endregion Public Constructors
 
+        #region Internal Methods
+
         internal void UpdatePower(Powers power, uint value)
         {
             Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, $"Update power : {power} = {value}");
@@ -61,8 +75,15 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             Powers[power] = value;
         }
 
+        #endregion Internal Methods
 
         #region Private Methods
+
+        private bool AllAchievementDataInfo(AllAchievementDataInfo allAchievementDataInfo)
+        {
+            // TODO : do something with that
+            return true;
+        }
 
         private bool BindPointUpdate(BindPointUpdate bindPointUpdate)
         {
@@ -71,10 +92,36 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return true;
         }
 
+        private bool EquipmentSetList(EquipmentSetList equipmentSetList)
+        {
+            EquipmentSets = equipmentSetList.EquipmentSets;
+            return true;
+        }
+
         private bool InitialSpellsInfo(InitialSpellsInfo initialSpells)
         {
             Spells = initialSpells.Spells;
             Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Initial Spells : " + Spells.ListToString());
+            return true;
+        }
+
+        private bool QuestGiverStatusMultiple(QuestGiverStatusMultiple questGiverStatusMultiple)
+        {
+            QuestsGiverStatuses = questGiverStatusMultiple.GiverStatuses;
+            return true;
+        }
+
+        private bool TalentsInfo(TalentsInfo talentsInfo)
+        {
+            // TODO : Add log info
+            if (talentsInfo.IsPet)
+            {
+                PetTalents = new TalentCollection(talentsInfo.Talents, talentsInfo.UnSpendPoints);
+            }
+            else
+            {
+                PlayerTalents = new PlayerTalentCollection(talentsInfo.Talents, talentsInfo.UnSpendPoints, talentsInfo.Glyphs);
+            }
             return true;
         }
 
@@ -87,7 +134,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         private bool UpdateProficiencyInfo(UpdateProficiencyInfo updateProficiencyInfo)
         {
-            // TODO: Bug 
+            // TODO: Bug
             switch (updateProficiencyInfo.ItemClass)
             {
                 case ItemClass.ITEM_CLASS_ARMOR:
@@ -102,38 +149,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                     Logger.Append(LogCategory.PLAYER, LogLevel.ERROR, "Unhandled Item Class : " + updateProficiencyInfo.ItemClass.ToString());
                     break;
             }
-            return true;
-        }
-
-        private bool TalentsInfo(TalentsInfo talentsInfo)
-        {
-            // TODO : Add log info
-            if(talentsInfo.IsPet)
-            {
-                PetTalents = new TalentCollection(talentsInfo.Talents, talentsInfo.UnSpendPoints);
-            }
-            else
-            {
-                PlayerTalents = new PlayerTalentCollection(talentsInfo.Talents, talentsInfo.UnSpendPoints, talentsInfo.Glyphs);
-            }
-            return true;
-        }
-
-        private bool AllAchievementDataInfo(AllAchievementDataInfo allAchievementDataInfo)
-        {
-            // TODO : do something with that
-            return true;
-        }
-
-        private bool EquipmentSetList(EquipmentSetList equipmentSetList)
-        {
-            EquipmentSets = equipmentSetList.EquipmentSets;
-            return true;
-        }
-
-        private bool QuestGiverStatusMultiple(QuestGiverStatusMultiple questGiverStatusMultiple)
-        {
-            QuestsGiverStatuses = questGiverStatusMultiple.GiverStatuses;
             return true;
         }
 

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
+﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class Item : Entity
     {
+        #region Internal Constructors
+
         internal Item(Entity entity) : base(entity.Guid)
         {
             Type = entity.Type;
@@ -15,5 +11,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             Movement = entity.Movement;
             Fields = entity.Fields;
         }
+
+        #endregion Internal Constructors
     }
 }

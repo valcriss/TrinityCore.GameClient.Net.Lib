@@ -1,14 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Models
 {
     public class PlayerTalentCollection : TalentCollection
     {
+        #region Public Properties
+
         public List<Glyph> Glyphs { get; set; }
+
+        #endregion Public Properties
+
+        #region Public Constructors
 
         public PlayerTalentCollection()
         {
@@ -19,5 +21,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Models
         {
             Glyphs = glyphs;
         }
+
+        #endregion Public Constructors
     }
 }

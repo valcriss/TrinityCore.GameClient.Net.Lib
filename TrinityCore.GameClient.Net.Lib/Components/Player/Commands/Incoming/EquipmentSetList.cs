@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
@@ -10,8 +6,14 @@ using TrinityCore.GameClient.Net.Lib.Network.Core;
 namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
 {
     internal class EquipmentSetList : ReceivablePacket<Network.World.Enums.WorldCommand>
-    {    
+    {
+        #region Public Properties
+
         public List<EquipmentSet> EquipmentSets { get; set; }
+
+        #endregion Public Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -36,5 +38,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
                 EquipmentSets.Add(equipmentSet);
             }
         }
+
+        #endregion Internal Methods
     }
 }

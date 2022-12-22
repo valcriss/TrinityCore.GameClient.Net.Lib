@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
-using TrinityCore.GameClient.Net.Lib.Logging.Enums;
-using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
@@ -13,23 +8,30 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class Entity
     {
-        private string _name = null;
+        #region Public Properties
+
         public Dictionary<UpdateFields, uint> Fields { get; set; }
         public ulong Guid { get; set; }
         public Movement Movement { get; set; }
+        public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
+        public TypeID Type { get; set; }
+
+        #endregion Public Properties
+
+        #region Internal Properties
+
         internal Dictionary<Powers, uint> Powers { get; set; }
         internal SplineMoveMode SplineMoveMode { get; set; }
-        public TypeID Type { get; set; }
-        public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
 
-        public Position GetPosition()
-        {
-            return Movement.Position;
-        }
-        internal void UpdatePosition(Position position)
-        {
-            Movement.Position = position;
-        }
+        #endregion Internal Properties
+
+        #region Private Fields
+
+        private string _name = null;
+
+        #endregion Private Fields
+
+        #region Internal Constructors
 
         internal Entity(UInt64 guid)
         {
@@ -39,6 +41,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             Fields = new Dictionary<UpdateFields, uint>();
             Powers = new Dictionary<Powers, uint>();
         }
+
+        #endregion Internal Constructors
+
+        #region Public Methods
+
+        public Position GetPosition()
+        {
+            return Movement.Position;
+        }
+
+        #endregion Public Methods
+
+        #region Internal Methods
 
         internal void UpdateFields(Dictionary<UpdateFields, uint> fields)
         {
@@ -87,6 +102,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             }
         }
 
+        internal void UpdatePosition(Position position)
+        {
+            Movement.Position = position;
+        }
+
         internal void UpdatePower(Powers power, uint value)
         {
             if (!Powers.ContainsKey(power))
@@ -98,5 +118,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
                 Powers[power] = value;
             }
         }
+
+        #endregion Internal Methods
     }
 }

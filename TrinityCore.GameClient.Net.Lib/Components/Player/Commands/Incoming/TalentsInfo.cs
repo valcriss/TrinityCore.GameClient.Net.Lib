@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
@@ -10,13 +6,23 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
 {
     internal class TalentsInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
-        private const sbyte MAX_TALENT_SPECS = 2;
-        private const sbyte MAX_TALENT_TABS = 2;
+        #region Public Properties
 
         public List<Glyph> Glyphs { get; set; }
         public bool IsPet { get; set; }
         public List<Talent> Talents { get; set; }
         public uint UnSpendPoints { get; set; }
+
+        #endregion Public Properties
+
+        #region Private Fields
+
+        private const sbyte MAX_TALENT_SPECS = 2;
+        private const sbyte MAX_TALENT_TABS = 2;
+
+        #endregion Private Fields
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -67,5 +73,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
                 }
             }
         }
+
+        #endregion Internal Methods
     }
 }

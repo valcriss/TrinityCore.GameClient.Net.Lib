@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 {
     internal class MovementSpline
     {
+        #region Internal Properties
+
         internal int Duration { get; set; }
         internal int EffectStartTime { get; set; }
         internal float? FacingAngle { get; set; }
@@ -21,12 +19,26 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
         internal Position[] SplineNodes { get; set; }
         internal int TimePassed { get; set; }
         internal float VerticalAcceleration { get; set; }
+
+        #endregion Internal Properties
+
+        #region Private Properties
+
         private DateTime SplineStart { get; set; }
+
+        #endregion Private Properties
+
+        #region Internal Constructors
 
         internal MovementSpline()
         {
             SplineStart = DateTime.Now;
         }
+
+        #endregion Internal Constructors
+
+        #region Internal Methods
+
         internal Position CurrentPosition(float speed)
         {
             float totalTimePassed = (float)DateTime.Now.Subtract(SplineStart).TotalMilliseconds + TimePassed;
@@ -55,5 +67,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 
             return FinalDestination;
         }
+
+        #endregion Internal Methods
     }
 }

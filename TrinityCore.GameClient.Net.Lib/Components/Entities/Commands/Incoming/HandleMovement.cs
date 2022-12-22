@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
@@ -11,8 +7,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
 {
     internal class HandleMovement : ReceivablePacket<Network.World.Enums.WorldCommand>
     {
+        #region Internal Properties
+
         internal UInt64 Guid { get; set; }
         internal MovementLiving MovementLiving { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -22,7 +24,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
             MovementLiving.ExtraMovementFlags = (MovementFlags2)ReadUInt16();
             MovementLiving.Time = ReadUInt32();
             MovementLiving.Position = new Position(ReadVector3(), ReadSingle());
-
 
             if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_ONTRANSPORT))
             {
@@ -57,5 +58,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
                 MovementLiving.SplineElevation = ReadSingle();
             }
         }
+
+        #endregion Internal Methods
     }
 }

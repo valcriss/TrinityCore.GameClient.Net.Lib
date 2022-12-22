@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     internal class UnitInfo
     {
+        #region Internal Properties
+
         internal CreatureEliteType Classification { get; set; }
         internal uint[] CreatureDisplayId { get; set; }
         internal CreatureFamily CreatureFamily { get; set; }
@@ -25,12 +23,20 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         internal uint[] ProxyCreatureId { get; set; }
         internal uint[] QuestItems { get; set; }
 
+        #endregion Internal Properties
+
+        #region Internal Constructors
+
         internal UnitInfo()
         {
             ProxyCreatureId = new uint[2];
             CreatureDisplayId = new uint[4];
             QuestItems = new uint[6];
         }
+
+        #endregion Internal Constructors
+
+        #region Public Methods
 
         public override string ToString()
         {
@@ -47,5 +53,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             builder.AppendLine("Classification : " + Classification);
             return builder.ToString();
         }
+
+        #endregion Public Methods
     }
 }

@@ -1,23 +1,24 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Logging.Enums;
-using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
-using System.Collections;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 {
     internal class UpdateObjectInfo : ReceivablePacket<WorldCommand>
     {
+        #region Internal Properties
+
         internal List<UpdateMovement> Movements { get; set; }
         internal List<UpdateCreateObject> UpdateCreateObjects { get; set; }
         internal List<UpdateOutOfRange> UpdateOutOfRanges { get; set; }
         internal List<UpdateValues> UpdateValues { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Methods
 
         internal override void LoadData()
         {
@@ -80,6 +81,10 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
             }
         }
 
+        #endregion Internal Methods
+
+        #region Private Methods
+
         private Dictionary<UpdateFields, uint> GetUpdateValues()
         {
             Dictionary<UpdateFields, uint> values = new Dictionary<UpdateFields, uint>();
@@ -99,5 +104,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
 
             return values;
         }
+
+        #endregion Private Methods
     }
 }

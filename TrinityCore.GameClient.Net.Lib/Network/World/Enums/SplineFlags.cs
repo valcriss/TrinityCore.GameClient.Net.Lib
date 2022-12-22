@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Network.World.Enums
+﻿namespace TrinityCore.GameClient.Net.Lib.Network.World.Enums
 {
     internal enum SplineFlags : uint
     {
         None = 0x00000000,
+
         // x00-xFF(first byte) used as animation Ids storage in pair with Animation flag
         Done = 0x00000100,
+
         Falling = 0x00000200,           // Affects elevation computation, can't be combined with Parabolic flag
         No_Spline = 0x00000400,
         Parabolic = 0x00000800,           // Affects elevation computation, can't be combined with Falling flag
@@ -37,12 +33,17 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Enums
 
         // Masks
         Mask_Final_Facing = Final_Point | Final_Target | Final_Angle,
+
         // animation ids stored here, see AnimationTier enum, used with Animation flag
         Mask_Animations = 0xFF,
-        // flags that shouldn't be appended into SMSG_MONSTER_MOVE\SMSG_MONSTER_MOVE_TRANSPORT packet, should be more probably
+
+        // flags that shouldn't be appended into SMSG_MONSTER_MOVE\SMSG_MONSTER_MOVE_TRANSPORT
+        // packet, should be more probably
         Mask_No_Monster_Move = Mask_Final_Facing | Mask_Animations | Done,
+
         // CatmullRom interpolation mode used
         Mask_CatmullRom = Flying | Catmullrom,
+
         // Unused, not suported flags
         Mask_Unused = No_Spline | Enter_Cycle | Frozen | Unknown7 | Unknown8 | Unknown10 | Unknown11 | Unknown12 | Unknown13
     }

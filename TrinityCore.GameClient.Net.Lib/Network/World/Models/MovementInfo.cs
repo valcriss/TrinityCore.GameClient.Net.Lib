@@ -1,20 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Network.Core;
+﻿using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
 {
     internal class MovementInfo : Packet
     {
+        #region Internal Properties
+
+        internal MovementHasTarget MovementHasTarget { get; set; }
         internal MovementLiving MovementLiving { get; set; }
         internal MovementPosition MovementPosition { get; set; }
-        internal MovementStationary MovementStationary { get; set; }
-        internal MovementHasTarget MovementHasTarget { get; set; }
         internal MovementRotation MovementRotation { get; set; }
+        internal MovementStationary MovementStationary { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Constructors
 
         internal MovementInfo()
         {
@@ -70,7 +71,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                 for (int i = 0; i < 9; i++) MovementLiving.Speeds.Add((UnitMoveType)i, ReadSingle());
 
                 // if (unit->m_movementInfo.GetMovementFlags() & MOVEMENTFLAG_SPLINE_ENABLED)
-                //    Movement::PacketBuilder::WriteCreate(*unit->movespline, *data);
+                // Movement::PacketBuilder::WriteCreate(*unit->movespline, *data);
                 if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SPLINE_ENABLED))
                 {
                     MovementLiving.MovementSpline = new MovementSpline();
@@ -204,5 +205,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                 MovementRotation.Rotation = ReadInt64();
             }
         }
+
+        #endregion Internal Constructors
     }
 }

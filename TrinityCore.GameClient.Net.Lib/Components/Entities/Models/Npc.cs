@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
+﻿namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class Npc : Entity
     {
+        #region Internal Properties
+
         internal UnitInfo Infos { get; set; }
+
+        #endregion Internal Properties
+
+        #region Internal Constructors
 
         internal Npc(Entity entity, UnitInfo unitInfo) : base(entity.Guid)
         {
@@ -19,5 +18,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             Fields = entity.Fields;
             Infos = unitInfo;
         }
+
+        #endregion Internal Constructors
     }
 }

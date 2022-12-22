@@ -1,29 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class Creature : Entity
     {
-        internal UnitInfo Infos { get; set; }
-        public int Level
-        {
-            get
-            {
-                if (Fields.ContainsKey(Network.World.Enums.UpdateFields.UNIT_FIELD_LEVEL))
-                {
-                    return (int)Fields[Network.World.Enums.UpdateFields.UNIT_FIELD_LEVEL];
-                }
-
-                return 0;
-            }
-        }
-
-        internal bool IsAlive => Health > 0;
+        #region Public Properties
 
         public uint Health
         {
@@ -37,6 +18,20 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
                 return 0;
             }
         }
+
+        public int Level
+        {
+            get
+            {
+                if (Fields.ContainsKey(Network.World.Enums.UpdateFields.UNIT_FIELD_LEVEL))
+                {
+                    return (int)Fields[Network.World.Enums.UpdateFields.UNIT_FIELD_LEVEL];
+                }
+
+                return 0;
+            }
+        }
+
         public int PctHealth
         {
             get
@@ -50,6 +45,17 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             }
         }
 
+        #endregion Public Properties
+
+        #region Internal Properties
+
+        internal UnitInfo Infos { get; set; }
+        internal bool IsAlive => Health > 0;
+
+        #endregion Internal Properties
+
+        #region Internal Constructors
+
         internal Creature(Entity entity, UnitInfo unitInfo) : base(entity.Guid)
         {
             Type = entity.Type;
@@ -58,5 +64,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             Fields = entity.Fields;
             Infos = unitInfo;
         }
+
+        #endregion Internal Constructors
     }
 }

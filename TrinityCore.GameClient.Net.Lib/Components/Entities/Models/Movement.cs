@@ -1,14 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrinityCore.GameClient.Net.Lib.Network.World.Models;
+﻿using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 {
     public class Movement
     {
+        #region Public Properties
+
+        public Position Position
+        {
+            get => CalculatePosition();
+            set => _position = value;
+        }
+
+        #endregion Public Properties
+
+        #region Internal Properties
+
+        internal MovementHasTarget MovementHasTarget { get; set; }
+
+        internal MovementLiving MovementLiving { get; set; }
+
+        internal MovementPosition MovementPosition { get; set; }
+
+        internal MovementRotation MovementRotation { get; set; }
+
+        internal MovementStationary MovementStationary { get; set; }
+
+        #endregion Internal Properties
+
+        #region Private Fields
+
+        private Position _position;
+
+        #endregion Private Fields
+
+        #region Internal Constructors
+
         internal Movement()
         {
             MovementLiving = new MovementLiving();
@@ -17,18 +44,10 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             MovementHasTarget = new MovementHasTarget();
             MovementRotation = new MovementRotation();
         }
-        internal MovementLiving MovementLiving { get; set; }
-        internal MovementPosition MovementPosition { get; set; }
-        internal MovementStationary MovementStationary { get; set; }
-        internal MovementHasTarget MovementHasTarget { get; set; }
-        internal MovementRotation MovementRotation { get; set; }
 
-        private Position _position;
-        public Position Position
-        {
-            get => CalculatePosition();
-            set => _position = value;
-        }
+        #endregion Internal Constructors
+
+        #region Private Methods
 
         private Position CalculatePosition()
         {
@@ -36,5 +55,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 
             return MovementLiving != null ? MovementLiving.Position : new Position();
         }
+
+        #endregion Private Methods
     }
 }

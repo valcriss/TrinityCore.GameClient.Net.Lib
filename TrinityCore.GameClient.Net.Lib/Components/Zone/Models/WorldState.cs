@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Models
 {
@@ -26,7 +25,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Models
         #region Public Methods
 
         public override string ToString()
-        {      
+        {
             return $"MapId = {MapId}, ZoneId = {ZoneId}, AreaId = {AreaId}";
         }
 

@@ -1,20 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Models
+﻿namespace TrinityCore.GameClient.Net.Lib.Network.Auth.Models
 {
     public class AuthServerCredentials
     {
-        public string Username { get; set; }
+        #region Public Properties
+
         public string Password { get; set; }
+        public string Username { get; set; }
+
+        #endregion Public Properties
+
+        #region Public Constructors
 
         public AuthServerCredentials(string username, string password)
         {
             Username = username;
             Password = password;
         }
+
+        #endregion Public Constructors
     }
 }
