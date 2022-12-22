@@ -36,8 +36,10 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool LoginCharacter()
         {
-            GameClient = new GameClient(USERNAME, PASSWORD, HOSTNAME, PORT);
-            bool authAuthenticate = GameClient.Authenticate().Result;
+            GameClient = new GameClient();
+            AuthServerInfo authServer = new AuthServerInfo(HOSTNAME, PORT);
+            AuthServerCredentials credentials = new AuthServerCredentials(USERNAME, PASSWORD);
+            bool authAuthenticate = GameClient.Authenticate(authServer, credentials).Result;
 
             if (!authAuthenticate)
             {

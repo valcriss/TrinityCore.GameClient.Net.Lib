@@ -6,7 +6,7 @@ using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
 {
-    internal class ContactListInfo : ReceivablePacket<Network.World.Enums.WorldCommand>
+    internal class ContactListInfo : ReceivablePacket<WorldCommand>
     {
         #region Internal Properties
 

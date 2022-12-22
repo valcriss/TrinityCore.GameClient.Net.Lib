@@ -17,6 +17,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components
             WorldClient = worldClient;
         }
 
+        public virtual void Close()
+        {
+
+        }
+
         #endregion Protected Constructors
     }
 }

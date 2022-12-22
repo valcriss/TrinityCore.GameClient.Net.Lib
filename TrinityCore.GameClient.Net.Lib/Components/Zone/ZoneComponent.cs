@@ -29,7 +29,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone
         private bool InitWorldStatesInfo(InitWorldStatesInfo initWorldStates)
         {
             WorldState = initWorldStates.WorldState;
-            Logger.Append(Logging.Enums.LogCategory.ZONE, Logging.Enums.LogLevel.DEBUG, $"WorldState : {WorldState}");
+            Logger.Append(Logging.Enums.LogCategory.ZONE, Logging.Enums.LogLevel.INFORMATION, $"WorldState : {WorldState}");
             return true;
         }
 

@@ -41,6 +41,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
             WorldClient.PacketsHandler.RegisterHandler<ServerMotdInfo>(Network.World.Enums.WorldCommand.SMSG_MOTD, ServerMotdInfo);
             WorldClient.PacketsHandler.RegisterHandler<AccountDataTimesInfo>(Network.World.Enums.WorldCommand.SMSG_ACCOUNT_DATA_TIMES, AccountDataTimesInfo);
             WorldClient.PacketsHandler.RegisterHandler<LoginSetTimeSpeedInfo>(Network.World.Enums.WorldCommand.SMSG_LOGIN_SETTIMESPEED, LoginSetTimeSpeedInfo);
+            WorldClient.PacketsHandler.RegisterHandler<AddonInfo>(Network.World.Enums.WorldCommand.SMSG_ADDON_INFO, AddonInfo);
         }
 
         #endregion Internal Constructors
@@ -100,6 +101,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment
         {
             TutorialFlags = tutorialFlags.TutorialFlags;
             Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"TutorialFlags : {TutorialFlags}");
+            return true;
+        }
+
+        private bool AddonInfo(AddonInfo addonInfo)
+        {
+            Logger.Append(Logging.Enums.LogCategory.ENVIRONMENT, Logging.Enums.LogLevel.DEBUG, $"AddonInfo : Data Ignored");
             return true;
         }
 

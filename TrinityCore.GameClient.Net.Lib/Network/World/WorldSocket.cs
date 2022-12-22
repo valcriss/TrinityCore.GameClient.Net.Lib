@@ -22,6 +22,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         internal WorldSocket()
         {
             PacketsHandler = new PacketsHandler<WorldCommand>();
+            PacketsHandler.AddCompressed(WorldCommand.SMSG_COMPRESSED_UPDATE_OBJECT, WorldCommand.SMSG_UPDATE_OBJECT);
         }
 
         #endregion Internal Constructors

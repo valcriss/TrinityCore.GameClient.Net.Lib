@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Environment;
 using TrinityCore.GameClient.Net.Lib.Components.Factions;
 using TrinityCore.GameClient.Net.Lib.Components.Player;
@@ -22,16 +23,13 @@ namespace TrinityCore.GameClient.Net.Lib
         public PlayerComponent Player { get; set; }
         public SocialComponent Social { get; set; }
         public ZoneComponent Zone { get; set; }
+        public EntitiesComponent Entities { get; set; }
 
         #endregion Public Properties
 
         #region Private Properties
 
         private AuthClient AuthClient { get; set; }
-        private string Hostname { get; set; }
-        private string Password { get; set; }
-        private int Port { get; set; }
-        private string Username { get; set; }
         private WorldClient WorldClient { get; set; }
 
         #endregion Private Properties
@@ -44,13 +42,8 @@ namespace TrinityCore.GameClient.Net.Lib
 
         #region Public Constructors
 
-        public GameClient(string username, string password, string hostname, int port = 3724)
+        public GameClient()
         {
-            Username = username;
-            Password = password;
-            Hostname = hostname;
-            Port = port;
-
             AuthClient = new AuthClient();
             WorldClient = new WorldClient();
 
@@ -60,15 +53,16 @@ namespace TrinityCore.GameClient.Net.Lib
             Player = new PlayerComponent(WorldClient);
             Social = new SocialComponent(WorldClient);
             Zone = new ZoneComponent(WorldClient);
+            Entities = new EntitiesComponent(WorldClient, Player);
         }
 
         #endregion Public Constructors
 
         #region Public Methods
 
-        public async Task<bool> Authenticate()
+        public async Task<bool> Authenticate(AuthServerInfo authServer, AuthServerCredentials credentials)
         {
-            return await AuthClient.Authenticate(Hostname, Port, Username, Password);
+            return await AuthClient.Authenticate(authServer, credentials);
         }
 
         public async Task<bool> ConnectToRealm(WorldServerInfo realm)
@@ -99,7 +93,12 @@ namespace TrinityCore.GameClient.Net.Lib
 
         public async Task<bool> LogOut()
         {
-            return await WorldClient.LogOut();
+            bool result = await WorldClient.LogOut();
+            if(result)
+            {
+                Entities.Close();
+            }
+            return result;
         }
 
         #endregion Public Methods

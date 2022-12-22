@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private WorldPlayerState PlayerState { get; set; }
         private WorldState State { get; set; }
         private WorldServerInfo WorldServer { get; set; }
-
+        internal Query Query { get; set; }
         #endregion Private Properties
 
         #region Private Fields
@@ -52,6 +53,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
 
         internal WorldClient()
         {
+            Query = new Query(this);
             AuthenticateDone = new ManualResetEvent(false);
             CharacterListDone = new ManualResetEvent(false);
             CharacterLoginDone = new ManualResetEvent(false);
@@ -69,6 +71,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             PacketsHandler.RegisterHandler<ClientLogOutResponse>(WorldCommand.SMSG_LOGOUT_RESPONSE, ClientLogOutResponse);
             PacketsHandler.RegisterHandler<ClientLogOutComplete>(WorldCommand.SMSG_LOGOUT_COMPLETE, ClientLogOutComplete);
             PacketsHandler.RegisterHandler<ServerTimeSyncRequest>(WorldCommand.SMSG_TIME_SYNC_REQ, ServerTimeSyncRequest);
+
+            // Ignored
+            PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_ACTION_BUTTONS, IgnoredMessage);
+            PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_SPELL_GO, IgnoredMessage);
+            //PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_SPELL_GO, IgnoredMessage);
 
             KeepAliveTimer = new System.Timers.Timer(15000) { Enabled = true };
             KeepAliveTimer.Elapsed += HandleKeepAlive;
@@ -134,6 +141,15 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         }
 
         #endregion Public Methods
+
+        #region Internal Methods
+
+        internal Character GetCharacter()
+        {
+            return this.Character;
+        }
+
+        #endregion
 
         #region Protected Methods
 
@@ -230,6 +246,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private bool ServerTimeSyncRequest(ServerTimeSyncRequest timeSyncRequest)
         {
             return Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
+        }      
+        
+        private bool IgnoredMessage(IgnoredMessage ignoredMessage)
+        {
+            return true;
         }
 
         #endregion Private Methods

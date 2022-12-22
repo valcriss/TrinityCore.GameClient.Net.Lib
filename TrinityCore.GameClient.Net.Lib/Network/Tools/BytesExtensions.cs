@@ -1,6 +1,9 @@
-﻿using System;
+﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using System;
+using System.IO;
 using System.Numerics;
 using System.Text;
+using TrinityCore.GameClient.Net.Lib.Logging;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Tools
 {
@@ -53,6 +56,32 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             }
 
             return builder.ToString();
+        }
+
+        internal static byte[] Decompress(this byte[] data)
+        {
+            try
+            {
+                int length = (int)BitConverter.ToUInt32(data, 0);
+                byte[] output = new byte[length];
+                byte[] buffer = data.Split(4, data.Length - 4);
+
+                Stream s = new InflaterInputStream(new MemoryStream(buffer));
+                int offset = 0;
+                while (true)
+                {
+                    int size = s.Read(output, offset, length);
+                    if (size == length) break;
+                    offset += size;
+                    length -= size;
+                }
+
+                return output;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         internal static byte[] Split(this byte[] data, int startIndex, int length)

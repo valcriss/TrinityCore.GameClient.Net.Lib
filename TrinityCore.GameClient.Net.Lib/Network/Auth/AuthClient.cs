@@ -51,13 +51,13 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Auth
 
         #region Public Methods
 
-        public async Task<bool> Authenticate(string host, int port, string username, string password)
+        public async Task<bool> Authenticate(AuthServerInfo authServer, AuthServerCredentials credentials)
         {
             return await Task.Run(() =>
             {
-                Credentials = new AuthCredentials(username, password);
+                Credentials = new AuthCredentials(credentials.Username, credentials.Password);
                 State = AuthState.DISCONNECTED;
-                if (!Connect(host, port)) return false;
+                if (!Connect(authServer.Hostname, authServer.Port)) return false;
                 AuthenticateDone.Reset();
                 AuthenticateDone.WaitOne(AUTHENTIFICATION_TIMEOUT);
                 return State == AuthState.AUTHENTICATED;

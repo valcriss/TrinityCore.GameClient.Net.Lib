@@ -26,14 +26,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone.Models
         #region Public Methods
 
         public override string ToString()
-        {
-            StringBuilder result = new StringBuilder();
-            result.Append($"MapId : {MapId}, ZoneId : {ZoneId}, AreaId : {AreaId}, ");
-            foreach (KeyValuePair<uint, uint> item in Variables)
-            {
-                result.Append($"{item.Key} -> {item.Value}, ");
-            }
-            return result.ToString().Substring(0, result.Length - 2);
+        {      
+            return $"MapId = {MapId}, ZoneId = {ZoneId}, AreaId = {AreaId}";
         }
 
         public void UpdateVariable(uint id, uint value)

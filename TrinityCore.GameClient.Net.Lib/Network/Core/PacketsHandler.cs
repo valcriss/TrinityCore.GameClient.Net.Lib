@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Logging;
+using TrinityCore.GameClient.Net.Lib.Network.Tools;
+using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    internal class PacketsHandler<T>
+    internal class PacketsHandler<T> where T : struct, IConvertible
     {
         #region Internal Classes
 
@@ -27,7 +29,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         #endregion Internal Properties
 
         #region Private Properties
-
+        private Dictionary<T, T> CompressedCommands { get; }
         private List<T> Ignored { get; set; }
 
         #endregion Private Properties
@@ -36,6 +38,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         internal PacketsHandler()
         {
+            CompressedCommands = new Dictionary<T, T>();
             Handlers = new Dictionary<T, List<PacketsHandlerItem>>();
             Ignored = new List<T>();
         }
@@ -44,8 +47,22 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
 
         #region Internal Methods
 
+        internal void AddCompressed(T source,T target)
+        {
+            CompressedCommands.Add(source, target);
+        }
+
         internal bool Handle(ReceivablePacket<T> packet)
         {
+
+            if (CompressedCommands.ContainsKey(packet.Command))
+            {
+                byte[] decompressed = packet.Content.Decompress();
+                if (decompressed == null) return false;
+                T decompressedCommand = CompressedCommands[packet.Command];
+                packet = new ReceivablePacket<T>(decompressedCommand, decompressed);
+            }
+
             if (!Handlers.ContainsKey(packet.Command))
             {
                 if (!Ignored.Contains(packet.Command))
