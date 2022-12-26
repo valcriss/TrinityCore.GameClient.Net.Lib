@@ -22,7 +22,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
             get
             {
                 float length = Length;
-                Position point = new Position { X = X / length, Y = Y / length, Z = Z / length };
+                Position point = new Position { X = X / length, Y = Y / length, Z = Z / length, O = O };
                 return point;
             }
         }

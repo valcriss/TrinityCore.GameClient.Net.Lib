@@ -44,6 +44,25 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             return encryptedSize;
         }
 
+        internal void AppendPacketGuid(UInt64 guid)
+        {
+            byte[] packGuid = new byte[8 + 1];
+            packGuid[0] = 0;
+            var size = 1;
+            for (byte i = 0; guid != 0; ++i)
+            {
+                if ((guid & 0xFF) != 0)
+                {
+                    packGuid[0] |= (byte)(1 << i);
+                    packGuid[size] = (byte)(guid & 0xFF);
+                    ++size;
+                }
+
+                guid >>= 8;
+            }
+            Append(packGuid.Take(size).ToArray());
+        }
+
         internal override byte[] GetData()
         {
             byte[] data = new byte[6 + Buffer.Length];

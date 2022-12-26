@@ -10,6 +10,7 @@ using TrinityCore.GameClient.Net.Lib.Components.Zone;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
 using TrinityCore.GameClient.Net.Lib.Network.World;
+using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib
@@ -50,10 +51,11 @@ namespace TrinityCore.GameClient.Net.Lib
             // Components
             Environment = new EnvironmentComponent(WorldClient);
             Factions = new FactionsComponent(WorldClient);
-            Player = new PlayerComponent(WorldClient);
+            Entities = new EntitiesComponent(WorldClient);
+            Player = new PlayerComponent(WorldClient, Entities);
             Social = new SocialComponent(WorldClient);
             Zone = new ZoneComponent(WorldClient);
-            Entities = new EntitiesComponent(WorldClient, Player);
+
         }
 
         #endregion Public Constructors
@@ -78,7 +80,7 @@ namespace TrinityCore.GameClient.Net.Lib
 
         public async Task<bool> EnterRealm(Character character)
         {
-            return await WorldClient.LoginCharacter(character);
+            return await WorldClient.LoginCharacter(character);            
         }
 
         public async Task<List<Character>> GetCharacters()

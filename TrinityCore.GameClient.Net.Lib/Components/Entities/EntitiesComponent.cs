@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Components.Player;
@@ -26,9 +28,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 
         #region Public Constructors
 
-        public EntitiesComponent(WorldClient worldClient, PlayerComponent player) : base(worldClient)
+        public EntitiesComponent(WorldClient worldClient) : base(worldClient)
         {
-            Player = player;
             Collection = new EntitiesCollection(worldClient);
             WorldClient.PacketsHandler.RegisterHandler<PowerUpdateInfo>(Network.World.Enums.WorldCommand.SMSG_POWER_UPDATE, PowerUpdateInfo);
             WorldClient.PacketsHandler.RegisterHandler<UpdateObjectInfo>(Network.World.Enums.WorldCommand.SMSG_UPDATE_OBJECT, UpdateObjectInfo);
@@ -113,11 +114,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 
         private bool PowerUpdateInfo(PowerUpdateInfo powerUpdateInfo)
         {
-            if (Player.Guid.Equals(powerUpdateInfo.Guid))
-            {
-                Player.UpdatePower(powerUpdateInfo.Power, powerUpdateInfo.Value);
-                return true;
-            }
+            Entity entity = Collection.GetUnit(powerUpdateInfo.Guid);
+            entity.UpdatePower(powerUpdateInfo.Power, powerUpdateInfo.Value);
             Logger.Append(Logging.Enums.LogCategory.PLAYER, Logging.Enums.LogLevel.DEBUG, $"Update entity {powerUpdateInfo.Guid}  Power : {powerUpdateInfo.Power} = {powerUpdateInfo.Value}");
             return true;
         }
@@ -163,6 +161,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
             }
 
             return true;
+        }
+
+        public Models.Player FindPlayerByName(string name)
+        {
+            return Collection.Players.Values.Where(c => c.Name == name).FirstOrDefault();
         }
 
         #endregion Private Methods

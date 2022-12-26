@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming;
+using TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Outgoing;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Player.Models;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Logging.Enums;
 using TrinityCore.GameClient.Net.Lib.Logging.Tools;
 using TrinityCore.GameClient.Net.Lib.Network.World;
+using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
+using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Player
 {
@@ -25,6 +29,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         public List<Spell> Spells { get; set; }
         public List<Spell> UnlearnedSpells { get; set; }
 
+        public Position Position { get { return Entities.Collection.GetPlayer().GetPosition(); } set { Entities.Collection.GetPlayer().UpdatePosition(value); } }
+
         #endregion Public Properties
 
         #region Internal Properties
@@ -36,13 +42,18 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         #region Private Properties
 
         private Dictionary<Powers, UInt32> Powers { get; set; }
+        private EntitiesComponent Entities { get; set; }
+
+        private bool MovementInitialized { get; set; }
 
         #endregion Private Properties
 
         #region Public Constructors
 
-        public PlayerComponent(WorldClient worldClient) : base(worldClient)
+        public PlayerComponent(WorldClient worldClient, EntitiesComponent entities) : base(worldClient)
         {
+            MovementInitialized = false;
+            Entities = entities;
             Spells = new List<Spell>();
             UnlearnedSpells = new List<Spell>();
             Powers = new Dictionary<Powers, uint>();
@@ -150,6 +161,44 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                     break;
             }
             return true;
+        }
+
+        public bool Face(Entities.Models.Entity target)
+        {
+            Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing entity : " + target.Guid);
+            return Face(target.GetPosition());
+        }
+
+        public bool Face(float angle)
+        {
+            Position current = Position;
+            if (Math.Abs(current.O - angle) > 0.01f)
+            {
+                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing angle : " + angle);
+                current.O = angle;
+                Position = current;
+                ActivlyMoving();
+                return WorldClient.Send(new FacingMovement((ulong)Guid, Position, false));
+            }
+            return false;
+        }
+
+        public bool Face(Position destination)
+        {
+            Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing position : " + destination);
+            float angle = (destination - Position).Direction.O;
+            return Face(angle);
+        }
+
+        private void ActivlyMoving()
+        {
+            if(!MovementInitialized)
+            {
+                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending ActivlyMoving : " + Guid);
+                WorldClient.Send(new ActivlyMoving((ulong)Guid));
+                MovementInitialized = true;
+            }
+
         }
 
         #endregion Private Methods
