@@ -29,6 +29,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         public List<Spell> Spells { get; set; }
         public List<Spell> UnlearnedSpells { get; set; }
 
+        public bool IsStanding { get; set; }
+
         public Position Position { get { return Entities.Collection.GetPlayer().GetPosition(); } set { Entities.Collection.GetPlayer().UpdatePosition(value); } }
 
         #endregion Public Properties
@@ -52,6 +54,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         public PlayerComponent(WorldClient worldClient, EntitiesComponent entities) : base(worldClient)
         {
+            IsStanding = true;
             MovementInitialized = false;
             Entities = entities;
             Spells = new List<Spell>();
@@ -69,6 +72,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             WorldClient.PacketsHandler.RegisterHandler<AllAchievementDataInfo>(WorldCommand.SMSG_ALL_ACHIEVEMENT_DATA, AllAchievementDataInfo);
             WorldClient.PacketsHandler.RegisterHandler<EquipmentSetList>(WorldCommand.SMSG_EQUIPMENT_SET_LIST, EquipmentSetList);
             WorldClient.PacketsHandler.RegisterHandler<QuestGiverStatusMultiple>(WorldCommand.SMSG_QUESTGIVER_STATUS_MULTIPLE, QuestGiverStatusMultiple);
+            WorldClient.PacketsHandler.RegisterHandler<StandStateUpdateInfo>(WorldCommand.SMSG_STANDSTATE_UPDATE, StandStateUpdateInfo);
         }
 
         #endregion Public Constructors
@@ -165,8 +169,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         public bool Face(Entities.Models.Entity target)
         {
-            Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing entity : " + target.Guid);
-            return Face(target.GetPosition());
+            bool result = Face(target.GetPosition());
+            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing entity : " + target.Guid);
+            return result;
         }
 
         public bool Face(float angle)
@@ -185,14 +190,29 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         public bool Face(Position destination)
         {
-            Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing position : " + destination);
             float angle = (destination - Position).Direction.O;
-            return Face(angle);
+            bool result = Face(angle);
+            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing position : " + destination);
+            return result;
+        }
+
+        public bool Stand(bool value)
+        {
+            if (value == IsStanding)
+                return false;
+
+            return WorldClient.Send(new StandPositionRequest((ulong)Guid, value ? UnitStandStateType.UNIT_STAND_STATE_STAND : UnitStandStateType.UNIT_STAND_STATE_SIT));
+        }
+
+        private bool StandStateUpdateInfo(StandStateUpdateInfo stateUpdateInfo)
+        {
+            IsStanding = stateUpdateInfo.StandType == UnitStandStateType.UNIT_STAND_STATE_STAND;
+            return true;
         }
 
         private void ActivlyMoving()
         {
-            if(!MovementInitialized)
+            if (!MovementInitialized)
             {
                 Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending ActivlyMoving : " + Guid);
                 WorldClient.Send(new ActivlyMoving((ulong)Guid));

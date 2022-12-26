@@ -34,60 +34,36 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             AuthServerInfo authServer = new AuthServerInfo(configuration.Host, configuration.Port);
             AuthServerCredentials credentials = new AuthServerCredentials(configuration.Login, configuration.Password);
             bool authAuthenticate = GameClient.Authenticate(authServer, credentials).Result;
-
+            
             if (!authAuthenticate)
             {
-                AnsiConsole.MarkupLine("AuthClient authentification  [red]FAILED[/]");
                 return false;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("AuthClient authentification  [green]OK[/]");
             }
 
             List<WorldServerInfo> realms = GameClient.GetRealms().Result;
             if (realms == null || realms.Count < 1)
             {
-                AnsiConsole.MarkupLine("Retreive realms list         [red]FAILED[/]");
                 return false;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("Retreive realms list         [green]OK[/]");
             }
 
             bool worldAuthenticate = GameClient.ConnectToRealm(realms[0]).Result;
             if (!worldAuthenticate)
             {
-                AnsiConsole.MarkupLine("WorldClient authentification [red]FAILED[/]");
                 return false;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("WorldClient authentification [green]OK[/]");
             }
 
             List<Character> characters = GameClient.GetCharacters().Result;
             if (characters == null || characters.Count < 1)
             {
-                AnsiConsole.MarkupLine("Retreive characters list     [red]FAILED[/]");
                 return false;
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("Retreive characters list     [green]OK[/]");
             }
 
             bool characterLogin = GameClient.EnterRealm(characters[0]).Result;
             if (!characterLogin)
             {
-                AnsiConsole.MarkupLine("Character login              [red]FAILED[/]");
                 return false;
             }
-            else
-            {
-                AnsiConsole.MarkupLine("Character login              [green]OK[/]");
-            }
+           
             return true;
         }
 
@@ -116,19 +92,29 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             Logger.RegisterHandler("spectre", new SpectreLoggerHandler(minLevel));
             Console.CancelKeyPress += ConsoleCancelKeyPress;
             AnsiConsole.MarkupLine("[underline white]TrinityCore GameClient .Net Lib Sample[/]");
-
+            AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
             bool login = LoginCharacter(configuration);
-            if (!login) return;
+            if (!login)
+            {
+               
+                AnsiConsole.MarkupLine("[red]Unable to log into game[/]");
+                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth,'-')+ "[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[green]Log into game successfull[/]");
+                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
+                Bot bot = new Bot(GameClient);
+                bot.Start();
 
-            Bot bot = new Bot(GameClient);
-            bot.Start();
-
-            Running.WaitOne();
-
-            bot.Stop();
-            AnsiConsole.MarkupLine("[white]Sending logout[/]");
-            bool logout = GameClient.LogOut().Result;
-            if (!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
+                Running.WaitOne();
+                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
+                AnsiConsole.MarkupLine("[yellow]Starting logoff process[/]");
+                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
+                bot.Stop();
+                bool logout = GameClient.LogOut().Result;
+                if (!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
+            }
         }
 
         private static T Select<T>(List<T> items, string type)
