@@ -31,8 +31,8 @@ You can install the library by its nuget package : [TrinityCore.GameClient.Net.L
 ### What i am currently working on :
 **Working on moving the player :**
 - [x] Facing a position or facing a specific angle
+- [x] Sit and stand
 - [ ] Moving forward, backward, strafe, walking, running and sending movement heartbeats
-- [ ] Sit and stand
 - [ ] Jumps
 
 ---
