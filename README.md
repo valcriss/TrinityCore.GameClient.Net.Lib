@@ -23,7 +23,7 @@ _Have a nice day_
 - [x] Stay connected
 - [x] Getting world properties
 - [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
-- [x] Facing a position or facing a specific angle
+- [x] Facing an entity, a position or a specific angle
 - [x] Sit and stand
 - [x] Player chatting (say,group,shout,etc...)
 - [x] Player doing emotes
