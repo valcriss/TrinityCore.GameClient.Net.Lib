@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Text;
 using TrinityCore.GameClient.Net.Lib.Network.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.Core
@@ -48,6 +49,14 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         internal void Append(uint value)
         {
             Buffer = Buffer.Append(BitConverter.GetBytes(value));
+        }
+
+        internal void Append(string message)
+        {
+            byte[] value = UTF8Encoding.UTF8.GetBytes(message);
+            byte[] content = new byte[value.Length + 1];
+            Array.ConstrainedCopy(value, 0, content, 0, value.Length);
+            Append(content);
         }
 
         internal void Append(ulong value)
@@ -111,6 +120,34 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             ReadIndex += length;
             return value;
         }
+
+        protected string ReadUInt32String()
+        {
+            UInt32 length = ReadUInt32();
+            if (length == 0) return string.Empty;
+            byte[] raw = ReadBytes((int)length);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < raw.Length; i++)
+            {
+                if (raw[i] != 0)
+                    builder.Append((char)raw[i]);
+            }
+            return builder.ToString();
+        }
+
+        protected string ReadInt32String()
+        {
+            Int32 length = ReadInt32();
+            byte[] raw = ReadBytes((int)length);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < raw.Length; i++)
+            {
+                if (raw[i] != 0)
+                    builder.Append((char)raw[i]);
+            }
+            return builder.ToString();
+        }
+
 
         protected int ReadInt32()
         {
@@ -198,6 +235,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             ulong value = BitConverter.ToUInt64(Buffer, ReadIndex);
             ReadIndex += 8;
             return value;
+        }
+
+        protected bool IsDataLeft()
+        {
+            return Buffer.Length > ReadIndex;
         }
 
         protected Vector3 ReadVector3()

@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using TrinityCore.GameClient.Net.Lib.Logging;
+using TrinityCore.GameClient.Net.Lib.Logging.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.Auth;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Security;
@@ -76,6 +78,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             PacketsHandler.RegisterHandler<ClientLogOutResponse>(WorldCommand.SMSG_LOGOUT_RESPONSE, ClientLogOutResponse);
             PacketsHandler.RegisterHandler<ClientLogOutComplete>(WorldCommand.SMSG_LOGOUT_COMPLETE, ClientLogOutComplete);
             PacketsHandler.RegisterHandler<ServerTimeSyncRequest>(WorldCommand.SMSG_TIME_SYNC_REQ, ServerTimeSyncRequest);
+            PacketsHandler.RegisterHandler<NotificationInfo>(WorldCommand.SMSG_NOTIFICATION, NotificationInfo);
 
             // Ignored
             PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_ACTION_BUTTONS, IgnoredMessage);
@@ -256,6 +259,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         private bool ServerTimeSyncRequest(ServerTimeSyncRequest timeSyncRequest)
         {
             return Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
+        }
+
+        private bool NotificationInfo(NotificationInfo notificationInfo)
+        {
+            Logger.Append(LogCategory.NETWORK, LogLevel.WARNING, "Notification : " + notificationInfo.Message);
+            return true;
         }
 
         #endregion Private Methods

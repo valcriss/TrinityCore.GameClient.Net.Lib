@@ -23,6 +23,10 @@ _Have a nice day_
 - [x] Stay connected
 - [x] Getting world properties
 - [x] Realtime entities (players, npcs, creatures, world items, gameobjects) properties (name, stats, position) update
+- [x] Facing a position or facing a specific angle
+- [x] Sit and stand
+- [x] Player chatting (say,group,shout,etc...)
+- [x] Player doing emotes
 
 ## How can i install the library ?
 You can install the library by its nuget package : [TrinityCore.GameClient.Net.Lib](https://www.nuget.org/packages/TrinityCore.GameClient.Net.Lib/)
@@ -30,8 +34,6 @@ You can install the library by its nuget package : [TrinityCore.GameClient.Net.L
 ---
 ### What i am currently working on :
 **Working on moving the player :**
-- [x] Facing a position or facing a specific angle
-- [x] Sit and stand
 - [ ] Moving forward, backward, strafe, walking, running and sending movement heartbeats
 - [ ] Jumps
 
@@ -39,8 +41,6 @@ You can install the library by its nuget package : [TrinityCore.GameClient.Net.L
 ### What will i do next :
 - [ ] Player melee attack.
 - [ ] Player joining a group.
-- [ ] Player chatting (say,group,shout,etc...)
-- [ ] Player doing emotes
 - [ ] Player casting spells
 - [ ] Player looting
 - [ ] Player interracting with npc

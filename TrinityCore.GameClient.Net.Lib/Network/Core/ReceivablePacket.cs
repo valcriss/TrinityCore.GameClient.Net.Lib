@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Network.Core
 {
-    internal class ReceivablePacket<T> : Packet
+    public class ReceivablePacket<T> : Packet
     {
         #region Internal Properties
 
