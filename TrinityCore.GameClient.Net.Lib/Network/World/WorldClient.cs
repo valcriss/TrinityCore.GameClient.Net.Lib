@@ -83,7 +83,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             // Ignored
             PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_ACTION_BUTTONS, IgnoredMessage);
             PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_SPELL_GO, IgnoredMessage);
-            //PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_SPELL_GO, IgnoredMessage);
+            PacketsHandler.RegisterHandler<IgnoredMessage>(WorldCommand.SMSG_LFG_AUTOJOIN_FAILED, IgnoredMessage);
 
             KeepAliveTimer = new System.Timers.Timer(15000) { Enabled = true };
             KeepAliveTimer.Elapsed += HandleKeepAlive;
@@ -234,6 +234,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             return CharacterLoginDone.Set();
         }
 
+        private bool NotificationInfo(NotificationInfo notificationInfo)
+        {
+            Logger.Append(LogCategory.NETWORK, LogLevel.WARNING, "Notification : " + notificationInfo.Message);
+            return true;
+        }
+
         private void OnGameSocketConnected()
         {
             State = WorldState.CONNECTED;
@@ -261,13 +267,6 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
             return Send(new ClientTimeSyncResponse(timeSyncRequest.SyncNextCounter));
         }
 
-        private bool NotificationInfo(NotificationInfo notificationInfo)
-        {
-            Logger.Append(LogCategory.NETWORK, LogLevel.WARNING, "Notification : " + notificationInfo.Message);
-            return true;
-        }
-
         #endregion Private Methods
-
     }
 }

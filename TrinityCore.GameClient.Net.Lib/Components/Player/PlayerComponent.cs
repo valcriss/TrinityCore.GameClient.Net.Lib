@@ -22,16 +22,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         public WorldPoint BindPoint { get; set; }
         public List<EquipmentSet> EquipmentSets { get; set; }
+
         public UInt64? Guid
         { get { if (WorldClient.GetCharacter() != null) { return WorldClient.GetCharacter().GUID; } return null; } }
-        public TalentCollection PetTalents { get; set; }
-        public PlayerTalentCollection PlayerTalents { get; set; }
-        public List<Spell> Spells { get; set; }
-        public List<Spell> UnlearnedSpells { get; set; }
 
         public bool IsStanding { get; set; }
+        public TalentCollection PetTalents { get; set; }
+        public PlayerTalentCollection PlayerTalents { get; set; }
 
-        public Position Position { get { return Entities.Collection.GetPlayer().GetPosition(); } set { Entities.Collection.GetPlayer().UpdatePosition(value); } }
+        public Position Position
+        { get { return Entities.Collection.GetPlayer().GetPosition(); } set { Entities.Collection.GetPlayer().UpdatePosition(value); } }
+
+        public List<Spell> Spells { get; set; }
+        public List<Spell> UnlearnedSpells { get; set; }
 
         #endregion Public Properties
 
@@ -43,10 +46,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         #region Private Properties
 
-        private Dictionary<Powers, UInt32> Powers { get; set; }
+        private bool CanMove { get; set; }
         private EntitiesComponent Entities { get; set; }
-
+        private bool IsInCombat { get; set; }
         private bool MovementInitialized { get; set; }
+        private Dictionary<Powers, UInt32> Powers { get; set; }
 
         #endregion Private Properties
 
@@ -54,7 +58,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         public PlayerComponent(WorldClient worldClient, EntitiesComponent entities) : base(worldClient)
         {
+            IsInCombat = false;
             IsStanding = true;
+            CanMove = true;
             MovementInitialized = false;
             Entities = entities;
             Spells = new List<Spell>();
@@ -73,9 +79,55 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             WorldClient.PacketsHandler.RegisterHandler<EquipmentSetList>(WorldCommand.SMSG_EQUIPMENT_SET_LIST, EquipmentSetList);
             WorldClient.PacketsHandler.RegisterHandler<QuestGiverStatusMultiple>(WorldCommand.SMSG_QUESTGIVER_STATUS_MULTIPLE, QuestGiverStatusMultiple);
             WorldClient.PacketsHandler.RegisterHandler<StandStateUpdateInfo>(WorldCommand.SMSG_STANDSTATE_UPDATE, StandStateUpdateInfo);
+            WorldClient.PacketsHandler.RegisterHandler<MoveRootInfo>(WorldCommand.SMSG_FORCE_MOVE_ROOT, MoveRootInfo);
+            WorldClient.PacketsHandler.RegisterHandler<MoveRootInfo>(WorldCommand.SMSG_FORCE_MOVE_UNROOT, MoveRootInfo);
+            WorldClient.PacketsHandler.RegisterHandler<CancelCombatRequest>(WorldCommand.SMSG_CANCEL_COMBAT, CancelCombatRequest);
         }
 
         #endregion Public Constructors
+
+        #region Public Methods
+
+        public bool Face(Entities.Models.Entity target)
+        {
+            bool result = Face(target.GetPosition());
+            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing entity : " + target.Guid);
+            return result;
+        }
+
+        public bool Face(float angle)
+        {
+            if (!CanMove) return false;
+            Position current = Position;
+            if (Math.Abs(current.O - angle) > 0.01f)
+            {
+                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing angle : " + angle);
+                current.O = angle;
+                Position = current;
+                ActivlyMoving();
+                return WorldClient.Send(new FacingMovement((ulong)Guid, Position, false));
+            }
+            return false;
+        }
+
+        public bool Face(Position destination)
+        {
+            float angle = (destination - Position).Direction.O;
+            bool result = Face(angle);
+            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing position : " + destination);
+            return result;
+        }
+
+        public bool Stand(bool value)
+        {
+            if (!CanMove) return false;
+            if (value == IsStanding)
+                return false;
+
+            return WorldClient.Send(new StandPositionRequest((ulong)Guid, value ? UnitStandStateType.UNIT_STAND_STATE_STAND : UnitStandStateType.UNIT_STAND_STATE_SIT));
+        }
+
+        #endregion Public Methods
 
         #region Internal Methods
 
@@ -94,6 +146,16 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         #region Private Methods
 
+        private void ActivlyMoving()
+        {
+            if (!MovementInitialized)
+            {
+                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending ActivlyMoving : " + Guid);
+                WorldClient.Send(new ActivlyMoving((ulong)Guid));
+                MovementInitialized = true;
+            }
+        }
+
         private bool AllAchievementDataInfo(AllAchievementDataInfo allAchievementDataInfo)
         {
             // TODO : do something with that
@@ -104,6 +166,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         {
             BindPoint = bindPointUpdate.BindPoint;
             Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Bind Point : " + BindPoint.ToString());
+            return true;
+        }
+
+        private bool CancelCombatRequest(CancelCombatRequest cancelCombatRequest)
+        {
+            IsInCombat = false;
             return true;
         }
 
@@ -120,9 +188,21 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
             return true;
         }
 
+        private bool MoveRootInfo(MoveRootInfo moveRootInfo)
+        {
+            CanMove = moveRootInfo.CanMove;
+            return true;
+        }
+
         private bool QuestGiverStatusMultiple(QuestGiverStatusMultiple questGiverStatusMultiple)
         {
             QuestsGiverStatuses = questGiverStatusMultiple.GiverStatuses;
+            return true;
+        }
+
+        private bool StandStateUpdateInfo(StandStateUpdateInfo stateUpdateInfo)
+        {
+            IsStanding = stateUpdateInfo.StandType == UnitStandStateType.UNIT_STAND_STATE_STAND;
             return true;
         }
 
@@ -165,60 +245,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                     break;
             }
             return true;
-        }
-
-        public bool Face(Entities.Models.Entity target)
-        {
-            bool result = Face(target.GetPosition());
-            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing entity : " + target.Guid);
-            return result;
-        }
-
-        public bool Face(float angle)
-        {
-            Position current = Position;
-            if (Math.Abs(current.O - angle) > 0.01f)
-            {
-                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing angle : " + angle);
-                current.O = angle;
-                Position = current;
-                ActivlyMoving();
-                return WorldClient.Send(new FacingMovement((ulong)Guid, Position, false));
-            }
-            return false;
-        }
-
-        public bool Face(Position destination)
-        {
-            float angle = (destination - Position).Direction.O;
-            bool result = Face(angle);
-            if (result) Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing position : " + destination);
-            return result;
-        }
-
-        public bool Stand(bool value)
-        {
-            if (value == IsStanding)
-                return false;
-
-            return WorldClient.Send(new StandPositionRequest((ulong)Guid, value ? UnitStandStateType.UNIT_STAND_STATE_STAND : UnitStandStateType.UNIT_STAND_STATE_SIT));
-        }
-
-        private bool StandStateUpdateInfo(StandStateUpdateInfo stateUpdateInfo)
-        {
-            IsStanding = stateUpdateInfo.StandType == UnitStandStateType.UNIT_STAND_STATE_STAND;
-            return true;
-        }
-
-        private void ActivlyMoving()
-        {
-            if (!MovementInitialized)
-            {
-                Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending ActivlyMoving : " + Guid);
-                WorldClient.Send(new ActivlyMoving((ulong)Guid));
-                MovementInitialized = true;
-            }
-
         }
 
         #endregion Private Methods
