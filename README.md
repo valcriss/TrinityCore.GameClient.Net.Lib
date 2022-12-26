@@ -46,4 +46,25 @@ You can install the library by its nuget package : [TrinityCore.GameClient.Net.L
 - [ ] Player interracting with npc
 - [ ] Player begging for some gold or an item
 
+---
+### Connecting to a Trinity Core 3.3.5 Server
+```csharp
+var gameClient = new GameClient();
+var authServer = new AuthServerInfo("<serveur host>", 3724);
+var credentials = new AuthServerCredentials("<login>", "<password>");
 
+// Authenticating to the auth server
+bool authAuthenticate = await gameClient.Authenticate(authServer, credentials);
+
+// Retrieving realms list
+List<WorldServerInfo> realms = await gameClient.GetRealms();
+
+// Authenticating to the realm server
+bool worldAuthenticate = await gameClient.ConnectToRealm(realms[0]);
+
+// Retreiving the characters list
+List<Character> characters = await gameClient.GetCharacters();
+
+// Log the characters into the realm
+bool characterLogin = await gameClient.EnterRealm(characters[0]);
+```
