@@ -1,39 +1,43 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
     public class Configuration
     {
-        [JsonProperty("host")]
-        public string Host { get; set; }
-
-        [JsonProperty("port")]
-        public int Port { get; set; }
-
-        [JsonProperty("login")]
-        public string Login { get; set; }
-
-        [JsonProperty("password")]
-        public string Password { get; set; }
+        #region Public Properties
 
         [JsonProperty("dataPath")]
         public string DataPath { get; set; }
 
-        [JsonProperty("logLevel")]
-        public string LogLevel { get; set; }
+        [JsonProperty("host")]
+        public string Host { get; set; }
 
         [Newtonsoft.Json.JsonIgnore]
         public bool IsValid => !string.IsNullOrEmpty(Host) && !string.IsNullOrEmpty(Login) && !string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(DataPath) && Port > 0;
 
+        [JsonProperty("login")]
+        public string Login { get; set; }
+
+        [JsonProperty("logLevel")]
+        public string LogLevel { get; set; }
+
+        [JsonProperty("password")]
+        public string Password { get; set; }
+
+        [JsonProperty("port")]
+        public int Port { get; set; }
+
+        #endregion Public Properties
+
+        #region Private Properties
 
         private string Directory { get; set; }
         private string Filename { get; set; }
+
+        #endregion Private Properties
+
+        #region Public Constructors
 
         public Configuration()
         {
@@ -41,11 +45,9 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             Filename = System.IO.Path.Combine(Directory, "configuration.json");
         }
 
-        public void Save()
-        {
-            string objContent = JsonConvert.SerializeObject(this);
-            System.IO.File.WriteAllText(Filename, objContent);
-        }
+        #endregion Public Constructors
+
+        #region Public Methods
 
         public static Configuration Load()
         {
@@ -60,11 +62,18 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             }
             catch (Exception)
             {
-
             }
             string objContent = JsonConvert.SerializeObject(configuration);
             System.IO.File.WriteAllText(configuration.Filename, objContent);
             return configuration;
         }
+
+        public void Save()
+        {
+            string objContent = JsonConvert.SerializeObject(this);
+            System.IO.File.WriteAllText(Filename, objContent);
+        }
+
+        #endregion Public Methods
     }
 }

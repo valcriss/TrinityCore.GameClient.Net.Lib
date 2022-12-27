@@ -1,13 +1,12 @@
-﻿using Microsoft.VisualBasic;
-using Spectre.Console;
+﻿using Spectre.Console;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Logging.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.Auth.Models;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
+using TrinityCore.GameClient.Net.Lib.Sample.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample
 {
@@ -30,11 +29,13 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         private static bool LoginCharacter(Configuration configuration)
         {
-            GameClient = new GameClient();
             AuthServerInfo authServer = new AuthServerInfo(configuration.Host, configuration.Port);
             AuthServerCredentials credentials = new AuthServerCredentials(configuration.Login, configuration.Password);
-            bool authAuthenticate = GameClient.Authenticate(authServer, credentials).Result;
-            
+
+            GameClient = GameClient.Factory(configuration.DataPath, authServer, credentials);
+
+            bool authAuthenticate = GameClient.Authenticate().Result;
+
             if (!authAuthenticate)
             {
                 return false;
@@ -63,7 +64,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             {
                 return false;
             }
-           
+
             return true;
         }
 
@@ -96,22 +97,18 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             bool login = LoginCharacter(configuration);
             if (!login)
             {
-               
                 AnsiConsole.MarkupLine("[red]Unable to log into game[/]");
-                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth,'-')+ "[/]");
+                AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
             }
             else
             {
                 AnsiConsole.MarkupLine("[green]Log into game successfull[/]");
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
-                Bot bot = new Bot(GameClient);
-                bot.Start();
-
+                Bot bot = new Bot();
                 Running.WaitOne();
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
                 AnsiConsole.MarkupLine("[yellow]Starting logoff process[/]");
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
-                bot.Stop();
                 bool logout = GameClient.LogOut().Result;
                 if (!logout) AnsiConsole.MarkupLine("[red]Unable to logout[/]");
             }

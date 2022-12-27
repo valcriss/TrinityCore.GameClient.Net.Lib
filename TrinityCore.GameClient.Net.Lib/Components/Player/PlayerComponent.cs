@@ -31,7 +31,16 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         public PlayerTalentCollection PlayerTalents { get; set; }
 
         public Position Position
-        { get { return Entities.Collection.GetPlayer().GetPosition(); } set { Entities.Collection.GetPlayer().UpdatePosition(value); } }
+        { 
+            get 
+            { 
+                return GameClient.Get<EntitiesComponent>().Collection.GetPlayer().GetPosition(); 
+            } 
+            set 
+            {
+                GameClient.Get<EntitiesComponent>().Collection.GetPlayer().UpdatePosition(value); 
+            } 
+        }
 
         public List<Spell> Spells { get; set; }
         public List<Spell> UnlearnedSpells { get; set; }
@@ -47,22 +56,20 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
         #region Private Properties
 
         private bool CanMove { get; set; }
-        private EntitiesComponent Entities { get; set; }
         private bool IsInCombat { get; set; }
-        private bool MovementInitialized { get; set; }
+        internal bool MovementInitialized { get; set; }
         private Dictionary<Powers, UInt32> Powers { get; set; }
 
         #endregion Private Properties
 
         #region Public Constructors
 
-        public PlayerComponent(WorldClient worldClient, EntitiesComponent entities) : base(worldClient)
+        public PlayerComponent(WorldClient worldClient) : base(worldClient)
         {
             IsInCombat = false;
             IsStanding = true;
             CanMove = true;
             MovementInitialized = false;
-            Entities = entities;
             Spells = new List<Spell>();
             UnlearnedSpells = new List<Spell>();
             Powers = new Dictionary<Powers, uint>();
@@ -104,7 +111,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
                 Logger.Append(LogCategory.PLAYER, LogLevel.DEBUG, "Sending Facing angle : " + angle);
                 current.O = angle;
                 Position = current;
-                ActivlyMoving();
+                SendActivlyMoving();
                 return WorldClient.Send(new FacingMovement((ulong)Guid, Position, false));
             }
             return false;
@@ -146,7 +153,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player
 
         #region Private Methods
 
-        private void ActivlyMoving()
+        internal void SendActivlyMoving()
         {
             if (!MovementInitialized)
             {
