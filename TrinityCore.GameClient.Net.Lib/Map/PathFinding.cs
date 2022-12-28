@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Map.MmapTile;
@@ -175,55 +176,107 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         public Path FindPath(int mapId, Vector3 start, Vector3 end, float speed, int maxPathLength = 50)
         {
-            MmapFile mmap = Collection.GetMap(mapId);
+            DateTime durationStart = DateTime.Now;
+            float distance = (start - end).Length();
+            MmapTileFileCollection tileCollection = MmapTileFileCollection.Factory(Collection, mapId, start, end);
+            if (tileCollection == null) return null;
 
-            MmapTileFile startTile = mmap.GetMmapTileFileFromVector3(start);
-            if (startTile == null) return null;
-            MmapTileFile endTile = mmap.GetMmapTileFileFromVector3(end);
-            if (endTile == null) return null;
+            MmapTileFile startTile = tileCollection.StartTile;
+            MmapTileFile endTile = tileCollection.EndTile;
 
-            if (startTile.Key != endTile.Key) return null;
+            if (startTile.Key == endTile.Key)
+            {
+                return new Path(new List<Point>(), speed, mapId);
+            }
 
             MmapMeshPoly startPoly = startTile.GetNearestPoly(start);
             if (startPoly == null) return null;
-            MmapMeshPoly endPoly = endTile.GetNearestPoly(end);
+            MmapMeshPoly endPoly = endTile.GetNearestPoly(start);
             if (endPoly == null) return null;
 
-            List<string> done = new List<string>();
-            List<MmapMeshPoly> mmapMeshPolies = new List<MmapMeshPoly>() { startPoly };
-            Queue<List<MmapMeshPoly>> queue = new Queue<List<MmapMeshPoly>>();
-            queue.Enqueue(mmapMeshPolies);
-
-            DateTime s = DateTime.Now;
+            Queue<PathHypothesis> queue = new Queue<PathHypothesis>();
+            queue.Enqueue(new PathHypothesis(startPoly, start));
 
             while (queue.Count > 0)
             {
-                List<MmapMeshPoly> current = queue.Dequeue();
-                MmapMeshPoly last = current[current.Count - 1];
-
-                foreach (MmapMeshPoly poly in last.GetNeighbors(startTile).OrderBy(c => (c.Center() - end).Length()))
+                PathHypothesis hypothesis = queue.Dequeue();
+                List<MmapMeshPoly> linked = tileCollection.GetLinkedPolys(hypothesis.LastMeshPoly);
+                foreach (MmapMeshPoly poly in linked.Where(c => !hypothesis.IsDone(c)).OrderBy(c => (c.Center() - end.ToFileFormat()).Length()))
                 {
-                    if (done.Contains(poly.Key)) continue;
-
                     if (poly.Key == endPoly.Key)
                     {
-                        current.Add(poly);
-                        System.Diagnostics.Debug.WriteLine("Duration :" + DateTime.Now.Subtract(s).TotalMilliseconds);
-                        List<Point> points = current.ToPoints();
-                        points.Add(new Point(end.X, end.Y, end.Z));
-                        return new Path(points, speed, mapId);
+                        // travel done
+                        hypothesis.Append(poly, end.ToFileFormat());
+                        Trace.WriteLine("Duration : " + DateTime.Now.Subtract(durationStart).TotalMilliseconds + " (ms)");
+                        return new Path(hypothesis.GetPoints(), speed, mapId);
                     }
-
-                    done.Add(poly.Key);
-
-                    if (current.Count >= maxPathLength) continue;
-                    List<MmapMeshPoly> clone = current.ToArray().ToList();
-                    clone.Add(poly);
-                    queue.Enqueue(clone);
+                    hypothesis.Append(poly);
+                    if (hypothesis.Length < (distance * 5))
+                        queue.Enqueue(hypothesis);
                 }
             }
 
             return null;
+        }
+
+        #endregion Public Methods
+    }
+
+    public struct PathHypothesis
+    {
+        #region Public Properties
+
+        public List<string> Done { get; set; }
+        public MmapMeshPoly LastMeshPoly { get; set; }
+        public float Length { get; set; }
+        public List<Vector3> Points { get; set; }
+
+        #endregion Public Properties
+
+        #region Public Constructors
+
+        public PathHypothesis(MmapMeshPoly lastMeshPoly, Vector3 start)
+        {
+            Points = new List<Vector3>() { start.ToFileFormat() };
+            Length = 0;
+            Done = new List<string>() { lastMeshPoly.Key };
+            LastMeshPoly = lastMeshPoly;
+        }
+
+        #endregion Public Constructors
+
+        #region Public Methods
+
+        public void Append(MmapMeshPoly lastMeshPoly, Vector3? final = null)
+        {
+            if (Points.Count > 0)
+            {
+                Length += (lastMeshPoly.Center() - Points[Points.Count - 1]).Length();
+            }
+            LastMeshPoly = lastMeshPoly;
+            Done.Add(lastMeshPoly.Key);
+            Points.Add(lastMeshPoly.Center());
+            if (final != null)
+            {
+                Length += (final.Value - Points[Points.Count - 1]).Length();
+                Points.Add(final.Value);
+            }
+        }
+
+        public List<Point> GetPoints()
+        {
+            List<Point> tmp = new List<Point>();
+            foreach (Vector3 vector in Points)
+            {
+                Vector3 v = vector.ToWorldFormat();
+                tmp.Add(new Point(v.X, v.Y, v.Z));
+            }
+            return tmp;
+        }
+
+        public bool IsDone(MmapMeshPoly poly)
+        {
+            return Done.Contains(poly.Key);
         }
 
         #endregion Public Methods

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Map.Exceptions;
 using TrinityCore.GameClient.Net.Lib.Map.Tools;
+using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Map
 {
@@ -64,6 +65,12 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             return new MmapFile(file, mapId, origin, tileWidth, tileHeight, maxTiles, maxPoly);
         }
 
+        public MmapTileFile GetMmapTileFileFromCoords(int tileX, int tileY)
+        {
+            string key = GetMmapTileKeyFromCoords(tileX, tileY);
+            return GetMmapTileFileFromKey(key);
+        }
+
         public MmapTileFile GetMmapTileFileFromKey(string key)
         {
             MmapTileFile fromCache = MmapTileFileCache.Instance.Get(key);
@@ -90,9 +97,25 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             return GetMmapTileFileFromKey(key);
         }
 
+        public MmapTileFile GetMmapTileFileFromVector3(Position position)
+        {
+            string key = GetMmapTileKeyFromVector3(position);
+            return GetMmapTileFileFromKey(key);
+        }
+
+        public string GetMmapTileKeyFromCoords(int tileX, int tileY)
+        {
+            return MapId.ToString("000") + tileX.ToString("00") + tileY.ToString("00");
+        }
+
         public string GetMmapTileKeyFromVector3(float x, float y, float z)
         {
             return GetMmapTileKeyFromVector3(new Vector3(x, y, z));
+        }
+
+        public string GetMmapTileKeyFromVector3(Position position)
+        {
+            return GetMmapTileKeyFromVector3(new Vector3(position.X, position.Y, position.Z));
         }
 
         public string GetMmapTileKeyFromVector3(Vector3 position)

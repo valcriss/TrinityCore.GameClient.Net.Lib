@@ -1,7 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
+using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
+using TrinityCore.GameClient.Net.Lib.Components.Zone;
+using TrinityCore.GameClient.Net.Lib.Map;
+using TrinityCore.GameClient.Net.Lib.Map.Tools;
 using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
@@ -12,13 +18,31 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
 
         private List<Position> StoredPositions { get; set; }
 
+        private string TestCaseFile { get; set; }
+
         #endregion Private Properties
+
+        #region Private Fields
+
+        private string[] commands;
+
+        #endregion Private Fields
 
         #region Public Constructors
 
         public PathCommand()
         {
             StoredPositions = new List<Position>();
+            commands = new string[]
+            {
+                "clear",
+                "list",
+                "store",
+                "distance",
+                "try",
+                "run"
+            };
+            TestCaseFile = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "PathFindingFindPathTestCases.csv");
         }
 
         #endregion Public Constructors
@@ -27,6 +51,11 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
 
         public override bool Handle(string command)
         {
+            if (!commands.Contains(command)) return false;
+
+            Position current = GameClient.Get<PlayerComponent>().Position;
+            Player other = GameClient.Get<EntitiesComponent>().FindPlayerByName("Daniel");
+            Position otherPosition = other?.GetPosition();
             switch (command.ToLower())
             {
                 case "clear":
@@ -63,12 +92,32 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
                     return true;
 
                 case "store":
-                    Player other = GameClient.Get<EntitiesComponent>().FindPlayerByName("Daniel");
-                    if (other != null)
+                    if (otherPosition == null) return false;
+                    StoredPositions.Add(otherPosition);
+                    GameClient.Get<SocialComponent>().Yell("Position stored (" + StoredPositions.Count + " positions so far)");
+                    return true;
+
+                case "distance":
+                    if (otherPosition == null) return false;
+                    GameClient.Get<SocialComponent>().Yell("Distance (" + (otherPosition - current).Length + ")");
+                    return true;
+
+                case "try":
+                    if (StoredPositions.Count == 0)
                     {
-                        Position position = other.GetPosition();
-                        StoredPositions.Add(position);
-                        GameClient.Get<SocialComponent>().Yell("Position stored (" + StoredPositions.Count + " positions so far)");
+                        GameClient.Get<SocialComponent>().Yell("No position stored for the moment");
+                    }
+
+                    Position target = StoredPositions[0];
+                    Path p = GameClient.Get<ZoneComponent>().Atlas.PathFinding.FindPath(GameClient.Get<ZoneComponent>().WorldState.MapId, current.ToVector3(), target.ToVector3(), 7f);
+                    if (p == null)
+                    {
+                        GameClient.Get<SocialComponent>().Yell("No path found");
+                        System.IO.File.AppendAllText(TestCaseFile, $"{GameClient.Get<ZoneComponent>().WorldState.MapId};{current.X};{current.Y};{current.Z};{target.X};{target.Y};{target.Z}\n");
+                    }
+                    else
+                    {
+                        GameClient.Get<SocialComponent>().Yell("Found a path with " + p.Points.Length + " points");
                     }
                     return true;
 
@@ -82,7 +131,6 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
                 default:
                     return false;
             }
-            return false;
         }
 
         #endregion Public Methods

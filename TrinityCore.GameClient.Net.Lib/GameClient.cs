@@ -17,6 +17,12 @@ namespace TrinityCore.GameClient.Net.Lib
 {
     public class GameClient : IDisposable
     {
+        #region Public Properties
+
+        private string DataPath { get; set; }
+
+        #endregion Public Properties
+
         #region Private Properties
 
         private AuthClient AuthClient { get; set; }
@@ -38,6 +44,7 @@ namespace TrinityCore.GameClient.Net.Lib
 
         private GameClient(string dataPath, AuthServerInfo authServer, AuthServerCredentials credentials)
         {
+            DataPath = dataPath;
             Components = new Dictionary<Type, Component>();
 
             AuthClient = new AuthClient();
@@ -77,6 +84,11 @@ namespace TrinityCore.GameClient.Net.Lib
                 return (T)_instance.Components[typeof(T)];
             }
             return default(T);
+        }
+
+        public string GetDataPath()
+        {
+            return DataPath;
         }
 
         public async Task<bool> Authenticate()

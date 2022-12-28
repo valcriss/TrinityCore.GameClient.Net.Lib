@@ -66,6 +66,46 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         #region Public Methods
 
+        public static Vector3? ClosestHeightPointTriangle(Vector3 rayOrigin, Vector3 rayDirection, Vector3 vert0, Vector3 vert1, Vector3 vert2)
+        {
+            double Epsilon = 0.000001d;
+            var edge1 = vert1 - vert0;
+            var edge2 = vert2 - vert0;
+
+            var pvec = Vector3.Cross(rayDirection, edge2);
+
+            var det = Vector3.Dot(edge1, pvec);
+
+            if (det > -Epsilon && det < Epsilon)
+            {
+                return null;
+            }
+
+            var invDet = 1d / det;
+
+            var tvec = rayOrigin - vert0;
+
+            var u = Vector3.Dot(tvec, pvec) * invDet;
+
+            if (u < 0 || u > 1)
+            {
+                return null;
+            }
+
+            var qvec = Vector3.Cross(tvec, edge1);
+
+            var v = Vector3.Dot(rayDirection, qvec) * invDet;
+
+            if (v < 0 || u + v > 1)
+            {
+                return null;
+            }
+
+            float t = (float)(Vector3.Dot(edge2, qvec) * invDet);
+
+            return new Vector3(rayDirection.X * t, rayDirection.Y * t, rayDirection.Z * t) + rayOrigin;
+        }
+
         public static MmapTileFile Load(string file)
         {
             CheckFile(file);
@@ -75,6 +115,19 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             int tileY = GetTileYFromFilename(file);
 
             return new MmapTileFile(file, mapId, tileX, tileY);
+        }
+
+        public float? GetHeightAtPosition(Vector3 position)
+        {
+            MmapMeshPoly poly = GetNearestPoly(position);
+            if (poly == null) return null;
+            position = position.ToFileFormat();
+            MmapMeshTriangle triangle = poly.Triangles.FirstOrDefault(triangle => triangle.PointInTriangle(position));
+            if (triangle == null) return null;
+
+            Vector3? p = ClosestHeightPointTriangle(position, new Vector3(0, -1, 0), triangle.Points[0], triangle.Points[1], triangle.Points[2]);
+            if (p == null) return null;
+            return p.Value.Y;
         }
 
         public MmapMeshPoly GetNearestPoly(Vector3 position)
@@ -89,18 +142,6 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         }
 
         #endregion Public Methods
-
-        #region Internal Methods
-
-        internal float? GetHeightAtPosition(Vector3 position)
-        {
-            position = position.ToFileFormat();
-            MmapMeshVert vert = Mesh.Verts.OrderBy(c => (c.Vector3 - position).Length()).FirstOrDefault();
-            if (vert == null) return null;
-            return vert.Y;
-        }
-
-        #endregion Internal Methods
 
         #region Private Methods
 
@@ -161,7 +202,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             DateTime start = DateTime.Now;
             BinaryReader reader = BinaryReader.FromFile(File);
             _mmapTileHeader = MmapTileHeader.FromBinaryReader(reader);
-            _mmapMesh = MmapMesh.FromBinaryReader(reader);
+            _mmapMesh = MmapMesh.FromBinaryReader(this, reader);
             if (reader.BytesLeft > 0)
             {
                 throw new Exception("Bytes left");

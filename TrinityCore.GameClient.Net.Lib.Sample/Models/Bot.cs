@@ -1,9 +1,5 @@
 ﻿using System.Collections.Generic;
-using TrinityCore.GameClient.Net.Lib.Components.Entities;
-using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
-using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
-using TrinityCore.GameClient.Net.Lib.Network.World.Models;
 using TrinityCore.GameClient.Net.Lib.Sample.Models.Commands;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample.Models
@@ -27,6 +23,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models
                 new SitStandCommand(),
                 new SpeakCommand(),
                 new WaveCommand(),
+                new CheckCommand()
             };
             GameClient.Get<SocialComponent>().OnChatMessage += SocialOnChatMessage;
         }
@@ -37,7 +34,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models
 
         private void SocialOnChatMessage(Components.Social.Commands.Incoming.MessageChatInfo chatMessage)
         {
-            foreach(Command command in Commands)
+            foreach (Command command in Commands)
             {
                 if (command.Handle(chatMessage.Message)) break;
             }

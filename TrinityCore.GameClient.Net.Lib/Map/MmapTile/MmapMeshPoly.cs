@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Map.Tools;
@@ -13,6 +14,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
         public uint FirstLink { get; set; }
         public ushort Flags { get; set; }
         public string Key => Center().X + "|" + Center().Y + "|" + Center().Z;
+        public MmapMesh MmapMesh { get; set; }
         public ushort[] Neis { get; set; }
         public MmapMeshTriangle[] Triangles { get; set; }
         public byte VertCount { get; set; }
@@ -40,6 +42,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
         public static MmapMeshPoly LoadBinaryReader(MmapMesh mesh, BinaryReader reader)
         {
             MmapMeshPoly poly = new MmapMeshPoly();
+            poly.MmapMesh = mesh;
             poly.FirstLink = reader.ReadUint();
             poly.Verts = reader.ReadUShorts(6);
             poly.Neis = reader.ReadUShorts(6);
@@ -131,8 +134,9 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
             return _center.Value;
         }
 
-        public List<MmapMeshPoly> GetNeighbors(MmapTileFile tile)
+        public List<MmapMeshPoly> GetNeighbors()
         {
+            var tile = MmapMesh.MmapTileFile;
             List<MmapMeshPoly> results = new List<MmapMeshPoly>();
             for (uint i = FirstLink; i != DT_NULL_LINK; i = tile.Mesh.Links[(int)i].Next)
             {
@@ -145,6 +149,15 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
         }
 
         #endregion Public Methods
+
+        #region Internal Methods
+
+        internal bool ShareAPoint(MmapMeshPoly lastMeshPoly)
+        {
+            return this.Verts.Any(c => lastMeshPoly.Verts.Contains(c));
+        }
+
+        #endregion Internal Methods
 
         #region Private Methods
 

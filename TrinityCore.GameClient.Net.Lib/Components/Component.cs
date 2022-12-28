@@ -4,11 +4,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components
 {
     public abstract class Component
     {
-        #region Public Properties
+        #region Protected Properties
 
-        public WorldClient WorldClient { get; set; }
+        protected WorldClient WorldClient { get; set; }
 
-        #endregion Public Properties
+        #endregion Protected Properties
 
         #region Protected Constructors
 

@@ -1,6 +1,7 @@
 ﻿using TrinityCore.GameClient.Net.Lib.Components.Zone.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Zone.Models;
 using TrinityCore.GameClient.Net.Lib.Logging;
+using TrinityCore.GameClient.Net.Lib.Map;
 using TrinityCore.GameClient.Net.Lib.Network.World;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
@@ -10,6 +11,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone
     {
         #region Public Properties
 
+        public MmapFilesCollection Atlas { get; set; }
         public Models.WorldState WorldState { get; set; }
 
         #endregion Public Properties
@@ -29,6 +31,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Zone
         private bool InitWorldStatesInfo(InitWorldStatesInfo initWorldStates)
         {
             WorldState = initWorldStates.WorldState;
+            Atlas = MmapFilesCollection.Load(System.IO.Path.Combine(GameClient.Get().GetDataPath(), "mmaps"));
             Logger.Append(Logging.Enums.LogCategory.ZONE, Logging.Enums.LogLevel.VERBOSE, $"WorldState : {WorldState}");
             return true;
         }

@@ -9,6 +9,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
 
         public MmapMeshHeader Header { get; set; }
         public List<MmapMeshLink> Links { get; set; }
+        public MmapTileFile MmapTileFile { get; set; }
         public List<MmapMeshOffMeshConnection> OffMeshConnections { get; set; }
         public List<MmapMeshPolyDetail> PolyDetails { get; set; }
         public List<MmapMeshPoly> Polys { get; set; }
@@ -37,10 +38,10 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
 
         #region Public Methods
 
-        public static MmapMesh FromBinaryReader(BinaryReader reader)
+        public static MmapMesh FromBinaryReader(MmapTileFile mmapTileFile, BinaryReader reader)
         {
             MmapMesh mesh = new MmapMesh();
-
+            mesh.MmapTileFile = mmapTileFile;
             mesh.Header = MmapMeshHeader.LoadFromBinaryReader(reader);
 
             for (int i = 0; i < mesh.Header.VertCount; i++)
