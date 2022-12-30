@@ -20,7 +20,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
             byte count = ReadByte();
             if (count == 0)
             {
-                Characters = new Character[0];
+                Characters = System.Array.Empty<Character>();
             }
             else
             {

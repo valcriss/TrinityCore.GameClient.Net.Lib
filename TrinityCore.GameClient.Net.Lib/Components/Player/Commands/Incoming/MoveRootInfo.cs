@@ -16,7 +16,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
         internal override void LoadData()
         {
             Guid = ReadPackedGuid();
-            uint zero = ReadUInt32();
+            ReadUInt32();
             CanMove = (Command == Network.World.Enums.WorldCommand.SMSG_FORCE_MOVE_UNROOT);
         }
 

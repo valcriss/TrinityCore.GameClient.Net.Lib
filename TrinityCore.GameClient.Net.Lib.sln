@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityCore.GameClient.Net.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityCore.GameClient.Net.Lib", "TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.csproj", "{A4378127-E6B2-4239-811A-CBE597D6780F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityCore.GameClient.Net.Lib.Tests", "TrinityCore.GameClient.Net.Lib.Tests\TrinityCore.GameClient.Net.Lib.Tests.csproj", "{0D1684B6-95CE-4A9C-B10F-A12DE0F2626C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{A4378127-E6B2-4239-811A-CBE597D6780F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4378127-E6B2-4239-811A-CBE597D6780F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4378127-E6B2-4239-811A-CBE597D6780F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0D1684B6-95CE-4A9C-B10F-A12DE0F2626C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0D1684B6-95CE-4A9C-B10F-A12DE0F2626C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0D1684B6-95CE-4A9C-B10F-A12DE0F2626C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0D1684B6-95CE-4A9C-B10F-A12DE0F2626C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

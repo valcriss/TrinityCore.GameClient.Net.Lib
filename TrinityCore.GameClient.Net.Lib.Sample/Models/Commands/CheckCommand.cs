@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
@@ -44,7 +45,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
                 MmapFilesCollection collection = MmapFilesCollection.Load(System.IO.Path.Combine(GameClient.Get().GetDataPath(), "mmaps"));
                 MmapFile mmap = collection.GetMap(mapId);
                 MmapTileFile tile = mmap.GetMmapTileFileFromVector3(current);
-                float? check = tile.GetHeightAtPosition(current.ToVector3());
+                Vector3 check = tile.ClosestPointAtPosition(current.ToVector3());
                 GameClient.Get<SocialComponent>().Shout("Position : " + current.ToString());
                 GameClient.Get<SocialComponent>().Shout("GetHeightAtPosition : " + check.ToString());
 

@@ -11,10 +11,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Security
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new AuthenticationCrypto();
-                }
+                _instance ??= new AuthenticationCrypto();
                 return _instance;
             }
         }

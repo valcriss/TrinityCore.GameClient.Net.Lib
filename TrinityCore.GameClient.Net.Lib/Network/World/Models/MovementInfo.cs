@@ -21,41 +21,44 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
         {
         }
 
+#pragma warning disable IDE0060 // Supprimer le paramètre inutilisé
+
         internal MovementInfo(byte[] buffer, int readIndex, TypeID typeId) : base(buffer, readIndex)
+#pragma warning restore IDE0060 // Supprimer le paramètre inutilisé
         {
             MovementLiving = null;
 
             ushort flags = ReadUInt16();
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_LIVING) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_LIVING) != 0)
             {
                 MovementLiving = new MovementLiving();
-                MovementLiving.MovementFlags = (MovementFlags)ReadUInt32();
-                MovementLiving.ExtraMovementFlags = (MovementFlags2)ReadUInt16();
+                MovementLiving.MovementFlags = (MovementTypes)ReadUInt32();
+                MovementLiving.ExtraMovementFlags = (MovementOptions)ReadUInt16();
                 MovementLiving.Time = ReadUInt32();
                 MovementLiving.Position = new Position(ReadVector3(), ReadSingle());
 
-                if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_ONTRANSPORT))
+                if (MovementLiving.MovementFlags.HasFlag(MovementTypes.ONTRANSPORT))
                 {
                     MovementLiving.TransportGuid = ReadPackedGuid();
                     MovementLiving.TransportPosition = new Position(ReadVector3(), ReadSingle());
 
                     MovementLiving.TransportTime = ReadUInt32();
                     MovementLiving.TransportSeat = ReadByte();
-                    if (MovementLiving.ExtraMovementFlags.HasFlag(MovementFlags2.MOVEMENTFLAG2_INTERPOLATED_MOVEMENT))
+                    if (MovementLiving.ExtraMovementFlags.HasFlag(MovementOptions.INTERPOLATED_MOVEMENT))
                         MovementLiving.TransportTime2 = ReadUInt32();
                 }
 
-                if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SWIMMING) ||
-                    MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_FLYING) ||
-                    MovementLiving.ExtraMovementFlags.HasFlag(MovementFlags2.MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING))
+                if (MovementLiving.MovementFlags.HasFlag(MovementTypes.SWIMMING) ||
+                    MovementLiving.MovementFlags.HasFlag(MovementTypes.FLYING) ||
+                    MovementLiving.ExtraMovementFlags.HasFlag(MovementOptions.ALWAYS_ALLOW_PITCHING))
                 {
                     MovementLiving.Pitch = ReadSingle();
                 }
 
                 MovementLiving.FallTime = ReadUInt32();
 
-                if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_FALLING))
+                if (MovementLiving.MovementFlags.HasFlag(MovementTypes.FALLING))
                 {
                     MovementLiving.JumpZSpeed = ReadSingle();
                     MovementLiving.JumpSinAngle = ReadSingle();
@@ -63,28 +66,26 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                     MovementLiving.JumpXySpeed = ReadSingle();
                 }
 
-                if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SPLINE_ELEVATION))
+                if (MovementLiving.MovementFlags.HasFlag(MovementTypes.SPLINE_ELEVATION))
                 {
                     MovementLiving.SplineElevation = ReadSingle();
                 }
 
                 for (int i = 0; i < 9; i++) MovementLiving.Speeds.Add((UnitMoveType)i, ReadSingle());
 
-                // if (unit->m_movementInfo.GetMovementFlags() & MOVEMENTFLAG_SPLINE_ENABLED)
-                // Movement::PacketBuilder::WriteCreate(*unit->movespline, *data);
-                if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SPLINE_ENABLED))
+                if (MovementLiving.MovementFlags.HasFlag(MovementTypes.SPLINE_ENABLED))
                 {
                     MovementLiving.MovementSpline = new MovementSpline();
-                    MovementLiving.MovementSpline.SplineFlags = (SplineFlags)ReadUInt32();
-                    if (MovementLiving.MovementSpline.SplineFlags == SplineFlags.Final_Angle)
+                    MovementLiving.MovementSpline.SplineFlags = (SplineTypes)ReadUInt32();
+                    if (MovementLiving.MovementSpline.SplineFlags == SplineTypes.Final_Angle)
                     {
                         MovementLiving.MovementSpline.FacingAngle = ReadSingle();
                     }
-                    else if (MovementLiving.MovementSpline.SplineFlags == SplineFlags.Final_Target)
+                    else if (MovementLiving.MovementSpline.SplineFlags == SplineTypes.Final_Target)
                     {
                         MovementLiving.MovementSpline.FacingTarget = ReadSingle();
                     }
-                    else if (MovementLiving.MovementSpline.SplineFlags == SplineFlags.Final_Point)
+                    else if (MovementLiving.MovementSpline.SplineFlags == SplineTypes.Final_Point)
                     {
                         MovementLiving.MovementSpline.FinalPosition = new Position(ReadVector3(), 0);
                     }
@@ -93,8 +94,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                     MovementLiving.MovementSpline.Duration = ReadInt32();
                     MovementLiving.MovementSpline.SplineId = ReadUInt32();
 
-                    float f1 = ReadSingle(); // = 1.0
-                    float f2 = ReadSingle(); // = 1.0
+                    ReadSingle(); // = 1.0
+                    ReadSingle(); // = 1.0
 
                     MovementLiving.MovementSpline.VerticalAcceleration = ReadSingle();
                     MovementLiving.MovementSpline.EffectStartTime = ReadInt32();
@@ -109,7 +110,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
             }
             else
             {
-                if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_POSITION) != 0)
+                if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_POSITION) != 0)
                 {
                     MovementPosition = new MovementPosition();
                     MovementPosition.Transport = PeekByte() != 0;
@@ -135,7 +136,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                 }
                 else
                 {
-                    if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_STATIONARY_POSITION) != 0)
+                    if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_STATIONARY_POSITION) != 0)
                     {
                         MovementStationary = new MovementStationary();
                         MovementStationary.Stationary = new Position(ReadSingle(), ReadSingle(), ReadSingle(), ReadSingle());
@@ -143,43 +144,17 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                 }
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_UNKNOWN) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_UNKNOWN) != 0)
             {
                 ReadUInt32();
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_LOWGUID) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_LOWGUID) != 0)
             {
-                switch (typeId)
-                {
-                    case TypeID.TYPEID_OBJECT:
-                    case TypeID.TYPEID_ITEM:
-                    case TypeID.TYPEID_CONTAINER:
-                    case TypeID.TYPEID_GAMEOBJECT:
-                    case TypeID.TYPEID_DYNAMICOBJECT:
-                    case TypeID.TYPEID_CORPSE:
-                        ReadUInt32(); // GetGUID().GetCounter()
-                        break;
-                    //! Unit, Player and default here are sending wrong values.
-                    /// @todo Research the proper formula
-                    case TypeID.TYPEID_UNIT:
-                        ReadUInt32(); // unk
-                        break;
-
-                    case TypeID.TYPEID_PLAYER:
-                        if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_SELF) != 0)
-                            ReadUInt32(); // unk
-                        else
-                            ReadUInt32(); // unk
-                        break;
-
-                    default:
-                        ReadUInt32(); // unk
-                        break;
-                }
+                ReadUInt32();
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_HAS_TARGET) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_HAS_TARGET) != 0)
             {
                 MovementHasTarget = new MovementHasTarget();
                 if (PeekByte() != 0)
@@ -188,18 +163,18 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
                     ReadSByte();
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_TRANSPORT) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_TRANSPORT) != 0)
             {
                 ReadUInt32();
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_VEHICLE) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_VEHICLE) != 0)
             {
                 ReadUInt32();
                 ReadSingle();
             }
 
-            if ((flags & (ushort)ObjectUpdateFlags.UPDATEFLAG_ROTATION) != 0)
+            if ((flags & (ushort)ObjectUpdateOptions.UPDATEFLAG_ROTATION) != 0)
             {
                 MovementRotation = new MovementRotation();
                 MovementRotation.Rotation = ReadInt64();

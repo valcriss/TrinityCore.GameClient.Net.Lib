@@ -20,12 +20,9 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
         {
             CompletedAchievements = new List<CompletedAchievement>();
             AchievementCriteriaList = new List<AchievementCriteria>();
-            for (; ; )
+            uint achievementId = ReadUInt32();
+            while (achievementId != 0xFFFFFFFF)
             {
-                uint achievementId = ReadUInt32();
-                if (achievementId == 0xFFFFFFFF)
-                    break;
-
                 DateTime time = ReadPackedTime();
 
                 CompletedAchievements.Add(new CompletedAchievement
@@ -33,15 +30,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
                     AchievementId = achievementId,
                     Date = time
                 });
+                achievementId = ReadUInt32();
             }
 
-            for (; ; )
+            uint criteriaId = ReadUInt32();
+            while (criteriaId != 0xFFFFFFFF)
             {
-                uint criteriaId = ReadUInt32();
-                if (criteriaId == 0xFFFFFFFF)
-                    break;
                 ulong criteriaCounter = ReadPackedGuid();
-                ulong playerGuid = ReadPackedGuid();
+                ReadPackedGuid(); // PlayerGuid
                 ReadInt32(); // 0
                 DateTime time = ReadPackedTime();
                 ReadInt32(); // 0
@@ -53,6 +49,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
                     Counter = criteriaCounter,
                     Date = time
                 });
+                criteriaId = ReadUInt32();
             }
         }
 

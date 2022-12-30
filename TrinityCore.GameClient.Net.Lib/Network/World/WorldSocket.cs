@@ -73,7 +73,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                     }
                     else
                     {
-                        PacketsHandler.Handle(new ReceivablePacket<WorldCommand>(header.Command, new byte[0]));
+                        PacketsHandler.Handle(new ReceivablePacket<WorldCommand>(header.Command, Array.Empty<byte>()));
                         ReceiveData();
                     }
                 }

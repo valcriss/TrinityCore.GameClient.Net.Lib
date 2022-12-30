@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
 using TrinityCore.GameClient.Net.Lib.Sample.Models.Commands;
 
@@ -30,13 +32,23 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models
 
         #endregion Public Constructors
 
+        #region Public Methods
+
+        public void Close()
+        {
+            GameClient.Get<SocialComponent>().OnChatMessage -= SocialOnChatMessage;
+        }
+
+        #endregion Public Methods
+
         #region Private Methods
 
         private void SocialOnChatMessage(Components.Social.Commands.Incoming.MessageChatInfo chatMessage)
         {
-            foreach (Command command in Commands)
+            bool executed = Commands.Any(c => c.Handle(chatMessage.Message));
+            if (executed)
             {
-                if (command.Handle(chatMessage.Message)) break;
+                Trace.WriteLine("Command executed");
             }
         }
 

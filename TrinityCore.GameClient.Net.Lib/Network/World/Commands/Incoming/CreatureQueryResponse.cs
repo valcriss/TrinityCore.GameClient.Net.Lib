@@ -22,7 +22,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
             CreatureInfo.Name = ReadCString();
             CreatureInfo.NameAlt = ReadCString();
             CreatureInfo.CursorName = ReadCString();
-            CreatureInfo.Flags = (CreatureTypeFlags)ReadUInt32();
+            CreatureInfo.Flags = (CreatureOptions)ReadUInt32();
             CreatureInfo.CreatureType = (CreatureType)ReadUInt32(); // CreatureType.dbc
             CreatureInfo.CreatureFamily = (CreatureFamily)ReadUInt32(); // CreatureFamily.dbc
             CreatureInfo.Classification = (CreatureEliteType)ReadUInt32(); // Creature Rank (elite, boss, etc)

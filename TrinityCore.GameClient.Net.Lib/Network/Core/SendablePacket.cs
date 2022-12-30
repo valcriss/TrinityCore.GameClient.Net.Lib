@@ -4,7 +4,7 @@
     {
         #region Protected Constructors
 
-        protected SendablePacket() : base(new byte[0])
+        protected SendablePacket() : base(System.Array.Empty<byte>())
         {
         }
 

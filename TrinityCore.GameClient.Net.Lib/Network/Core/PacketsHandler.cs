@@ -57,7 +57,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             if (CompressedCommands.ContainsKey(packet.Command))
             {
                 byte[] decompressed = packet.Content.Decompress();
-                if (decompressed == null) return false;
+                if (decompressed.Length == 0) return false;
                 T decompressedCommand = CompressedCommands[packet.Command];
                 packet = new ReceivablePacket<T>(decompressedCommand, decompressed);
             }

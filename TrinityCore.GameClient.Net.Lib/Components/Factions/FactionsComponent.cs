@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using TrinityCore.GameClient.Net.Lib.Components.Factions.Commands.Incoming;
-using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Models;
+using TrinityCore.GameClient.Net.Lib.Components.Social.Models;
 using TrinityCore.GameClient.Net.Lib.Network.World;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 

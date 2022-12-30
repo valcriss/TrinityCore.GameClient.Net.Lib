@@ -9,6 +9,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Environment.Commands.Incomin
 
         internal override void LoadData()
         {
+            // Nothing to load is revelant for the moment
         }
 
         #endregion Internal Methods

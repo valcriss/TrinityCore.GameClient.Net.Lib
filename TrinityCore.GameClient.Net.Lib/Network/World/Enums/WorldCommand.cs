@@ -1,5 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Network.World.Enums
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1069:Les valeurs enum ne doivent pas être dupliquées", Justification = "Mixed CMSG and SMSG")]
     public enum WorldCommand : uint
     {
         MSG_NULL_ACTION = 0,
@@ -331,7 +332,6 @@
         CMSG_CANCEL_CHANNELLING = 315,
         SMSG_AI_REACTION = 316,
         CMSG_SET_SELECTION = 317,
-        CMSG_DELETEEQUIPMENT_SET = 318,
 
         /// <summary>
         /// pguid

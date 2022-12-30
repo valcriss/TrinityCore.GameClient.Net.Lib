@@ -17,18 +17,13 @@ namespace TrinityCore.GameClient.Net.Lib
 {
     public class GameClient : IDisposable
     {
-        #region Public Properties
-
-        private string DataPath { get; set; }
-
-        #endregion Public Properties
-
         #region Private Properties
 
         private AuthClient AuthClient { get; set; }
         private AuthServerCredentials AuthServerCredentials { get; set; }
         private AuthServerInfo AuthServerInfo { get; set; }
         private Dictionary<Type, Component> Components { get; set; }
+        private string DataPath { get; set; }
         private WorldClient WorldClient { get; set; }
 
         #endregion Private Properties
@@ -78,17 +73,12 @@ namespace TrinityCore.GameClient.Net.Lib
 
         public static T Get<T>() where T : Component
         {
-            if (_instance == null) return default(T);
+            if (_instance == null) return default;
             if (_instance.Components.ContainsKey(typeof(T)))
             {
                 return (T)_instance.Components[typeof(T)];
             }
-            return default(T);
-        }
-
-        public string GetDataPath()
-        {
-            return DataPath;
+            return default;
         }
 
         public async Task<bool> Authenticate()
@@ -115,6 +105,11 @@ namespace TrinityCore.GameClient.Net.Lib
         public async Task<List<Character>> GetCharacters()
         {
             return await WorldClient.GetCharacters();
+        }
+
+        public string GetDataPath()
+        {
+            return DataPath;
         }
 
         public async Task<List<WorldServerInfo>> GetRealms()

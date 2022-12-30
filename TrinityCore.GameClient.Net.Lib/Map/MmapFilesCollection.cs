@@ -11,8 +11,6 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         public List<MmapFile> MmapFiles { get; set; }
 
-        public PathFinding PathFinding { get; set; }
-
         #endregion Public Properties
 
         #region Public Constructors
@@ -20,7 +18,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         public MmapFilesCollection()
         {
             MmapFiles = new List<MmapFile>();
-            PathFinding = new PathFinding(this);
+            PathFinding.Initialize(this);
         }
 
         #endregion Public Constructors
@@ -44,13 +42,13 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             return collection;
         }
 
-        public float? GetHeightAtPosition(int mapId, Vector3 position)
+        public Vector3 ClosestPointAtPosition(int mapId, Vector3 position)
         {
             MmapFile mmap = GetMap(mapId);
-            if (mmap == null) return null;
+            if (mmap == null) return position;
             MmapTileFile tile = mmap.GetMmapTileFileFromVector3(position);
-            if (tile == null) return null;
-            return tile.GetHeightAtPosition(position);
+            if (tile == null) return position;
+            return tile.ClosestPointAtPosition(position);
         }
 
         public MmapFile GetMap(int mapId)

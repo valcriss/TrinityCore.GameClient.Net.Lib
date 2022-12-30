@@ -25,7 +25,24 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
 
         #region Public Methods
 
-        public Vector3 CalculateCentroid(List<Vector3> verticies)
+        public Vector3 Center()
+        {
+            return CalculateCentroid(Points.ToList());
+        }
+
+        public bool PointInTriangle(Vector3 position)
+        {
+            bool b1 = Sign(position, Points[0], Points[1]) < 0.0f;
+            bool b2 = Sign(position, Points[1], Points[2]) < 0.0f;
+            bool b3 = Sign(position, Points[2], Points[0]) < 0.0f;
+            return b1 == b2 && b2 == b3;
+        }
+
+        #endregion Public Methods
+
+        #region Private Methods
+
+        private static Vector3 CalculateCentroid(List<Vector3> verticies)
         {
             var s = new Vector3();
             var areaTotal = 0.0f;
@@ -60,24 +77,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
             return point;
         }
 
-        public Vector3 Center()
-        {
-            return CalculateCentroid(Points.ToList());
-        }
-
-        public bool PointInTriangle(Vector3 position)
-        {
-            bool b1 = Sign(position, Points[0], Points[1]) < 0.0f;
-            bool b2 = Sign(position, Points[1], Points[2]) < 0.0f;
-            bool b3 = Sign(position, Points[2], Points[0]) < 0.0f;
-            return b1 == b2 && b2 == b3;
-        }
-
-        #endregion Public Methods
-
-        #region Private Methods
-
-        private float Sign(Vector3 p1, Vector3 p2, Vector3 p3)
+        private static float Sign(Vector3 p1, Vector3 p2, Vector3 p3)
         {
             return (p1.X - p3.X) * (p2.Z - p3.Z) - (p2.X - p3.X) * (p1.Z - p3.Z);
         }

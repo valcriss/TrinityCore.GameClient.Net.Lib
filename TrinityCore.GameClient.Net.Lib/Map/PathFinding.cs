@@ -8,6 +8,69 @@ using TrinityCore.GameClient.Net.Lib.Map.Tools;
 
 namespace TrinityCore.GameClient.Net.Lib.Map
 {
+    public static class PathFinding
+    {
+        #region Public Properties
+
+        public static MmapFilesCollection Collection { get; set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        public static Path FindPath(int mapId, Vector3 start, Vector3 end, float speed)
+        {
+            DateTime durationStart = DateTime.Now;
+            float distance = (start - end).Length();
+            MmapTileFileCollection tileCollection = MmapTileFileCollection.Factory(Collection, mapId, start, end);
+            if (tileCollection == null) return null;
+
+            MmapTileFile startTile = tileCollection.StartTile;
+            MmapTileFile endTile = tileCollection.EndTile;
+
+            if (startTile.Key == endTile.Key)
+            {
+                return new Path(new List<Point>() { new Point(start.X, start.Y, start.Z), new Point(end.X, end.Y, end.Z) }, speed, mapId);
+            }
+
+            MmapMeshPoly startPoly = startTile.GetNearestPoly(start);
+            if (startPoly == null) return null;
+            MmapMeshPoly endPoly = endTile.GetNearestPoly(start);
+            if (endPoly == null) return null;
+
+            Queue<PathHypothesis> queue = new Queue<PathHypothesis>();
+            queue.Enqueue(new PathHypothesis(startPoly, start));
+
+            while (queue.Count > 0)
+            {
+                PathHypothesis hypothesis = queue.Dequeue();
+                List<MmapMeshPoly> linked = tileCollection.GetLinkedPolys(hypothesis.LastMeshPoly);
+                foreach (MmapMeshPoly poly in linked.Where(c => !hypothesis.IsDone(c)).OrderBy(c => (c.Center() - end.ToFileFormat()).Length()))
+                {
+                    if (poly.Key == endPoly.Key)
+                    {
+                        // travel done
+                        hypothesis.Append(poly, end.ToFileFormat());
+                        Trace.WriteLine("Duration : " + DateTime.Now.Subtract(durationStart).TotalMilliseconds + " (ms)");
+                        return new Path(hypothesis.GetPoints(), speed, mapId);
+                    }
+                    hypothesis.Append(poly);
+                    if (hypothesis.Length < (distance * 5))
+                        queue.Enqueue(hypothesis);
+                }
+            }
+
+            return null;
+        }
+
+        public static void Initialize(MmapFilesCollection collection)
+        {
+            Collection = collection;
+        }
+
+        #endregion Public Methods
+    }
+
     public class Path
     {
         #region Public Properties
@@ -73,7 +136,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         public Path(List<Point> points, float speed, int mapId)
         {
             if (points == null || points.Count < 2)
-                throw new ArgumentException("Argument cannot be null or a list with just 1 point", "points");
+                throw new ArgumentException("Argument cannot be null or a list with just 1 point", nameof(points));
             Points = points.ToArray();
 
             for (var index = 0; index < Points.Length; index++)
@@ -82,7 +145,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             }
 
             if (speed <= 0.0f)
-                throw new ArgumentException("Argument must be a positive number", "speed");
+                throw new ArgumentException("Argument must be a positive number", nameof(speed));
             Speed = speed;
 
             CurrentPosition = Points[0];
@@ -105,7 +168,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         {
             float totalDistance = deltaTime * Speed;
 
-            if (Points.Length <= NextPointIndex) return Points[Points.Length - 1];
+            if (Points.Length <= NextPointIndex) return Points[^1];
 
             float distanceToNextPoint = (Points[NextPointIndex] - _currentPosition).Length;
             if (totalDistance < distanceToNextPoint)
@@ -155,73 +218,6 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         #endregion Private Methods
     }
 
-    public class PathFinding
-    {
-        #region Private Properties
-
-        private MmapFilesCollection Collection { get; set; }
-
-        #endregion Private Properties
-
-        #region Public Constructors
-
-        public PathFinding(MmapFilesCollection collection)
-        {
-            Collection = collection;
-        }
-
-        #endregion Public Constructors
-
-        #region Public Methods
-
-        public Path FindPath(int mapId, Vector3 start, Vector3 end, float speed, int maxPathLength = 50)
-        {
-            DateTime durationStart = DateTime.Now;
-            float distance = (start - end).Length();
-            MmapTileFileCollection tileCollection = MmapTileFileCollection.Factory(Collection, mapId, start, end);
-            if (tileCollection == null) return null;
-
-            MmapTileFile startTile = tileCollection.StartTile;
-            MmapTileFile endTile = tileCollection.EndTile;
-
-            if (startTile.Key == endTile.Key)
-            {
-                return new Path(new List<Point>(), speed, mapId);
-            }
-
-            MmapMeshPoly startPoly = startTile.GetNearestPoly(start);
-            if (startPoly == null) return null;
-            MmapMeshPoly endPoly = endTile.GetNearestPoly(start);
-            if (endPoly == null) return null;
-
-            Queue<PathHypothesis> queue = new Queue<PathHypothesis>();
-            queue.Enqueue(new PathHypothesis(startPoly, start));
-
-            while (queue.Count > 0)
-            {
-                PathHypothesis hypothesis = queue.Dequeue();
-                List<MmapMeshPoly> linked = tileCollection.GetLinkedPolys(hypothesis.LastMeshPoly);
-                foreach (MmapMeshPoly poly in linked.Where(c => !hypothesis.IsDone(c)).OrderBy(c => (c.Center() - end.ToFileFormat()).Length()))
-                {
-                    if (poly.Key == endPoly.Key)
-                    {
-                        // travel done
-                        hypothesis.Append(poly, end.ToFileFormat());
-                        Trace.WriteLine("Duration : " + DateTime.Now.Subtract(durationStart).TotalMilliseconds + " (ms)");
-                        return new Path(hypothesis.GetPoints(), speed, mapId);
-                    }
-                    hypothesis.Append(poly);
-                    if (hypothesis.Length < (distance * 5))
-                        queue.Enqueue(hypothesis);
-                }
-            }
-
-            return null;
-        }
-
-        #endregion Public Methods
-    }
-
     public struct PathHypothesis
     {
         #region Public Properties
@@ -251,14 +247,14 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         {
             if (Points.Count > 0)
             {
-                Length += (lastMeshPoly.Center() - Points[Points.Count - 1]).Length();
+                Length += (lastMeshPoly.Center() - Points[^1]).Length();
             }
             LastMeshPoly = lastMeshPoly;
             Done.Add(lastMeshPoly.Key);
             Points.Add(lastMeshPoly.Center());
             if (final != null)
             {
-                Length += (final.Value - Points[Points.Count - 1]).Length();
+                Length += (final.Value - Points[^1]).Length();
                 Points.Add(final.Value);
             }
         }
@@ -269,7 +265,8 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             foreach (Vector3 vector in Points)
             {
                 Vector3 v = vector.ToWorldFormat();
-                tmp.Add(new Point(v.X, v.Y, v.Z));
+                Vector3 h = PathFinding.Collection.ClosestPointAtPosition(LastMeshPoly.MmapMesh.MmapTileFile.MapId, v);
+                tmp.Add(new Point(h.X, h.Y, h.Z));
             }
             return tmp;
         }

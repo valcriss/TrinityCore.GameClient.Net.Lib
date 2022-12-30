@@ -15,7 +15,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         internal CreatureType CreatureType { get; set; }
         internal string CursorName { get; set; }
         internal float EnergyMulti { get; set; }
-        internal CreatureTypeFlags Flags { get; set; }
+        internal CreatureOptions Flags { get; set; }
         internal float HpMulti { get; set; }
         internal bool Leader { get; set; }
         internal string Name { get; set; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using TrinityCore.GameClient.Net.Lib.Map.Tools;
@@ -161,7 +162,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
 
         #region Private Methods
 
-        private uint GetPolyRefIndex(long @ref)
+        private static uint GetPolyRefIndex(long @ref)
         {
             uint saltMask = ((uint)1 << DT_SALT_BITS) - 1;
             uint tileMask = ((uint)1 << DT_TILE_BITS) - 1;
@@ -169,6 +170,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
             uint salt = (uint)(@ref >> DT_POLY_BITS + DT_TILE_BITS & saltMask);
             uint it = (uint)(@ref >> DT_POLY_BITS & tileMask);
             uint ip = (uint)(@ref & polyMask);
+            Trace.WriteLine($"salt:{salt}, it:{it}, ip:{ip}");
             return ip;
         }
 

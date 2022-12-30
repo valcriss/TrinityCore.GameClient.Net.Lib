@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json.schemastore.org/sarif-1.0.0",
+  "version": "1.0.0",
+  "runs": [
+    {
+      "tool": {
+        "name": "Compilateur Microsoft (R) Visual C#",
+        "version": "4.4.0.0",
+        "fileVersion": "4.4.0-6.22565.8 (53091686)",
+        "semanticVersion": "4.4.0",
+        "language": "fr-FR"
+      },
+      "results": [
+        {
+          "ruleId": "S3776",
+          "level": "warning",
+          "message": "Refactor this method to reduce its Cognitive Complexity from 17 to the 15 allowed.",
+          "locations": [
+            {
+              "resultFile": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 39,
+                  "startColumn": 30,
+                  "endLine": 39,
+                  "endColumn": 36
+                }
+              }
+            }
+          ],
+          "relatedLocations": [
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 41,
+                  "startColumn": 13,
+                  "endLine": 41,
+                  "endColumn": 15
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 46,
+                  "startColumn": 13,
+                  "endLine": 46,
+                  "endColumn": 19
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 49,
+                  "startColumn": 21,
+                  "endLine": 49,
+                  "endColumn": 23
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 56,
+                  "startColumn": 21,
+                  "endLine": 56,
+                  "endColumn": 23
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 60,
+                  "startColumn": 21,
+                  "endLine": 60,
+                  "endColumn": 25
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 71,
+                  "startColumn": 25,
+                  "endLine": 71,
+                  "endColumn": 27
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 75,
+                  "startColumn": 25,
+                  "endLine": 75,
+                  "endColumn": 30
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Models/Commands/PathCommand.cs",
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 29,
+                  "endLine": 79,
+                  "endColumn": 31
+                }
+              }
+            }
+          ],
+          "properties": {
+            "warningLevel": 1,
+            "customProperties": {
+              "0": "+1",
+              "1": "+1",
+              "2": "+2 (incl 1 for nesting)",
+              "3": "+2 (incl 1 for nesting)",
+              "4": "+1",
+              "5": "+3 (incl 2 for nesting)",
+              "6": "+3 (incl 2 for nesting)",
+              "7": "+4 (incl 3 for nesting)"
+            }
+          }
+        },
+        {
+          "ruleId": "S2068",
+          "level": "warning",
+          "message": "\"password\" detected here, make sure this is not a hard-coded credential.",
+          "locations": [
+            {
+              "resultFile": {
+                "uri": "file:///C:/Users/silve/Documents/GitHub/TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.Sample/Program.cs",
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 66,
+                  "endLine": 79,
+                  "endColumn": 96
+                }
+              }
+            }
+          ],
+          "properties": {
+            "warningLevel": 1
+          }
+        }
+      ],
+      "rules": {
+        "S2068": {
+          "id": "S2068",
+          "shortDescription": "Hard-coded credentials are security-sensitive",
+          "fullDescription": "Because it is easy to extract strings from an application source code or binary, credentials should not be hard-coded. This is particularly true for applications that are distributed or that are open-source.",
+          "defaultLevel": "warning",
+          "helpUri": "https://rules.sonarsource.com/csharp/RSPEC-2068",
+          "properties": {
+            "category": "Blocker Security Hotspot",
+            "isEnabledByDefault": true,
+            "tags": [
+              "C#",
+              "MainSourceScope",
+              "SonarWay"
+            ]
+          }
+        },
+        "S3776": {
+          "id": "S3776",
+          "shortDescription": "Cognitive Complexity of methods should not be too high",
+          "fullDescription": "Cognitive Complexity is a measure of how hard the control flow of a method is to understand. Methods with high Cognitive Complexity will be difficult to maintain.",
+          "defaultLevel": "warning",
+          "helpUri": "https://rules.sonarsource.com/csharp/RSPEC-3776",
+          "properties": {
+            "category": "Critical Code Smell",
+            "isEnabledByDefault": false,
+            "tags": [
+              "C#",
+              "MainSourceScope",
+              "TestSourceScope",
+              "SonarWay"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

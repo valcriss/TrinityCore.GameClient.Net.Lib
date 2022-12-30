@@ -396,6 +396,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             }
             catch (ThreadInterruptedException)
             {
+                // Ending process
             }
         }
 

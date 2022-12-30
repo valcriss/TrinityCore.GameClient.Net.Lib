@@ -26,22 +26,22 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
             UpdateCreateObjects = new List<UpdateCreateObject>();
             Movements = new List<UpdateMovement>();
             UpdateOutOfRanges = new List<UpdateOutOfRange>();
-            List<ObjectUpdateType> objectUpdateTypes = new List<ObjectUpdateType>();
+            List<ObjectUpdateTypes> objectUpdateTypes = new List<ObjectUpdateTypes>();
             uint count = ReadUInt32();
             for (int i = 0; i < count; i++)
             {
-                ObjectUpdateType type = (ObjectUpdateType)ReadSByte();
+                ObjectUpdateTypes type = (ObjectUpdateTypes)ReadSByte();
                 objectUpdateTypes.Add(type);
                 switch (type)
                 {
-                    case ObjectUpdateType.UPDATETYPE_VALUES:
+                    case ObjectUpdateTypes.UPDATETYPE_VALUES:
                         UpdateValues updateValues = new UpdateValues();
                         updateValues.Guid = ReadPackedGuid();
                         updateValues.Fields = GetUpdateValues();
                         UpdateValues.Add(updateValues);
                         break;
 
-                    case ObjectUpdateType.UPDATETYPE_MOVEMENT:
+                    case ObjectUpdateTypes.UPDATETYPE_MOVEMENT:
                         UpdateMovement movement = new UpdateMovement();
                         movement.Guid = ReadPackedGuid();
                         MovementInfo movementInfo1 = new MovementInfo(Buffer, ReadIndex, TypeID.TYPEID_PLAYER);
@@ -50,8 +50,8 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
                         Movements.Add(movement);
                         break;
 
-                    case ObjectUpdateType.UPDATETYPE_CREATE_OBJECT:
-                    case ObjectUpdateType.UPDATETYPE_CREATE_OBJECT2:
+                    case ObjectUpdateTypes.UPDATETYPE_CREATE_OBJECT:
+                    case ObjectUpdateTypes.UPDATETYPE_CREATE_OBJECT2:
                         UpdateCreateObject updateCreateObject = new UpdateCreateObject();
                         updateCreateObject.Guid = ReadPackedGuid();
                         updateCreateObject.ObjectType = (TypeID)ReadSByte();
@@ -63,7 +63,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
                         UpdateCreateObjects.Add(updateCreateObject);
                         break;
 
-                    case ObjectUpdateType.UPDATETYPE_OUT_OF_RANGE_OBJECTS:
+                    case ObjectUpdateTypes.UPDATETYPE_OUT_OF_RANGE_OBJECTS:
                         UpdateOutOfRange updateOutOfRange = new UpdateOutOfRange();
                         var guidCount = ReadUInt32();
                         for (var guidIndex = 0; guidIndex < guidCount; guidIndex++)
@@ -71,12 +71,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming
                         UpdateOutOfRanges.Add(updateOutOfRange);
                         break;
 
-                    case ObjectUpdateType.UPDATETYPE_NEAR_OBJECTS:
+                    case ObjectUpdateTypes.UPDATETYPE_NEAR_OBJECTS:
 
                         break;
 
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        throw new InvalidOperationException($"{nameof(type)} is not valid");
                 }
             }
         }

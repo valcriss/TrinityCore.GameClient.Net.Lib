@@ -17,7 +17,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
 
         internal static byte[] Append(this byte[] array1, byte[] array2, int length = -1)
         {
-            if (array1 == null) array1 = new byte[0];
+            array1 ??= Array.Empty<byte>();
             if (array2 == null) return array1;
             if (length == -1) length = array2.Length;
 
@@ -56,7 +56,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Tools
             }
             catch
             {
-                return null;
+                return Array.Empty<byte>();
             }
         }
 

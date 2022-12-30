@@ -1,7 +1,7 @@
 ﻿using TrinityCore.GameClient.Net.Lib.Components.Entities;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Components.Social;
-using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Enums;
+using TrinityCore.GameClient.Net.Lib.Components.Social.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
 {

@@ -8,7 +8,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Outgoing
     {
         #region Internal Constructors
 
-        internal StandPositionRequest(ulong guid, UnitStandStateType standType) : base(WorldCommand.CMSG_STANDSTATECHANGE)
+        internal StandPositionRequest(UnitStandStateType standType) : base(WorldCommand.CMSG_STANDSTATECHANGE)
         {
             Append((uint)standType);
         }

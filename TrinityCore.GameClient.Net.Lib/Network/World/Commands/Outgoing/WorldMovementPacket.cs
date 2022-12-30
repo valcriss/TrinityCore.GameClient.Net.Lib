@@ -1,28 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
 namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing
 {
     internal class WorldMovementPacket : WorldSendablePacket
     {
+        #region Internal Properties
+
+        internal uint FallTime
+        {
+            get;
+            set;
+        }
+
+        internal MovementTypes Flags
+        {
+            get;
+            set;
+        }
+
+        internal MovementOptions Flags2
+        {
+            get;
+            set;
+        }
+
         internal ulong Guid
         {
             get;
             set;
         }
 
-        internal MovementFlags Flags
-        {
-            get;
-            set;
-        }
-
-        internal MovementFlags2 Flags2
+        internal float O
         {
             get;
             set;
@@ -52,27 +62,22 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing
             set;
         }
 
-        internal float O
-        {
-            get;
-            set;
-        }
+        #endregion Internal Properties
 
-        internal uint FallTime
-        {
-            get;
-            set;
-        }
+        #region Internal Constructors
 
         internal WorldMovementPacket(WorldCommand command) : base(command)
         {
-            
         }
+
+        #endregion Internal Constructors
+
+        #region Protected Methods
 
         protected void ReadData()
         {
             Time = (uint)(DateTime.Now - Process.GetCurrentProcess().StartTime).TotalMilliseconds;
-            Flags2 = MovementFlags2.MOVEMENTFLAG2_NONE;
+            Flags2 = MovementOptions.None;
             AppendPacketGuid(Guid);
             Append((uint)Flags);
             Append((ushort)Flags2);
@@ -83,5 +88,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Commands.Outgoing
             Append(O);
             Append(FallTime);
         }
+
+        #endregion Protected Methods
     }
 }

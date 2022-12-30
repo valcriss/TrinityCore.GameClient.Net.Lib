@@ -14,7 +14,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
         internal Position FinalDestination { get; set; }
         internal Position FinalPosition { get; set; }
         internal SplineEvaluationMode SplineEvaluationMode { get; set; }
-        internal SplineFlags? SplineFlags { get; set; }
+        internal SplineTypes? SplineFlags { get; set; }
         internal uint SplineId { get; set; }
         internal Position[] SplineNodes { get; set; }
         internal int TimePassed { get; set; }

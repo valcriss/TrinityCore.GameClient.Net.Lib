@@ -106,6 +106,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
                 Bot bot = new Bot();
                 Running.WaitOne();
+                bot.Close();
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");
                 AnsiConsole.MarkupLine("[yellow]Starting logoff process[/]");
                 AnsiConsole.MarkupLine("[gray]" + "-".PadLeft(Console.BufferWidth, '-') + "[/]");

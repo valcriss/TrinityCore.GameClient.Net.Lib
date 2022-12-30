@@ -20,29 +20,12 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
         internal WorldSendablePacket(WorldCommand command)
         {
             Command = command;
-            Buffer = new byte[0];
+            Buffer = Array.Empty<byte>();
         }
 
         #endregion Internal Constructors
 
         #region Internal Methods
-
-        internal byte[] EncryptedCommand()
-        {
-            byte[] encryptedCommand = BitConverter.GetBytes((uint)Command);
-            AuthenticationCrypto.Instance.Encrypt(encryptedCommand, 0, encryptedCommand.Length);
-
-            return encryptedCommand;
-        }
-
-        internal byte[] EncryptedSize()
-        {
-            byte[] encryptedSize = BitConverter.GetBytes(Buffer.Length + 4).SubArray(0, 2);
-            Array.Reverse(encryptedSize);
-            AuthenticationCrypto.Instance.Encrypt(encryptedSize, 0, 2);
-
-            return encryptedSize;
-        }
 
         internal void AppendPacketGuid(UInt64 guid)
         {
@@ -61,6 +44,23 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World
                 guid >>= 8;
             }
             Append(packGuid.Take(size).ToArray());
+        }
+
+        internal byte[] EncryptedCommand()
+        {
+            byte[] encryptedCommand = BitConverter.GetBytes((uint)Command);
+            AuthenticationCrypto.Instance.Encrypt(encryptedCommand, 0, encryptedCommand.Length);
+
+            return encryptedCommand;
+        }
+
+        internal byte[] EncryptedSize()
+        {
+            byte[] encryptedSize = BitConverter.GetBytes(Buffer.Length + 4).SubArray(0, 2);
+            Array.Reverse(encryptedSize);
+            AuthenticationCrypto.Instance.Encrypt(encryptedSize, 0, 2);
+
+            return encryptedSize;
         }
 
         internal override byte[] GetData()

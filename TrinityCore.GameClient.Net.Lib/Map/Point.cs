@@ -17,7 +17,16 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         public float DirectionOrientation
         {
-            get { var dir = Direction; double orientation = Math.Atan2(dir.Y, dir.X); if (orientation < 0) orientation += 2.0 * Math.PI; return (float)orientation; }
+            get
+            {
+                var dir = Direction;
+                double orientation = Math.Atan2(dir.Y, dir.X);
+                if (orientation < 0)
+                {
+                    orientation += 2.0 * Math.PI;
+                }
+                return (float)orientation;
+            }
         }
 
         public float Length
@@ -25,15 +34,11 @@ namespace TrinityCore.GameClient.Net.Lib.Map
             get { return (float)Math.Sqrt(X * X + Y * Y + Z * Z); }
         }
 
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+
         #endregion Public Properties
-
-        #region Public Fields
-
-        public float X;
-        public float Y;
-        public float Z;
-
-        #endregion Public Fields
 
         #region Public Constructors
 
@@ -80,7 +85,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return ToString().GetHashCode();
         }
 
         public override string ToString()

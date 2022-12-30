@@ -38,25 +38,5 @@ namespace TrinityCore.GameClient.Net.Lib.Map.MmapTile
         }
 
         #endregion Public Methods
-
-        #region Private Methods
-
-        private static void CheckFile(string file)
-        {
-            if (!file.Exists())
-            {
-                throw new System.IO.FileNotFoundException();
-            }
-            else if (!file.CheckExtension(Constants.MMAP_TILE_FILE_EXTENSION))
-            {
-                throw new FileBadExtensionException(Constants.MMAP_TILE_FILE_EXTENSION);
-            }
-            else if (!file.CheckRegExp(Constants.MMAP_TILE_FILE_CHECK_REGEXP))
-            {
-                throw new FileBadFilenamePatternException(Constants.MMAP_TILE_FILE_EXTENSION, Constants.MMAP_TILE_FILE_CHECK_REGEXP);
-            }
-        }
-
-        #endregion Private Methods
     }
 }

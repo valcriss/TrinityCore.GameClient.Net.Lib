@@ -1,0 +1,15 @@
+~
+uC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Configuration.csutf-8É
+zC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\GlobalSuppressions.csutf-8{
+rC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Bot.csutf-8
+vC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Command.csutf-8é
+ÑC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\CheckCommand.csutf-8ç
+ÉC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\FaceCommand.csutf-8ç
+ÉC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\PathCommand.csutf-8ë
+áC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\SitStandCommand.csutf-8é
+ÑC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\SpeakCommand.csutf-8ç
+ÉC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Models\Commands\WaveCommand.csutf-8x
+oC:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\Program.csutf-8Ö
+|C:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\SpectreLoggerHandler.csutf-8∞
+§C:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.csutf-8∑
+´C:\Users\silve\Documents\GitHub\TrinityCore.GameClient.Net.Lib\TrinityCore.GameClient.Net.Lib.Sample\obj\Debug\net6.0\TrinityCore.GameClient.Net.Lib.Sample.AssemblyInfo.csutf-8

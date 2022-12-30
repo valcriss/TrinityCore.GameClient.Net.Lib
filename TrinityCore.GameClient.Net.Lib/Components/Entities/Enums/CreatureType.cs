@@ -2,25 +2,8 @@
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Enums
 {
-    internal enum CreatureType
-    {
-        CREATURE_TYPE_BEAST = 1,
-        CREATURE_TYPE_DRAGONKIN = 2,
-        CREATURE_TYPE_DEMON = 3,
-        CREATURE_TYPE_ELEMENTAL = 4,
-        CREATURE_TYPE_GIANT = 5,
-        CREATURE_TYPE_UNDEAD = 6,
-        CREATURE_TYPE_HUMANOID = 7,
-        CREATURE_TYPE_CRITTER = 8,
-        CREATURE_TYPE_MECHANICAL = 9,
-        CREATURE_TYPE_NOT_SPECIFIED = 10,
-        CREATURE_TYPE_TOTEM = 11,
-        CREATURE_TYPE_NON_COMBAT_PET = 12,
-        CREATURE_TYPE_GAS_CLOUD = 13
-    }
-
     [Flags]
-    internal enum CreatureTypeFlags : uint
+    internal enum CreatureOptions : uint
     {
         CREATURE_TYPE_FLAG_TAMEABLE_PET =
             0x00000001, // Makes the mob tameable (must also be a beast and have family set)
@@ -72,5 +55,22 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Enums
         CREATURE_TYPE_FLAG_DO_NOT_TARGET_ON_INTERACTION = 0x20000000,
         CREATURE_TYPE_FLAG_DO_NOT_RENDER_OBJECT_NAME = 0x40000000,
         CREATURE_TYPE_FLAG_UNIT_IS_QUEST_BOSS = 0x80000000 // Not verified
+    }
+
+    internal enum CreatureType
+    {
+        CREATURE_TYPE_BEAST = 1,
+        CREATURE_TYPE_DRAGONKIN = 2,
+        CREATURE_TYPE_DEMON = 3,
+        CREATURE_TYPE_ELEMENTAL = 4,
+        CREATURE_TYPE_GIANT = 5,
+        CREATURE_TYPE_UNDEAD = 6,
+        CREATURE_TYPE_HUMANOID = 7,
+        CREATURE_TYPE_CRITTER = 8,
+        CREATURE_TYPE_MECHANICAL = 9,
+        CREATURE_TYPE_NOT_SPECIFIED = 10,
+        CREATURE_TYPE_TOTEM = 11,
+        CREATURE_TYPE_NON_COMBAT_PET = 12,
+        CREATURE_TYPE_GAS_CLOUD = 13
     }
 }

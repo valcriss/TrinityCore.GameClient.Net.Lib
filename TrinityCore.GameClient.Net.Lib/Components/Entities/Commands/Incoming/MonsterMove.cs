@@ -21,19 +21,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
         internal override void LoadData()
         {
             MonsterGuid = ReadPackedGuid();
-            sbyte zero = ReadSByte(); // = 0
+            ReadSByte(); // = 0
             Vector3 point = ReadVector3();
             Position = new Position(point, 0);
-            UInt32 splineId = ReadUInt32();
+            ReadUInt32();
             MonsterMoveType monsterMove = (MonsterMoveType)ReadSByte();
             switch (monsterMove)
             {
                 case MonsterMoveType.MonsterMoveFacingSpot:
-                    Vector3 spot = ReadVector3();
+                    ReadVector3();
                     break;
 
                 case MonsterMoveType.MonsterMoveFacingTarget:
-                    UInt64 target = ReadUInt64();
+                    ReadUInt64();
                     break;
 
                 case MonsterMoveType.MonsterMoveFacingAngle:
@@ -47,48 +47,37 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
 
             UInt32 splineFlags = ReadUInt32();
 
-            if ((splineFlags & (uint)SplineFlags.Animation) != 0)
+            if ((splineFlags & (uint)SplineTypes.Animation) != 0)
             {
-                sbyte animationId = ReadSByte();
-                Int32 effectStartTime = ReadInt32();
+                ReadSByte();
+                ReadInt32();
             }
 
-            Int32 duration = ReadInt32();
+            ReadInt32();
 
-            if ((splineFlags & (uint)SplineFlags.Parabolic) != 0)
+            if ((splineFlags & (uint)SplineTypes.Parabolic) != 0)
             {
-                float verticalAcceleration = ReadSingle();
-                Int32 effectStartTime = ReadInt32();
+                ReadSingle();
+                ReadInt32();
             }
 
-            if ((splineFlags & (uint)SplineFlags.Mask_CatmullRom) != 0)
+            if ((splineFlags & (uint)SplineTypes.Mask_CatmullRom) != 0)
             {
-                if ((splineFlags & (uint)SplineFlags.Cyclic) != 0)
+                UInt32 count = ReadUInt32();
+                for (int i = 0; i < count; i++)
                 {
-                    UInt32 count = ReadUInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        Vector3 pathPoint = ReadVector3();
-                    }
-                }
-                else
-                {
-                    UInt32 count = ReadUInt32();
-                    for (int i = 0; i < count; i++)
-                    {
-                        Vector3 pathPoint = ReadVector3();
-                    }
+                    ReadVector3();
                 }
             }
             else
             {
                 UInt32 lastIndex = ReadUInt32();
-                Vector3 destination = ReadVector3();
+                ReadVector3();
                 if (lastIndex > 1)
                 {
                     for (int i = 1; i < lastIndex; ++i)
                     {
-                        Vector3 pathPoint = ReadVector3();
+                        ReadVector3();
                     }
                 }
             }

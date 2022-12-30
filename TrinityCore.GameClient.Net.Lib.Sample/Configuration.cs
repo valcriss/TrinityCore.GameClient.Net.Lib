@@ -51,7 +51,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
 
         public static Configuration Load()
         {
-            Configuration configuration = new Configuration();
+            Configuration configuration = new();
             try
             {
                 if (System.IO.File.Exists(configuration.Filename))
@@ -62,6 +62,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample
             }
             catch (Exception)
             {
+                return null;
             }
             string objContent = JsonConvert.SerializeObject(configuration);
             System.IO.File.WriteAllText(configuration.Filename, objContent);

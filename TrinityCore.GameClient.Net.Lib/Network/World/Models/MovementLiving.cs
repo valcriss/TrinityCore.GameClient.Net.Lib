@@ -7,7 +7,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
     {
         #region Internal Properties
 
-        internal MovementFlags2 ExtraMovementFlags { get; set; }
+        internal MovementOptions ExtraMovementFlags { get; set; }
 
         internal uint FallTime { get; set; }
 
@@ -20,7 +20,7 @@ namespace TrinityCore.GameClient.Net.Lib.Network.World.Models
         // MOVEMENTFLAG_FALLING
         internal float? JumpZSpeed { get; set; }
 
-        internal MovementFlags MovementFlags { get; set; }
+        internal MovementTypes MovementFlags { get; set; }
 
         // MOVEMENTFLAG_SPLINE_ENABLED
         internal MovementSpline MovementSpline { get; set; }

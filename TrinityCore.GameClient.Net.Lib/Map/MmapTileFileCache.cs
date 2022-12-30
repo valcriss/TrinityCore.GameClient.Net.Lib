@@ -12,10 +12,7 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = new MmapTileFileCache();
-                }
+                _instance ??= new MmapTileFileCache();
                 return _instance;
             }
         }

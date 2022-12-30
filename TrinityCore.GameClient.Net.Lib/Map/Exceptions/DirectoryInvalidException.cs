@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace TrinityCore.GameClient.Net.Lib.Map.Exceptions
 {
+    [Serializable]
     public class DirectoryInvalidException : Exception
     {
         #region Public Constructors
@@ -12,5 +14,13 @@ namespace TrinityCore.GameClient.Net.Lib.Map.Exceptions
         }
 
         #endregion Public Constructors
+
+        #region Protected Constructors
+
+        protected DirectoryInvalidException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
+        #endregion Protected Constructors
     }
 }

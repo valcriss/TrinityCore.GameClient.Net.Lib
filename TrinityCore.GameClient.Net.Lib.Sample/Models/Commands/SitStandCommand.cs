@@ -11,11 +11,11 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
             switch (command.ToLower())
             {
                 case "sit":
-                    GameClient.Get<PlayerComponent>().Stand(false);
+                    GameClient.Get<PlayerComponent>().Movement.Stand(false);
                     return true;
 
                 case "stand":
-                    GameClient.Get<PlayerComponent>().Stand(true);
+                    GameClient.Get<PlayerComponent>().Movement.Stand(true);
                     return true;
 
                 default:

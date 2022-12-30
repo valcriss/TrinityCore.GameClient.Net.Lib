@@ -11,7 +11,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Outgoing
         internal FacingMovement(ulong guid, Position position, bool moving) : base(WorldCommand.MSG_MOVE_SET_FACING)
         {
             Guid = guid;
-            Flags = moving ? MovementFlags.MOVEMENTFLAG_FORWARD : MovementFlags.MOVEMENTFLAG_NONE;
+            Flags = moving ? MovementTypes.FORWARD : MovementTypes.None;
             X = position.X;
             Y = position.Y;
             Z = position.Z;

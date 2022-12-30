@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
 namespace TrinityCore.GameClient.Net.Lib.Map.Exceptions
 {
+    [Serializable]
     public class FileBadFilenamePatternException : Exception
     {
         #region Public Constructors
@@ -11,5 +13,13 @@ namespace TrinityCore.GameClient.Net.Lib.Map.Exceptions
         }
 
         #endregion Public Constructors
+
+        #region Protected Constructors
+
+        protected FileBadFilenamePatternException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
+        #endregion Protected Constructors
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System.Threading.Tasks;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
-using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Enums;
+using TrinityCore.GameClient.Net.Lib.Components.Player;
+using TrinityCore.GameClient.Net.Lib.Components.Player.Tools;
 using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Outgoing;
+using TrinityCore.GameClient.Net.Lib.Components.Social.Enums;
 using TrinityCore.GameClient.Net.Lib.Components.Social.Models;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Logging.Enums;
@@ -16,6 +18,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
         #region Public Delegates
 
         public delegate void SocialChatMessageEventHandler(MessageChatInfo chatMessage);
+
         public delegate void SocialTextEmoteEventHandler(TextEmoteInfo textEmote);
 
         #endregion Public Delegates
@@ -23,6 +26,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
         #region Public Events
 
         public event SocialChatMessageEventHandler OnChatMessage;
+
         public event SocialTextEmoteEventHandler OnTextEmote;
 
         #endregion Public Events
@@ -48,12 +52,80 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
 
         #endregion Public Constructors
 
+        #region Public Methods
+
+        public bool Channel(string channel, string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(channel, OutChatType.CHAT_MSG_CHANNEL, language, value));
+        }
+
+        public bool Emote(TextEmotes textEmote, Entity target = null)
+        {
+            return WorldClient.Send(new EmoteRequest(textEmote, target));
+        }
+
+        public bool Guild(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_GUILD, language, value));
+        }
+
+        public bool Officer(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_OFFICER, language, value));
+        }
+
+        public bool Party(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_PARTY, language, value));
+        }
+
+        public bool Raid(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_RAID, language, value));
+        }
+
+        public bool Say(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_SAY, language, value));
+        }
+
+        public bool Shout(string value)
+        {
+            return Yell(value);
+        }
+
+        public bool Whisper(string to, string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_WHISPER, language, to, value));
+        }
+
+        public bool Yell(string value)
+        {
+            Language language = GameClient.Get<PlayerComponent>().Character.Race.GetLanguage();
+            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_YELL, language, value));
+        }
+
+        #endregion Public Methods
+
         #region Private Methods
 
         private bool ContactListInfo(ContactListInfo contactList)
         {
             Contacts = contactList.Contacts;
             Logger.Append(LogCategory.SOCIAL, LogLevel.DEBUG, "Friends : " + Contacts.Friends.Count.ToString());
+            return true;
+        }
+
+        private bool EmoteInfo(EmoteInfo emoteInfo)
+        {
+            Logger.Append(LogCategory.SOCIAL, LogLevel.VERBOSE, "Emote (" + emoteInfo.Emote + ") (" + emoteInfo.Guid + ")");
             return true;
         }
 
@@ -71,62 +143,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social
         {
             Logger.Append(LogCategory.SOCIAL, LogLevel.VERBOSE, "MessageChat (" + messageChatInfo.SenderName + ") (" + messageChatInfo.Message + ")");
             Task.Run(() => OnChatMessage?.Invoke(messageChatInfo));
-            return true;
-        }
-
-        public bool Say(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_SAY, language, value));
-        }
-
-        public bool Shout(string value, Language language = Language.LANG_COMMON)
-        {
-            return Yell(value, language);
-        }
-
-        public bool Yell(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_YELL, language, value));
-        }
-
-        public bool Party(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_PARTY, language, value));
-        }
-
-        public bool Raid(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_RAID, language, value));
-        }
-
-        public bool Guild(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_GUILD, language, value));
-        }
-
-        public bool Officer(string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_OFFICER, language, value));
-        }
-
-        public bool Whisper(string to, string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(OutChatType.CHAT_MSG_WHISPER, language, to, value));
-        }
-
-        public bool Channel(string channel, string value, Language language = Language.LANG_COMMON)
-        {
-            return WorldClient.Send(new MessageChatRequest(channel, OutChatType.CHAT_MSG_CHANNEL, language, value));
-        }
-
-        public bool Emote(TextEmotes textEmote, Entity target = null)
-        {
-            return WorldClient.Send(new EmoteRequest(textEmote, target));
-        }
-
-        private bool EmoteInfo(EmoteInfo emoteInfo)
-        {
-            Logger.Append(LogCategory.SOCIAL, LogLevel.VERBOSE, "Emote (" + emoteInfo.Emote + ") (" + emoteInfo.Guid + ")");
             return true;
         }
 

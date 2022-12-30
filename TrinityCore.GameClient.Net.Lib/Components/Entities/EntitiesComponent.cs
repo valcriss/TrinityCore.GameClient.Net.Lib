@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
-using TrinityCore.GameClient.Net.Lib.Components.Player;
 using TrinityCore.GameClient.Net.Lib.Logging;
 using TrinityCore.GameClient.Net.Lib.Network.World;
 using TrinityCore.GameClient.Net.Lib.Network.World.Commands.Incoming;
@@ -19,12 +17,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
         public EntitiesCollection Collection { get; set; }
 
         #endregion Public Properties
-
-        #region Private Properties
-
-        private PlayerComponent Player { get; set; }
-
-        #endregion Private Properties
 
         #region Public Constructors
 
@@ -71,6 +63,11 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
         {
             Collection.Close();
             base.Close();
+        }
+
+        public Models.Player FindPlayerByName(string name)
+        {
+            return Collection.Players.Values.FirstOrDefault(c => c.Name == name);
         }
 
         #endregion Public Methods
@@ -157,15 +154,10 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 
             if (updateObject.UpdateOutOfRanges.Count > 0)
             {
-                // TODO: do something
+                // Research needed
             }
 
             return true;
-        }
-
-        public Models.Player FindPlayerByName(string name)
-        {
-            return Collection.Players.Values.Where(c => c.Name == name).FirstOrDefault();
         }
 
         #endregion Private Methods

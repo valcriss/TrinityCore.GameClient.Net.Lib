@@ -20,32 +20,32 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
         {
             Guid = ReadPackedGuid();
             MovementLiving = new MovementLiving();
-            MovementLiving.MovementFlags = (MovementFlags)ReadUInt32();
-            MovementLiving.ExtraMovementFlags = (MovementFlags2)ReadUInt16();
+            MovementLiving.MovementFlags = (MovementTypes)ReadUInt32();
+            MovementLiving.ExtraMovementFlags = (MovementOptions)ReadUInt16();
             MovementLiving.Time = ReadUInt32();
             MovementLiving.Position = new Position(ReadVector3(), ReadSingle());
 
-            if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_ONTRANSPORT))
+            if (MovementLiving.MovementFlags.HasFlag(MovementTypes.ONTRANSPORT))
             {
                 MovementLiving.TransportGuid = ReadPackedGuid();
                 MovementLiving.TransportPosition = new Position(ReadVector3(), ReadSingle());
 
                 MovementLiving.TransportTime = ReadUInt32();
                 MovementLiving.TransportSeat = ReadByte();
-                if (MovementLiving.ExtraMovementFlags.HasFlag(MovementFlags2.MOVEMENTFLAG2_INTERPOLATED_MOVEMENT))
+                if (MovementLiving.ExtraMovementFlags.HasFlag(MovementOptions.INTERPOLATED_MOVEMENT))
                     MovementLiving.TransportTime2 = ReadUInt32();
             }
 
-            if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SWIMMING) || MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_FLYING)
-                                                                                          || MovementLiving.ExtraMovementFlags.HasFlag(MovementFlags2
-                                                                                              .MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING))
+            if (MovementLiving.MovementFlags.HasFlag(MovementTypes.SWIMMING) || MovementLiving.MovementFlags.HasFlag(MovementTypes.FLYING)
+                                                                                          || MovementLiving.ExtraMovementFlags.HasFlag(MovementOptions
+                                                                                              .ALWAYS_ALLOW_PITCHING))
             {
                 MovementLiving.Pitch = ReadSingle();
             }
 
             MovementLiving.FallTime = ReadUInt32();
 
-            if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_FALLING))
+            if (MovementLiving.MovementFlags.HasFlag(MovementTypes.FALLING))
             {
                 MovementLiving.JumpZSpeed = ReadSingle();
                 MovementLiving.JumpSinAngle = ReadSingle();
@@ -53,7 +53,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming
                 MovementLiving.JumpXySpeed = ReadSingle();
             }
 
-            if (MovementLiving.MovementFlags.HasFlag(MovementFlags.MOVEMENTFLAG_SPLINE_ELEVATION))
+            if (MovementLiving.MovementFlags.HasFlag(MovementTypes.SPLINE_ELEVATION))
             {
                 MovementLiving.SplineElevation = ReadSingle();
             }

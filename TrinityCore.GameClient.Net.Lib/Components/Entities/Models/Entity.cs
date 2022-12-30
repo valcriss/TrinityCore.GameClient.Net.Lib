@@ -13,7 +13,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         public Dictionary<UpdateFields, uint> Fields { get; set; }
         public ulong Guid { get; set; }
         public Movement Movement { get; set; }
-        public string Name { get => _name != null ? _name : Guid.ToString(); set => _name = value; }
+        public string Name { get => _name ?? Guid.ToString(); set => _name = value; }
         public TypeID Type { get; set; }
 
         #endregion Public Properties

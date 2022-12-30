@@ -15,7 +15,7 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
                 Player other = GameClient.Get<EntitiesComponent>().FindPlayerByName("Daniel");
                 if (other != null)
                 {
-                    GameClient.Get<PlayerComponent>().Face(other);
+                    GameClient.Get<PlayerComponent>().Movement.Face(other);
                     return true;
                 }
             }

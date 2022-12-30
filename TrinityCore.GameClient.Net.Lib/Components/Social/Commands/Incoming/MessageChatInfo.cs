@@ -1,5 +1,5 @@
 ﻿using System;
-using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Enums;
+using TrinityCore.GameClient.Net.Lib.Components.Social.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 using TrinityCore.GameClient.Net.Lib.Network.World.Enums;
 
@@ -28,8 +28,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
             bool gmMessage = Command == WorldCommand.SMSG_GM_MESSAGECHAT;
             ChatType = (ChatType)ReadByte();
             Language = (Language)ReadUInt32();
-            SenderGuid = (ulong)ReadUInt64();
-            uint empty = ReadUInt32();
+            SenderGuid = ReadUInt64();
+            ReadUInt32();
             switch (ChatType)
             {
                 case ChatType.CHAT_MSG_MONSTER_SAY:
@@ -41,7 +41,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
                 case ChatType.CHAT_MSG_RAID_BOSS_WHISPER:
                 case ChatType.CHAT_MSG_BATTLENET:
                     SenderName = ReadUInt32String();
-                    ReceiverGuid = (ulong)ReadUInt64();
+                    ReceiverGuid = ReadUInt64();
                     if (IsDataLeft())
                     {
                         ReceiverName = ReadUInt32String();
@@ -50,13 +50,13 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
 
                 case ChatType.CHAT_MSG_WHISPER_FOREIGN:
                     SenderName = ReadUInt32String();
-                    ReceiverGuid = (ulong)ReadUInt64();
+                    ReceiverGuid = ReadUInt64();
                     break;
 
                 case ChatType.CHAT_MSG_BG_SYSTEM_NEUTRAL:
                 case ChatType.CHAT_MSG_BG_SYSTEM_ALLIANCE:
                 case ChatType.CHAT_MSG_BG_SYSTEM_HORDE:
-                    ReceiverGuid = (ulong)ReadUInt64();
+                    ReceiverGuid = ReadUInt64();
                     if (IsDataLeft())
                     {
                         ReceiverName = ReadUInt32String();
@@ -65,7 +65,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
 
                 case ChatType.CHAT_MSG_ACHIEVEMENT:
                 case ChatType.CHAT_MSG_GUILD_ACHIEVEMENT:
-                    ReceiverGuid = (ulong)ReadUInt64();
+                    ReceiverGuid = ReadUInt64();
                     break;
 
                 default:
@@ -77,12 +77,12 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Incoming
                     {
                         ChannelName = ReadUInt32String();
                     }
-                    ReceiverGuid = (ulong)ReadUInt64();
+                    ReceiverGuid = ReadUInt64();
                     break;
             }
 
             Message = ReadUInt32String();
-            sbyte empty2 = ReadSByte();
+            ReadSByte();
             if (ChatType == ChatType.CHAT_MSG_ACHIEVEMENT || ChatType == ChatType.CHAT_MSG_GUILD_ACHIEVEMENT)
                 AchievementId = ReadUInt32();
         }

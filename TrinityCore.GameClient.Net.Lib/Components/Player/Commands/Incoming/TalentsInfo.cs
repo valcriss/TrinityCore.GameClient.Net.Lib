@@ -18,7 +18,6 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
         #region Private Fields
 
         private const sbyte MAX_TALENT_SPECS = 2;
-        private const sbyte MAX_TALENT_TABS = 2;
 
         #endregion Private Fields
 
@@ -44,7 +43,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
             {
                 UnSpendPoints = ReadUInt32();
                 sbyte talentGroupCount = ReadSByte();
-                sbyte talentGroupIndex = ReadSByte();
+                ReadSByte();
 
                 if (talentGroupCount > 0)
                 {

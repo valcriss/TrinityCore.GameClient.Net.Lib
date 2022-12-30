@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using TrinityCore.GameClient.Net.Lib.Components.Social.Commands.Models;
+using TrinityCore.GameClient.Net.Lib.Components.Social.Models;
 using TrinityCore.GameClient.Net.Lib.Network.Core;
 
 namespace TrinityCore.GameClient.Net.Lib.Components.Factions.Commands.Incoming

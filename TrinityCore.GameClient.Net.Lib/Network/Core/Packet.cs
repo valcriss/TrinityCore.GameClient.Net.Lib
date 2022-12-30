@@ -74,11 +74,9 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             var packedDate = ReadInt32();
             var minute = packedDate & 0x3F;
             var hour = (packedDate >> 6) & 0x1F;
-            // var weekDay = (packedDate >> 11) & 7;
             var day = (packedDate >> 14) & 0x3F;
             var month = (packedDate >> 20) & 0xF;
             var year = (packedDate >> 24) & 0x1F;
-            // var something2 = (packedDate >> 29) & 3; always 0
 
             return new DateTime(2000, 1, 1).AddYears(year).AddMonths(month).AddDays(day).AddHours(hour)
                 .AddMinutes(minute);
@@ -87,6 +85,11 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
         #endregion Internal Methods
 
         #region Protected Methods
+
+        protected bool IsDataLeft()
+        {
+            return Buffer.Length > ReadIndex;
+        }
 
         protected byte PeekByte()
         {
@@ -121,39 +124,24 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             return value;
         }
 
-        protected string ReadUInt32String()
-        {
-            UInt32 length = ReadUInt32();
-            if (length == 0) return string.Empty;
-            byte[] raw = ReadBytes((int)length);
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < raw.Length; i++)
-            {
-                if (raw[i] != 0)
-                    builder.Append((char)raw[i]);
-            }
-            return builder.ToString();
-        }
-
-        protected string ReadInt32String()
-        {
-            Int32 length = ReadInt32();
-            byte[] raw = ReadBytes((int)length);
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < raw.Length; i++)
-            {
-                if (raw[i] != 0)
-                    builder.Append((char)raw[i]);
-            }
-            return builder.ToString();
-        }
-
-
         protected int ReadInt32()
         {
             int value = BitConverter.ToInt32(Buffer, ReadIndex);
             ReadIndex += 4;
             return value;
+        }
+
+        protected string ReadInt32String()
+        {
+            Int32 length = ReadInt32();
+            byte[] raw = ReadBytes(length);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < raw.Length; i++)
+            {
+                if (raw[i] != 0)
+                    builder.Append((char)raw[i]);
+            }
+            return builder.ToString();
         }
 
         protected long ReadInt64()
@@ -230,16 +218,25 @@ namespace TrinityCore.GameClient.Net.Lib.Network.Core
             return value;
         }
 
+        protected string ReadUInt32String()
+        {
+            UInt32 length = ReadUInt32();
+            if (length == 0) return string.Empty;
+            byte[] raw = ReadBytes((int)length);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < raw.Length; i++)
+            {
+                if (raw[i] != 0)
+                    builder.Append((char)raw[i]);
+            }
+            return builder.ToString();
+        }
+
         protected ulong ReadUInt64()
         {
             ulong value = BitConverter.ToUInt64(Buffer, ReadIndex);
             ReadIndex += 8;
             return value;
-        }
-
-        protected bool IsDataLeft()
-        {
-            return Buffer.Length > ReadIndex;
         }
 
         protected Vector3 ReadVector3()

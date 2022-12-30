@@ -9,8 +9,6 @@
 
         #endregion Public Properties
 
-
-
         #region Public Constructors
 
         public AuthServerInfo(string hostname) : this(hostname, 3724)

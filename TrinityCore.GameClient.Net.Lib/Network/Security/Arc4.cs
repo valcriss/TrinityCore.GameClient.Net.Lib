@@ -39,9 +39,7 @@
                 _x = (byte)(_x + 1);
                 _y = (byte)(_state[_x] + _y);
                 // swap byte
-                var tmp = _state[_x];
-                _state[_x] = _state[_y];
-                _state[_y] = tmp;
+                (_state[_y], _state[_x]) = (_state[_x], _state[_y]);
 
                 var xorIndex = (byte)(_state[_x] + _state[_y]);
                 outputBuffer[outputOffset + counter] = (byte)(inputBuffer[inputOffset + counter] ^ _state[xorIndex]);
@@ -62,9 +60,8 @@
             {
                 index2 = (byte)(key[index1] + _state[counter] + index2);
                 // swap byte
-                byte tmp = _state[counter];
-                _state[counter] = _state[index2];
-                _state[index2] = tmp;
+                (_state[index2], _state[counter]) = (_state[counter], _state[index2]);
+
                 index1 = (byte)((index1 + 1) % key.Length);
             }
         }

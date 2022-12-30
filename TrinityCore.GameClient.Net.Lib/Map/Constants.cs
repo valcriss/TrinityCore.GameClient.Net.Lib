@@ -1,6 +1,6 @@
 ﻿namespace TrinityCore.GameClient.Net.Lib.Map
 {
-    public class Constants
+    public static class Constants
     {
         #region Public Fields
 
