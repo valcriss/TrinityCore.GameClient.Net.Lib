@@ -12,19 +12,19 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
     {
         #region Public Properties
 
-        public Dictionary<ulong, Creature> Creatures { get; set; }
-        public Dictionary<ulong, GameObject> GameObjects { get; set; }
-        public Dictionary<ulong, Item> Items { get; set; }
-        public Dictionary<ulong, Npc> Npc { get; set; }
-        public Dictionary<ulong, Player> Players { get; set; }
+        public EntityTypeCollection<Creature> Creatures { get; set; }
+        public EntityTypeCollection<GameObject> GameObjects { get; set; }
+        public EntityTypeCollection<Item> Items { get; set; }
+        public EntityTypeCollection<Npc> Npc { get; set; }
+        public EntityTypeCollection<Player> Players { get; set; }
 
         #endregion Public Properties
 
         #region Private Properties
 
-        private Dictionary<ulong, MapType> Map { get; set; }
-        private Dictionary<ulong, Entity> UnCategorized { get; set; }
-        private Dictionary<ulong, Entity> UnCategorizedUnit { get; set; }
+        private ValueCollection<MapType> Map { get; set; }
+        private EntityTypeCollection<Entity> UnCategorized { get; set; }
+        private EntityTypeCollection<Entity> UnCategorizedUnit { get; set; }
         private Thread UpdateUnitThread { get; set; }
         private WorldClient WorldClient { get; set; }
 
@@ -35,14 +35,14 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         internal EntitiesCollection(WorldClient client)
         {
             WorldClient = client;
-            Players = new Dictionary<ulong, Player>();
-            Npc = new Dictionary<ulong, Npc>();
-            Creatures = new Dictionary<ulong, Creature>();
-            Items = new Dictionary<ulong, Item>();
-            GameObjects = new Dictionary<ulong, GameObject>();
-            Map = new Dictionary<ulong, MapType>();
-            UnCategorized = new Dictionary<ulong, Entity>();
-            UnCategorizedUnit = new Dictionary<ulong, Entity>();
+            Players = new EntityTypeCollection<Player>();
+            Npc = new EntityTypeCollection<Npc>();
+            Creatures = new EntityTypeCollection<Creature>();
+            Items = new EntityTypeCollection<Item>();
+            GameObjects = new EntityTypeCollection<GameObject>();
+            Map = new ValueCollection<MapType>();
+            UnCategorized = new EntityTypeCollection<Entity>();
+            UnCategorizedUnit = new EntityTypeCollection<Entity>();
             UpdateUnitThread = new Thread(UpdateUnit);
             UpdateUnitThread.Start();
         }
@@ -57,61 +57,31 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             switch (type)
             {
                 case TypeID.TYPEID_ITEM:
-                    lock (Items)
-                    {
-                        if (!Items.ContainsKey(entity.Guid))
-                        {
-                            Items.Add(entity.Guid, new Item(entity));
-                            Map[entity.Guid] = MapType.ITEM;
-                        }
-                    }
+                    Items.Add(new Item(entity));
+                    Map.Set(entity.Guid, MapType.ITEM);
                     break;
 
                 case TypeID.TYPEID_UNIT:
-                    lock (UnCategorizedUnit)
-                    {
-                        if (!UnCategorizedUnit.ContainsKey(entity.Guid))
-                        {
-                            UnCategorizedUnit.Add(entity.Guid, entity);
-                            Map[entity.Guid] = MapType.UNIT;
-                        }
-                    }
+                    UnCategorizedUnit.Add(entity);
+                    Map.Set(entity.Guid, MapType.UNIT);
                     break;
 
                 case TypeID.TYPEID_PLAYER:
-                    lock (Players)
-                    {
-                        if (!Players.ContainsKey(entity.Guid))
-                        {
-                            Players.Add(entity.Guid, new Player(entity));
-                            Map[entity.Guid] = MapType.PLAYER;
-                            WorldClient.Send(new NameQueryRequest(entity.Guid));
-                        }
-                    }
+                    Players.Add(new Player(entity));
+                    Map.Set(entity.Guid, MapType.PLAYER);
+                    WorldClient.Send(new NameQueryRequest(entity.Guid));
                     break;
 
                 case TypeID.TYPEID_GAMEOBJECT:
-                    lock (GameObjects)
-                    {
-                        if (!GameObjects.ContainsKey(entity.Guid))
-                        {
-                            GameObjects.Add(entity.Guid, new GameObject(entity));
-                            Map[entity.Guid] = MapType.GAME_OBJECT;
-                        }
-                    }
+                    GameObjects.Add(new GameObject(entity));
+                    Map.Set(entity.Guid, MapType.GAME_OBJECT);
                     break;
 
                 default:
                     return;
             }
 
-            lock (UnCategorized)
-            {
-                if (UnCategorized.ContainsKey(entity.Guid))
-                {
-                    UnCategorized.Remove(entity.Guid);
-                }
-            }
+            UnCategorized.Remove(entity.Guid);
         }
 
         internal void Close()
@@ -121,85 +91,36 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
 
         internal void DestroyEntity(ulong guid)
         {
-            MapType type = MapType.UNKNOWN;
-            lock (Map)
-            {
-                if (Map.ContainsKey(guid))
-                {
-                    type = Map[guid];
-                }
-            }
+            MapType type = Map.Contains(guid) ? Map.Get(guid) : MapType.UNKNOWN;
 
             switch (type)
             {
                 case MapType.UNKNOWN:
-                    lock (UnCategorized)
-                    {
-                        if (UnCategorized.ContainsKey(guid))
-                        {
-                            UnCategorized.Remove(guid);
-                        }
-                    }
+                    UnCategorized.Remove(guid);
                     break;
 
                 case MapType.PLAYER:
-                    lock (Players)
-                    {
-                        if (Players.ContainsKey(guid))
-                        {
-                            Players.Remove(guid);
-                        }
-                    }
+                    Players.Remove(guid);
                     break;
 
                 case MapType.UNIT:
-                    lock (UnCategorizedUnit)
-                    {
-                        if (UnCategorizedUnit.ContainsKey(guid))
-                        {
-                            UnCategorizedUnit.Remove(guid);
-                        }
-                    }
+                    UnCategorizedUnit.Remove(guid);
                     break;
 
                 case MapType.NPC:
-                    lock (Npc)
-                    {
-                        if (Npc.ContainsKey(guid))
-                        {
-                            Npc.Remove(guid);
-                        }
-                    }
+                    Npc.Remove(guid);
                     break;
 
                 case MapType.CREATURE:
-                    lock (Creatures)
-                    {
-                        if (Creatures.ContainsKey(guid))
-                        {
-                            Creatures.Remove(guid);
-                        }
-                    }
+                    Creatures.Remove(guid);
                     break;
 
                 case MapType.ITEM:
-                    lock (Items)
-                    {
-                        if (Items.ContainsKey(guid))
-                        {
-                            Items.Remove(guid);
-                        }
-                    }
+                    Items.Remove(guid);
                     break;
 
                 case MapType.GAME_OBJECT:
-                    lock (GameObjects)
-                    {
-                        if (GameObjects.ContainsKey(guid))
-                        {
-                            GameObjects.Remove(guid);
-                        }
-                    }
+                    GameObjects.Remove(guid);
                     break;
             }
         }
@@ -208,95 +129,39 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         {
             ulong? guid = WorldClient?.GetCharacter()?.GUID;
             if (guid == null) return null;
-            if (!Players.ContainsKey(guid.Value)) return null;
-            return Players[guid.Value];
+            return Players.Get(guid.Value);
         }
 
         internal Entity GetUnit(ulong guid)
         {
-            MapType type = MapType.UNKNOWN;
-            lock (Map)
-            {
-                if (Map.ContainsKey(guid))
-                {
-                    type = Map[guid];
-                }
-            }
-
+            MapType type = Map.Contains(guid) ? Map.Get(guid) : MapType.UNKNOWN;
+            Entity entity = null;
             switch (type)
             {
                 case MapType.UNKNOWN:
-                    lock (UnCategorized)
-                    {
-                        if (UnCategorized.ContainsKey(guid))
-                        {
-                            return UnCategorized[guid];
-                        }
-                    }
+                    entity = UnCategorized.Get(guid);
                     break;
-
                 case MapType.PLAYER:
-                    lock (Players)
-                    {
-                        if (Players.ContainsKey(guid))
-                        {
-                            return Players[guid];
-                        }
-                    }
+                    entity = Players.Get(guid);
                     break;
-
                 case MapType.UNIT:
-                    lock (UnCategorizedUnit)
-                    {
-                        if (UnCategorizedUnit.ContainsKey(guid))
-                        {
-                            return UnCategorizedUnit[guid];
-                        }
-                    }
+                    entity = UnCategorizedUnit.Get(guid);
                     break;
-
                 case MapType.NPC:
-                    lock (Npc)
-                    {
-                        if (Npc.ContainsKey(guid))
-                        {
-                            return Npc[guid];
-                        }
-                    }
+                    entity = Npc.Get(guid);
                     break;
-
                 case MapType.CREATURE:
-                    lock (Creatures)
-                    {
-                        if (Creatures.ContainsKey(guid))
-                        {
-                            return Creatures[guid];
-                        }
-                    }
+                    entity = Creatures.Get(guid);
                     break;
-
                 case MapType.ITEM:
-                    lock (Items)
-                    {
-                        if (Items.ContainsKey(guid))
-                        {
-                            return Items[guid];
-                        }
-                    }
+                    entity = Items.Get(guid);
                     break;
-
                 case MapType.GAME_OBJECT:
-                    lock (GameObjects)
-                    {
-                        if (GameObjects.ContainsKey(guid))
-                        {
-                            return GameObjects[guid];
-                        }
-                    }
+                    entity = GameObjects.Get(guid);
                     break;
             }
 
-            return AddEntity(guid);
+            return entity ?? AddEntity(guid);
         }
 
         #endregion Internal Methods
@@ -306,21 +171,8 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
         private Entity AddEntity(ulong guid)
         {
             Entity entity = new Entity(guid);
-            lock (UnCategorized)
-            {
-                if (UnCategorized.ContainsKey(guid))
-                {
-                    UnCategorized.Add(guid, entity);
-                }
-            }
-
-            lock (Map)
-            {
-                if (!Map.ContainsKey(guid))
-                {
-                    Map.Add(guid, MapType.UNKNOWN);
-                }
-            }
+            UnCategorized.Add(entity);
+            Map.Add(guid, MapType.UNKNOWN);
             return entity;
         }
 
@@ -330,68 +182,29 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
             {
                 while (true)
                 {
-                    Entity entity;
-                    lock (UnCategorizedUnit)
+                    Thread.Sleep(100);
+
+                    Entity entity = UnCategorizedUnit.FirstOrDefault();
+
+                    if (entity == null) continue;
+                    if (!entity.Fields.ContainsKey(UpdateFields.OBJECT_FIELD_ENTRY)) continue;
+
+                    uint entryId = entity.Fields[UpdateFields.OBJECT_FIELD_ENTRY];
+                    UnitInfo info = WorldClient.Query.GetUnitInfo(entryId, entity.Guid).Result;
+
+                    if (info == null) continue;
+
+                    if (entity.Fields.ContainsKey(UpdateFields.UNIT_FIELD_FLAGS) && entity.Fields[UpdateFields.UNIT_FIELD_FLAGS] > 0)
                     {
-                        entity = UnCategorizedUnit.Values.FirstOrDefault();
-                    }
-
-                    if (entity != null)
-                    {
-                        if (entity.Fields.ContainsKey(UpdateFields.OBJECT_FIELD_ENTRY))
-                        {
-                            uint entryId = entity.Fields[UpdateFields.OBJECT_FIELD_ENTRY];
-                            UnitInfo info = WorldClient.Query.GetUnitInfo(entryId, entity.Guid).Result;
-                            if (info != null)
-                            {
-                                if (entity.Fields.ContainsKey(UpdateFields.UNIT_FIELD_FLAGS) && entity.Fields[UpdateFields.UNIT_FIELD_FLAGS] > 0)
-                                {
-                                    lock (Npc)
-                                    {
-                                        if (!Npc.ContainsKey(entity.Guid))
-                                        {
-                                            Npc npc = new Npc(entity, info);
-                                            npc.Name = npc.Infos.Name;
-                                            Npc.Add(entity.Guid, npc);
-                                        }
-                                    }
-
-                                    lock (Map)
-                                    {
-                                        Map[entity.Guid] = MapType.NPC;
-                                    }
-                                }
-                                else
-                                {
-                                    lock (Creatures)
-                                    {
-                                        if (!Creatures.ContainsKey(entity.Guid))
-                                        {
-                                            Creature creature = new Creature(entity, info);
-                                            creature.Name = creature.Infos.Name;
-                                            Creatures.Add(entity.Guid, creature);
-                                        }
-                                    }
-                                    lock (Map)
-                                    {
-                                        Map[entity.Guid] = MapType.CREATURE;
-                                    }
-                                }
-
-                                lock (UnCategorizedUnit)
-                                {
-                                    if (UnCategorizedUnit.ContainsKey(entity.Guid))
-                                    {
-                                        UnCategorizedUnit.Remove(entity.Guid);
-                                    }
-                                }
-                            }
-                        }
+                        Npc.Add(new Npc(entity, info) { Name = info.Name });
+                        Map.Add(entity.Guid, MapType.NPC);
                     }
                     else
                     {
-                        Thread.Sleep(100);
+                        Creatures.Add(new Creature(entity, info) { Name = info.Name });
+                        Map.Add(entity.Guid, MapType.CREATURE);
                     }
+                    UnCategorizedUnit.Remove(entity.Guid);
                 }
             }
             catch (ThreadInterruptedException)

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Incoming;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Models;
 using TrinityCore.GameClient.Net.Lib.Logging;
@@ -67,7 +66,7 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities
 
         public Models.Player FindPlayerByName(string name)
         {
-            return Collection.Players.Values.FirstOrDefault(c => c.Name == name);
+            return Collection.Players.FirstOrDefault(c => c.Name == name);
         }
 
         #endregion Public Methods

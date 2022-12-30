@@ -30,49 +30,73 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Player.Commands.Incoming
             IsPet = ReadSByte() != 0;
             if (IsPet)
             {
-                UnSpendPoints = ReadUInt32();
-                sbyte count = ReadSByte();
-                for (int i = 0; i < count; i++)
-                    Talents.Add(new Talent
-                    {
-                        TalentId = ReadUInt32(),
-                        TalentRank = ReadSByte()
-                    });
+                LoadPetTalents();
             }
             else
             {
-                UnSpendPoints = ReadUInt32();
-                sbyte talentGroupCount = ReadSByte();
-                ReadSByte();
-
-                if (talentGroupCount > 0)
-                {
-                    if (talentGroupCount > MAX_TALENT_SPECS)
-                        talentGroupCount = MAX_TALENT_SPECS;
-
-                    for (int i = 0; i < talentGroupCount; i++)
-                    {
-                        sbyte talentIdCount = ReadSByte();
-                        for (int j = 0; j < talentIdCount; j++)
-                            Talents.Add(new Talent
-                            {
-                                Group = i,
-                                TalentId = ReadUInt32(),
-                                TalentRank = ReadSByte()
-                            });
-
-                        sbyte maxGlyphCount = ReadSByte();
-                        for (int j = 0; j < maxGlyphCount; j++)
-                            Glyphs.Add(new Glyph
-                            {
-                                Group = i,
-                                GlyphId = ReadUInt16()
-                            });
-                    }
-                }
+                LoadPlayerTalents();
             }
         }
 
         #endregion Internal Methods
+
+        #region Private Methods
+
+        private void LoadGlyphs(int group, sbyte glyphsToLoad)
+        {
+            for (int j = 0; j < glyphsToLoad; j++)
+                Glyphs.Add(new Glyph
+                {
+                    Group = group,
+                    GlyphId = ReadUInt16()
+                });
+        }
+
+        private void LoadPetTalents()
+        {
+            UnSpendPoints = ReadUInt32();
+            sbyte count = ReadSByte();
+            for (int i = 0; i < count; i++)
+            {
+                Talents.Add(new Talent
+                {
+                    TalentId = ReadUInt32(),
+                    TalentRank = ReadSByte()
+                });
+            }
+        }
+
+        private void LoadPlayerTalents()
+        {
+            UnSpendPoints = ReadUInt32();
+            sbyte talentGroupCount = ReadSByte();
+            ReadSByte();
+
+            if (talentGroupCount == 0) return;
+            if (talentGroupCount > MAX_TALENT_SPECS)
+                talentGroupCount = MAX_TALENT_SPECS;
+
+            for (int group = 0; group < talentGroupCount; group++)
+            {
+                sbyte talentsToLoad = ReadSByte();
+                LoadTalents(group, talentsToLoad);
+
+                sbyte glyphsToLoad = ReadSByte();
+                LoadGlyphs(group, glyphsToLoad);
+            }
+        }
+
+        private void LoadTalents(int group, sbyte talentsToLoad)
+        {
+            for (int j = 0; j < talentsToLoad; j++)
+                Talents.Add(new Talent
+                {
+                    Group = group,
+                    TalentId = ReadUInt32(),
+                    TalentRank = ReadSByte()
+                });
+        }
+
+        #endregion Private Methods
     }
 }

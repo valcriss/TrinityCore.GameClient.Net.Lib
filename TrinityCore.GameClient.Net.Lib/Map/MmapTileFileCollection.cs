@@ -14,6 +14,24 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         public List<MmapTileFile> MmapTileFiles { get; set; }
         public MmapTileFile StartTile { get; set; }
 
+        public int StepX
+        {
+            get
+            {
+                if (StartTile == null || EndTile == null) return 0;
+                return (StartTile.TileX < EndTile.TileX) ? 1 : -1;
+            }
+        }
+
+        public int StepY
+        {
+            get
+            {
+                if (StartTile == null || EndTile == null) return 0;
+                return (StartTile.TileY < EndTile.TileY) ? 1 : -1;
+            }
+        }
+
         #endregion Public Properties
 
         #region Private Constructors
@@ -31,9 +49,9 @@ namespace TrinityCore.GameClient.Net.Lib.Map
         {
             MmapFile mmap = collection.GetMap(mapId);
             MmapTileFile startTile = mmap.GetMmapTileFileFromVector3(start);
-            if (startTile == null) return null;
             MmapTileFile endTile = mmap.GetMmapTileFileFromVector3(end);
-            if (endTile == null) return null;
+
+            if (endTile == null || startTile == null) return null;
 
             MmapTileFileCollection tmp = new MmapTileFileCollection() { StartTile = startTile, EndTile = endTile };
 
@@ -44,19 +62,13 @@ namespace TrinityCore.GameClient.Net.Lib.Map
                 return tmp;
             }
 
-            int stepX = (startTile.TileX < endTile.TileX) ? 1 : -1;
-            int stepY = (startTile.TileY < endTile.TileY) ? 1 : -1;
-
-            for (int x = startTile.TileX; x != endTile.TileX; x += stepX)
+            for (int x = startTile.TileX; x != endTile.TileX; x += tmp.StepX)
             {
-                for (int y = startTile.TileY; y != endTile.TileY; y += stepY)
+                for (int y = startTile.TileY; y != endTile.TileY; y += tmp.StepY)
                 {
                     MmapTileFile tile = mmap.GetMmapTileFileFromCoords(x, y);
-                    if (tile != null)
-                    {
-                        if (tmp.MmapTileFiles.Any(c => c.Key == tile.Key)) continue;
-                        tmp.MmapTileFiles.Add(tile);
-                    }
+                    if (tile == null || tmp.MmapTileFiles.Any(c => c.Key == tile.Key)) continue;
+                    tmp.MmapTileFiles.Add(tile);
                 }
             }
 

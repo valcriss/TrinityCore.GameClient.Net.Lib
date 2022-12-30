@@ -46,43 +46,15 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
             switch (command.ToLower())
             {
                 case "distance":
-                    if (otherPosition == null) return false;
-                    GameClient.Get<SocialComponent>().Whisper("Daniel", "Distance (" + (otherPosition - current).Length + ")");
+                    Distance(current, otherPosition);
                     return true;
 
                 case "try":
-                    Position target = otherPosition;
-                    Path p = PathFinding.FindPath(GameClient.Get<ZoneComponent>().WorldState.MapId, current.ToVector3(), target.ToVector3(), 7f);
-                    if (p == null)
-                    {
-                        GameClient.Get<SocialComponent>().Whisper("Daniel", "No path found");
-                    }
-                    else
-                    {
-                        GameClient.Get<SocialComponent>().Whisper("Daniel", "Found a path with " + p.Points.Length + " points");
-                    }
+                    Try(current, otherPosition);
                     return true;
 
                 case "run":
-                    GameClient.Get<SocialComponent>().Whisper("Daniel", "Running path");
-                    Task.Run(() =>
-                    {
-                        TravelState state = GameClient.Get<PlayerComponent>().Movement.MoveTo(otherPosition);
-                        if (state == TravelState.ERROR)
-                        {
-                            return;
-                        }
-                        while (state != TravelState.DESTINATION_REACH)
-                        {
-                            System.Threading.Thread.Sleep(100);
-                            state = GameClient.Get<PlayerComponent>().Movement.MoveTo(otherPosition);
-                            if (state == TravelState.ERROR)
-                            {
-                                break;
-                            }
-                        }
-                    });
-
+                    Run(otherPosition);
                     return true;
 
                 default:
@@ -91,5 +63,49 @@ namespace TrinityCore.GameClient.Net.Lib.Sample.Models.Commands
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private static void Distance(Position current, Position otherPosition)
+        {
+            GameClient.Get<SocialComponent>().Whisper("Daniel", "Distance (" + (otherPosition - current).Length + ")");
+        }
+
+        private static void Run(Position otherPosition)
+        {
+            GameClient.Get<SocialComponent>().Whisper("Daniel", "Running path");
+            Task.Run(() =>
+            {
+                TravelState state = GameClient.Get<PlayerComponent>().Movement.MoveTo(otherPosition);
+                if (state == TravelState.ERROR)
+                {
+                    return;
+                }
+                while (state != TravelState.DESTINATION_REACH)
+                {
+                    System.Threading.Thread.Sleep(100);
+                    state = GameClient.Get<PlayerComponent>().Movement.MoveTo(otherPosition);
+                    if (state == TravelState.ERROR)
+                    {
+                        break;
+                    }
+                }
+            });
+        }
+
+        private static void Try(Position current, Position otherPosition)
+        {
+            Path p = PathFinding.FindPath(GameClient.Get<ZoneComponent>().WorldState.MapId, current.ToVector3(), otherPosition.ToVector3(), 7f);
+            if (p == null)
+            {
+                GameClient.Get<SocialComponent>().Whisper("Daniel", "No path found");
+            }
+            else
+            {
+                GameClient.Get<SocialComponent>().Whisper("Daniel", "Found a path with " + p.Points.Length + " points");
+            }
+        }
+
+        #endregion Private Methods
     }
 }
