@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
+﻿using System.Threading;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Commands.Outgoing;
 using TrinityCore.GameClient.Net.Lib.Components.Entities.Enums;
 using TrinityCore.GameClient.Net.Lib.Network.World;
@@ -12,17 +10,17 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
     {
         #region Public Properties
 
-        public EntityTypeCollection<Creature> Creatures { get; set; }
-        public EntityTypeCollection<GameObject> GameObjects { get; set; }
-        public EntityTypeCollection<Item> Items { get; set; }
-        public EntityTypeCollection<Npc> Npc { get; set; }
         public EntityTypeCollection<Player> Players { get; set; }
 
         #endregion Public Properties
 
         #region Private Properties
 
+        private EntityTypeCollection<Creature> Creatures { get; set; }
+        private EntityTypeCollection<GameObject> GameObjects { get; set; }
+        private EntityTypeCollection<Item> Items { get; set; }
         private ValueCollection<MapType> Map { get; set; }
+        private EntityTypeCollection<Npc> Npc { get; set; }
         private EntityTypeCollection<Entity> UnCategorized { get; set; }
         private EntityTypeCollection<Entity> UnCategorizedUnit { get; set; }
         private Thread UpdateUnitThread { get; set; }
@@ -141,21 +139,27 @@ namespace TrinityCore.GameClient.Net.Lib.Components.Entities.Models
                 case MapType.UNKNOWN:
                     entity = UnCategorized.Get(guid);
                     break;
+
                 case MapType.PLAYER:
                     entity = Players.Get(guid);
                     break;
+
                 case MapType.UNIT:
                     entity = UnCategorizedUnit.Get(guid);
                     break;
+
                 case MapType.NPC:
                     entity = Npc.Get(guid);
                     break;
+
                 case MapType.CREATURE:
                     entity = Creatures.Get(guid);
                     break;
+
                 case MapType.ITEM:
                     entity = Items.Get(guid);
                     break;
+
                 case MapType.GAME_OBJECT:
                     entity = GameObjects.Get(guid);
                     break;
