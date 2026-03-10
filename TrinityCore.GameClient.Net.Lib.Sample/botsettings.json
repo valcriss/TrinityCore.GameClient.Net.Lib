@@ -1,0 +1,32 @@
+{
+  "Connection": {
+    "Host": "127.0.0.1",
+    "Port": 3724,
+    "Login": "test",
+    "Password": "test",
+    "RealmName": "TrinityCore",
+    "WorldHost": "127.0.0.1",
+    "WorldPort": 8085,
+    "LogoutTimeoutSeconds": 25,
+    "CharacterName": "test"
+  },
+  "Combat": {
+    "AggroRadius": 35,
+    "MaxTargetLevelDelta": -1,
+    "NoHpChangeTimeoutSeconds": 10
+  },
+  "Navigation": {
+    "RepathIntervalMs": 750,
+    "MeleeRange": 2.5,
+    "StuckTimeoutMs": 3000
+  },
+  "Behavior": {
+    "TickMs": 150,
+    "EnableReleaseOnDeath": true
+  },
+  "Logging": {
+    "MinLevel": "Debug",
+    "Directory": "logs",
+    "EnablePacketTrace": true
+  }
+}

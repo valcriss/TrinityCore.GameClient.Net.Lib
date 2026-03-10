@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrinityCore.GameClient.Net.Protocol\TrinityCore.GameClient.Net.Protocol.csproj" />
+    <ProjectReference Include="..\TrinityCore.GameClient.Net.Transport\TrinityCore.GameClient.Net.Transport.csproj" />
+    <ProjectReference Include="..\TrinityCore.GameClient.Net.GameState\TrinityCore.GameClient.Net.GameState.csproj" />
+    <ProjectReference Include="..\TrinityCore.GameClient.Net.Navigation\TrinityCore.GameClient.Net.Navigation.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

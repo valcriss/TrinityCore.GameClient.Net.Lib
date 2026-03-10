@@ -1,0 +1,89 @@
+{
+    "Connection":  {
+                       "Host":  "127.0.0.1",
+                       "Port":  3724,
+                       "Login":  "test",
+                       "Password":  "test",
+                       "RealmName":  "TrinityCore",
+                       "WorldHost":  "127.0.0.1",
+                       "WorldPort":  8085,
+                       "LogoutTimeoutSeconds":  25,
+                       "CharacterName":  "test"
+                   },
+    "Combat":  {
+                   "AggroRadius":  35,
+                   "MaxTargetLevelDelta":  0,
+                   "NoHpChangeTimeoutSeconds":  10,
+                   "BlacklistSecondsAfterStuck":  10,
+                   "StuckCheckGraceSeconds":  2,
+                   "MinEngagementSeconds":  15,
+                   "MissingTargetGraceSeconds":  8,
+                   "LostTargetResetSeconds":  3,
+                   "IdleRecoverySeconds":  4,
+                   "UnknownTargetHpNoDamageTimeoutSeconds":  8,
+                   "FinisherNoProgressTimeoutSeconds":  25,
+                   "MaxApproachFailures":  4,
+                   "ApproachFailureWindowSeconds":  12,
+                   "TargetResetHpJumpPercent":  20,
+                   "LeashResetDistanceMultiplier":  1.35
+               },
+    "Death":  {
+                  "ReleaseDelayMs":  1000,
+                  "AutoResWaitAfterRepopMs":  12000,
+                  "ReclaimAttemptIntervalMs":  2000,
+                  "DeadCorpseRepopRetryIntervalMs":  3000,
+                  "CorpseSearchRadius":  39.0,
+                  "GhostCorpseMoveCommandIntervalMs":  1500,
+                  "GhostCorpseApproachArrivalRadius":  2.5,
+                  "GhostCorpseMoveStuckTimeoutMs":  6000
+              },
+    "Navigation":  {
+                       "RepathIntervalMs":  750,
+                       "StuckTimeoutMs":  8000,
+                       "FollowProjectionMapId":  0,
+                       "MeleeRange":  2.5,
+                       "MeleeStopBuffer":  1.5,
+                       "ChaseStepTimeoutMs":  2000,
+                       "ChaseCommandIntervalMs":  900,
+                       "ChaseRetryTimeoutMs":  1200,
+                       "ChaseRetryArrivalBuffer":  0.75,
+                       "ChaseAdaptiveArrivalPerFailure":  0.25,
+                       "ChaseAdaptiveArrivalMaxBonus":  1.0,
+                       "StuckCheckMaxDistance":  4.0,
+                       "ChaseStartBuffer":  1.25,
+                       "CloseRangeNudgeSeconds":  2,
+                       "MinMeleeDistance":  1.1,
+                       "PreferredMeleeDistance":  1.8,
+                       "PreferredMeleeTolerance":  0.35,
+                       "OverlapRepositionDistance":  0.45,
+                       "RepositionCooldownMs":  1000,
+                       "RepositionStepTimeoutMs":  700,
+                       "FaceNudgeCooldownMs":  2000,
+                       "FaceNudgeNoProgressMs":  1600,
+                       "FaceNudgeStepTimeoutMs":  500,
+                       "FaceRefreshBackAngleDeg":  130.0,
+                       "TargetPredictionMaxAgeMs":  1200,
+                       "TargetPredictionMinLeadSeconds":  0.15,
+                       "TargetPredictionMaxLeadSeconds":  0.9,
+                       "TargetPredictionMinSpeed":  0.4,
+                       "TargetPredictionMaxSpeed":  9.0,
+                       "TargetPredictionMaxDistance":  6.0
+                   },
+    "Behavior":  {
+                     "TickMs":  200,
+                     "RunDurationSeconds": 120,
+                     "EnableStartupMoveTest":  false,
+                     "StartMoveXOffset":  20.0,
+                     "ArrivalRadius":  1.2,
+                     "FollowNearestPlayer":  false,
+                     "FollowMinDistance":  1.0,
+                     "FollowResumeDistance":  2.0
+                 },
+    "Logging":  {
+                    "Directory":  "logs",
+                    "EnablePacketTrace":  true
+                }
+}
+
+
+
