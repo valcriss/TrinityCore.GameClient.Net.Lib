@@ -9,6 +9,7 @@ public interface IGameClient
     bool AutoAcceptGroupInvites { get; set; }
     GroupMembershipInfo? CurrentGroup { get; }
     GroupInviteInfo? PendingGroupInvite { get; }
+    MeleeAttackState CurrentMeleeAttack { get; }
     IReadOnlyList<ReceivedChatMessage> DrainIncomingChatMessages();
     Task<bool> LoginAsync(AuthServerInfo server, AuthServerCredentials credentials, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<RealmInfo>> GetRealmsAsync(CancellationToken cancellationToken = default);

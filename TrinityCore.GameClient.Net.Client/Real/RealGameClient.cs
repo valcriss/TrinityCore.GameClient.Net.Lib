@@ -147,6 +147,8 @@ public sealed class RealGameClient(
         }
     }
 
+    public MeleeAttackState CurrentMeleeAttack => new(_isAutoAttackActive, _autoAttackTargetGuid);
+
     public GroupInviteInfo? PendingGroupInvite
     {
         get

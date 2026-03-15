@@ -123,7 +123,7 @@ try
                     ct),
                 false,
                 cts.Token);
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath, allowAttackStateChecks: false);
             if (deathHandled)
             {
                 runMetrics.RecordTick(DateTimeOffset.UtcNow, false);
@@ -141,7 +141,7 @@ try
                     followHoldZone,
                     cts.Token);
                 await WriteFollowGroundCsvAsync(pathfinder, snapshot, settings, followGroundCsvPath);
-                await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
+                await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath, allowAttackStateChecks: false);
                 await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
                 await Task.Delay(settings.Behavior.TickMs, cts.Token);
                 continue;
@@ -209,12 +209,12 @@ try
                     await WriteLogAsync(botLogPath, "EXPLORE_WATCHDOG_ABORT timeout_or_blocked");
                 }
             }
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath, allowAttackStateChecks: combatTickOk);
             await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
         }
         else
         {
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath, allowAttackStateChecks: false);
             await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
         }
 
@@ -1285,6 +1285,7 @@ static async Task RunMeleeCombatTickAsync(
         return;
     }
 
+    await SyncCombatStateFromClientAsync(gameClient, state, now, logPath);
     UpdateTargetMotionSamples(snapshot, state, now);
 
     var hostileWithPosition = snapshot.NearbyUnits
@@ -2428,10 +2429,56 @@ static async Task ResetCombatEngagementAsync(
     state.LastPlayerHpPercent = playerHealthPercent;
     state.LastCombatProgressAtUtc = now;
     state.LastSwingStartAtUtc = null;
+    state.LastDeadAttackTargetGuid = 0;
+    state.LastDeadAttackTargetObservedAtUtc = null;
     state.EngagedTargetGuid = 0;
     state.EngagedSinceUtc = null;
     state.EngagedMissingSinceUtc = null;
     state.EngagedHadProgress = false;
+}
+
+static async Task SyncCombatStateFromClientAsync(
+    IGameClient gameClient,
+    MeleeCombatState state,
+    DateTimeOffset now,
+    string logPath)
+{
+    var clientAttack = gameClient.CurrentMeleeAttack;
+    if (clientAttack.IsActive)
+    {
+        var targetGuid = clientAttack.TargetGuid != 0 ? clientAttack.TargetGuid : state.AttackingGuid;
+        var changed = !state.AttackActive || state.AttackingGuid != targetGuid;
+        state.AttackActive = true;
+        state.AttackingGuid = targetGuid;
+        state.LastSwingStartAtUtc ??= now;
+        if (state.LastDeadAttackTargetGuid != targetGuid)
+        {
+            state.LastDeadAttackTargetGuid = 0;
+            state.LastDeadAttackTargetObservedAtUtc = null;
+        }
+
+        if (changed)
+        {
+            await WriteLogAsync(
+                logPath,
+                $"COMBAT_STATE_SYNC source=client active=True target={targetGuid}");
+        }
+
+        return;
+    }
+
+    if (state.AttackActive || state.AttackingGuid != 0)
+    {
+        await WriteLogAsync(
+            logPath,
+            $"COMBAT_STATE_SYNC source=client active=False target={state.AttackingGuid}");
+    }
+
+    state.AttackActive = false;
+    state.AttackingGuid = 0;
+    state.LastSwingStartAtUtc = null;
+    state.LastDeadAttackTargetGuid = 0;
+    state.LastDeadAttackTargetObservedAtUtc = null;
 }
 
 static void RegisterApproachAttempt(
@@ -3932,8 +3979,10 @@ static async Task DetectAndLogAnomaliesAsync(
     ExplorationState explorationState,
     RunMetrics metrics,
     BotAnomalyState anomalyState,
-    string logPath)
+    string logPath,
+    bool allowAttackStateChecks)
 {
+    var deadTargetAttackGrace = TimeSpan.FromMilliseconds(450);
     var now = DateTimeOffset.UtcNow;
     var player = snapshot.Player;
     if (player is null)
@@ -4085,11 +4134,18 @@ static async Task DetectAndLogAnomaliesAsync(
         anomalyState.LastNoProgressReason = string.Empty;
     }
 
-    if (meleeState.AttackActive && meleeState.AttackingGuid != 0)
+    if (!allowAttackStateChecks)
+    {
+        meleeState.LastDeadAttackTargetGuid = 0;
+        meleeState.LastDeadAttackTargetObservedAtUtc = null;
+    }
+    else if (meleeState.AttackActive && meleeState.AttackingGuid != 0)
     {
         var attackTarget = snapshot.NearbyUnits.FirstOrDefault(u => u.Guid == meleeState.AttackingGuid);
         if (attackTarget is null)
         {
+            meleeState.LastDeadAttackTargetGuid = 0;
+            meleeState.LastDeadAttackTargetObservedAtUtc = null;
             await LogAnomalyAsync(
                 metrics,
                 anomalyState,
@@ -4103,14 +4159,28 @@ static async Task DetectAndLogAnomaliesAsync(
         {
             if (attackTarget.IsDeadHint || (attackTarget.HealthPercent.HasValue && attackTarget.HealthPercent.Value <= 0))
             {
-                await LogAnomalyAsync(
-                    metrics,
-                    anomalyState,
-                    logPath,
-                    "attacking_dead_target",
-                    $"ANOMALY_ATTACKING_DEAD_TARGET guid={attackTarget.Guid} hp={(attackTarget.HealthPercent?.ToString() ?? "n/a")} deadHint={attackTarget.IsDeadHint}",
-                    now,
-                    TimeSpan.FromSeconds(1));
+                if (meleeState.LastDeadAttackTargetGuid != attackTarget.Guid)
+                {
+                    meleeState.LastDeadAttackTargetGuid = attackTarget.Guid;
+                    meleeState.LastDeadAttackTargetObservedAtUtc = now;
+                }
+                else if (meleeState.LastDeadAttackTargetObservedAtUtc.HasValue &&
+                         now - meleeState.LastDeadAttackTargetObservedAtUtc.Value >= deadTargetAttackGrace)
+                {
+                    await LogAnomalyAsync(
+                        metrics,
+                        anomalyState,
+                        logPath,
+                        "attacking_dead_target",
+                        $"ANOMALY_ATTACKING_DEAD_TARGET guid={attackTarget.Guid} hp={(attackTarget.HealthPercent?.ToString() ?? "n/a")} deadHint={attackTarget.IsDeadHint} graceMs={(long)deadTargetAttackGrace.TotalMilliseconds}",
+                        now,
+                        TimeSpan.FromSeconds(1));
+                }
+            }
+            else
+            {
+                meleeState.LastDeadAttackTargetGuid = 0;
+                meleeState.LastDeadAttackTargetObservedAtUtc = null;
             }
 
             if (attackTarget.X.HasValue && attackTarget.Y.HasValue && attackTarget.Z.HasValue)
@@ -4285,6 +4355,8 @@ file sealed class MeleeCombatState
     public DateTimeOffset LastFacingTelemetryAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset LastPredictionLogAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset LastChaseClampLogAtUtc { get; set; } = DateTimeOffset.MinValue;
+    public ulong LastDeadAttackTargetGuid { get; set; }
+    public DateTimeOffset? LastDeadAttackTargetObservedAtUtc { get; set; }
     public DateTimeOffset? LastEngagedTargetSeenAtUtc { get; set; }
     public Dictionary<ulong, DateTimeOffset> BlacklistedTargets { get; } = new();
     public Dictionary<ulong, MotionSamplePair> TargetMotionSamples { get; } = new();

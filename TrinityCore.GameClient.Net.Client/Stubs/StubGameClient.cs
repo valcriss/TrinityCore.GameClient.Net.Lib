@@ -13,6 +13,8 @@ public sealed class StubGameClient(IAuthService authService, IRealmService realm
 
     public GroupInviteInfo? PendingGroupInvite => null;
 
+    public MeleeAttackState CurrentMeleeAttack => new(false, 0);
+
     public IReadOnlyList<ReceivedChatMessage> DrainIncomingChatMessages() => [];
 
     public Task<bool> LoginAsync(AuthServerInfo server, AuthServerCredentials credentials, CancellationToken cancellationToken = default)
