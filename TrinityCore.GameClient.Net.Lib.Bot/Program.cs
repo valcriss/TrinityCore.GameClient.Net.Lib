@@ -10,14 +10,22 @@ using TrinityCore.GameClient.Net.GameState.Abstractions;
 using TrinityCore.GameClient.Net.GameState.Model;
 using TrinityCore.GameClient.Net.Lib;
 using TrinityCore.GameClient.Net.Navigation.Abstractions;
+using TrinityCore.GameClient.Net.Protocol.World;
 
 var settingsPath = Path.Combine(AppContext.BaseDirectory, "botsettings.json");
 var settings = await BotSettings.LoadAsync(settingsPath);
 var logsDirectory = Path.Combine(AppContext.BaseDirectory, settings.Logging.Directory);
 Directory.CreateDirectory(logsDirectory);
 var botLogPath = Path.Combine(logsDirectory, "bot.log");
+var botPacketsLogPath = Path.Combine(logsDirectory, "bot-packets.log");
 var followGroundCsvPath = Path.Combine(logsDirectory, "follow-ground.csv");
 var runSummaryJsonlPath = Path.Combine(logsDirectory, "run-summary.jsonl");
+
+await ResetRunArtifactsAsync(
+    botLogPath,
+    runSummaryJsonlPath,
+    botPacketsLogPath,
+    followGroundCsvPath);
 
 if (settings.Behavior.FollowNearestPlayer)
 {
@@ -27,26 +35,30 @@ if (settings.Behavior.FollowNearestPlayer)
 if (settings.Logging.EnablePacketTrace)
 {
     Trace.Listeners.Clear();
-    Trace.Listeners.Add(new TextWriterTraceListener(Path.Combine(logsDirectory, "bot-packets.log")));
+    Trace.Listeners.Add(new TextWriterTraceListener(botPacketsLogPath));
     Trace.AutoFlush = true;
 }
 
 await using var services = new ServiceCollection()
-    .AddTrinityCoreGameClientSkeleton()
+    .AddTrinityCoreGameClientCore()
+    .AddTrinityCoreBotDefaults()
     .BuildServiceProvider();
 
 var gameClient = services.GetRequiredService<IGameClient>();
 var gameState = services.GetRequiredService<IGameStateStore>();
 var targetSelector = services.GetRequiredService<ITargetSelector>();
 var pathfinder = services.GetRequiredService<IPathfinder>();
+var gameSession = services.GetRequiredService<IGameClientSession>();
 
 Console.WriteLine($"TrinityCore Bot - Protocol: {PublicApi.SupportedProtocolVersion}");
 
-if (!await FullLoginAsync(gameClient, settings, botLogPath))
+if (!await FullLoginAsync(gameSession, settings, botLogPath))
 {
     Console.WriteLine("Login bot KO");
     return;
 }
+
+await TryEnableGameMasterWhispersAsync(gameClient, settings, botLogPath);
 
 Console.WriteLine("Bot en marche.");
 await WriteLogAsync(botLogPath, "BOT STARTED");
@@ -59,6 +71,8 @@ var anomalyState = new BotAnomalyState();
 var factionTemplates = LoadFactionTemplateStore();
 var explorationState = new ExplorationState();
 var activityState = new BotActivityState();
+var hazardState = new HazardAwarenessState();
+var groupDebugState = new GroupDebugState();
 
 var playerAtStart = gameState.Snapshot.Player;
 if (settings.Behavior.EnableStartupMoveTest && playerAtStart is not null)
@@ -84,7 +98,14 @@ try
     var followHoldZone = false;
     while (!cts.IsCancellationRequested)
     {
+        if (await HandleRemoteControlCommandsAsync(gameClient, botLogPath, cts))
+        {
+            break;
+        }
+
         var snapshot = gameState.Snapshot;
+        await UpdateHazardAwarenessAsync(snapshot, settings, hazardState, botLogPath);
+        await ReportGroupDebugAsync(gameClient, snapshot, meleeState, groupDebugState, botLogPath, cts.Token);
         if (snapshot.Player is not null)
         {
             var deathHandled = await RunPhaseWithWatchdogAsync(
@@ -102,7 +123,7 @@ try
                     ct),
                 false,
                 cts.Token);
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
             if (deathHandled)
             {
                 runMetrics.RecordTick(DateTimeOffset.UtcNow, false);
@@ -120,7 +141,7 @@ try
                     followHoldZone,
                     cts.Token);
                 await WriteFollowGroundCsvAsync(pathfinder, snapshot, settings, followGroundCsvPath);
-                await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, runMetrics, anomalyState, botLogPath);
+                await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
                 await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
                 await Task.Delay(settings.Behavior.TickMs, cts.Token);
                 continue;
@@ -140,6 +161,7 @@ try
                         settings,
                         factionTemplates,
                         meleeState,
+                        hazardState,
                         runMetrics,
                         botLogPath,
                         ct);
@@ -163,6 +185,7 @@ try
                             factionTemplates,
                             meleeState,
                             explorationState,
+                            hazardState,
                         botLogPath,
                         ct);
                         return true;
@@ -186,12 +209,12 @@ try
                     await WriteLogAsync(botLogPath, "EXPLORE_WATCHDOG_ABORT timeout_or_blocked");
                 }
             }
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
             await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
         }
         else
         {
-            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, runMetrics, anomalyState, botLogPath);
+            await DetectAndLogAnomaliesAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, runMetrics, anomalyState, botLogPath);
             await TrackBotActivityAsync(snapshot, settings, meleeState, deathRecoveryState, explorationState, activityState, botLogPath);
         }
 
@@ -209,7 +232,7 @@ finally
     try
     {
         _ = await gameClient.StopMeleeAttackAsync();
-        _ = await gameClient.LogoutAsync(settings.Connection.LogoutTimeoutSeconds);
+        _ = await gameSession.DisconnectAsync(settings.Connection.LogoutTimeoutSeconds);
     }
     catch (OperationCanceledException)
     {
@@ -218,60 +241,391 @@ finally
     var summary = runMetrics.BuildSummary();
     Console.WriteLine(summary);
     await WriteLogAsync(botLogPath, summary);
-    await File.AppendAllTextAsync(runSummaryJsonlPath, runMetrics.BuildSummaryJsonLine() + Environment.NewLine);
+    await File.WriteAllTextAsync(runSummaryJsonlPath, runMetrics.BuildSummaryJsonLine() + Environment.NewLine);
     await WriteLogAsync(botLogPath, "BOT STOPPED");
 }
 
-static async Task<bool> FullLoginAsync(IGameClient gameClient, BotSettings settings, string logPath)
+static async Task<bool> FullLoginAsync(IGameClientSession gameSession, BotSettings settings, string logPath)
 {
     await WriteLogAsync(logPath, "Full login started");
-    var authOk = await gameClient.LoginAsync(
+    var worldOk = await gameSession.ConnectAsync(new GameClientSessionOptions(
         new AuthServerInfo(settings.Connection.Host, settings.Connection.Port),
-        new AuthServerCredentials(settings.Connection.Login, settings.Connection.Password));
-    if (!authOk)
-    {
-        await WriteLogAsync(logPath, "Auth failed");
-        return false;
-    }
-
-    var realms = await gameClient.GetRealmsAsync();
-    var realm = realms.FirstOrDefault(r => r.Name.Equals(settings.Connection.RealmName, StringComparison.OrdinalIgnoreCase))
-                ?? realms.FirstOrDefault();
-    if (realm is null)
-    {
-        await WriteLogAsync(logPath, "No realm");
-        return false;
-    }
-
-    var realmForConnection = new RealmInfo(
-        realm.Id,
-        realm.Name,
+        new AuthServerCredentials(settings.Connection.Login, settings.Connection.Password),
+        settings.Connection.RealmName,
         settings.Connection.WorldHost,
-        settings.Connection.WorldPort);
-    if (!await gameClient.ConnectRealmAsync(realmForConnection))
-    {
-        await WriteLogAsync(logPath, "Realm connect failed");
-        return false;
-    }
-
-    var characters = await gameClient.GetCharactersAsync();
-    var character = characters.FirstOrDefault(c => c.Name.Equals(settings.Connection.CharacterName, StringComparison.OrdinalIgnoreCase))
-                    ?? characters.FirstOrDefault();
-    if (character is null)
-    {
-        await WriteLogAsync(logPath, "No character");
-        return false;
-    }
-
-    var worldOk = await gameClient.EnterWorldAsync(character);
-    await WriteLogAsync(logPath, worldOk ? $"Enter world OK ({character.Name})" : "Enter world KO");
+        settings.Connection.WorldPort,
+        settings.Connection.CharacterName,
+        settings.Connection.LogoutTimeoutSeconds));
+    await WriteLogAsync(
+        logPath,
+        worldOk
+            ? $"Enter world OK ({gameSession.CurrentCharacter?.Name ?? settings.Connection.CharacterName})"
+            : "Enter world KO");
     return worldOk;
+}
+
+static async Task TryEnableGameMasterWhispersAsync(
+    IGameClient gameClient,
+    BotSettings settings,
+    string logPath)
+{
+    if (!settings.Connection.AutoEnableGmWhispers)
+    {
+        return;
+    }
+
+    await WriteLogAsync(logPath, "GM_WHISPERS_ENABLE requested");
+    var sent = await gameClient.SendChatMessageAsync(
+        ChatChannel.Say,
+        ".whispers on",
+        language: ChatLanguage.Auto);
+    await WriteLogAsync(
+        logPath,
+        sent
+            ? "GM_WHISPERS_ENABLE sent command=\".whispers on\""
+            : "GM_WHISPERS_ENABLE_FAIL command=\".whispers on\"");
+
+    if (sent)
+    {
+        await Task.Delay(300);
+    }
 }
 
 static async Task WriteLogAsync(string logPath, string message)
 {
     var line = $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}";
     await File.AppendAllTextAsync(logPath, line);
+}
+
+static async Task<bool> HandleRemoteControlCommandsAsync(
+    IGameClient gameClient,
+    string logPath,
+    CancellationTokenSource runCts)
+{
+    foreach (var chat in gameClient.DrainIncomingChatMessages())
+    {
+        if (chat.MessageType is not ChatMessageType.Whisper and not ChatMessageType.WhisperForeign)
+        {
+            continue;
+        }
+
+        var message = TrimDebugText(chat.Message, 80);
+        var sender = !string.IsNullOrWhiteSpace(chat.SenderName)
+            ? chat.SenderName!
+            : chat.SenderGuid != 0
+                ? chat.SenderGuid.ToString(CultureInfo.InvariantCulture)
+                : "?";
+        await WriteLogAsync(
+            logPath,
+            $"WHISPER_RECV sender=\"{TrimDebugText(sender, 40)}\" senderGuid={chat.SenderGuid} gm={chat.IsGameMasterMessage} message=\"{message}\"");
+
+        if (!string.Equals(chat.Message.Trim(), "shutdown", StringComparison.OrdinalIgnoreCase))
+        {
+            continue;
+        }
+
+        if (!chat.IsGameMasterMessage)
+        {
+            await WriteLogAsync(
+                logPath,
+                $"REMOTE_COMMAND_REJECT command=shutdown reason=non_gm_chat sender=\"{TrimDebugText(sender, 40)}\" senderGuid={chat.SenderGuid}");
+            continue;
+        }
+
+        await WriteLogAsync(
+            logPath,
+            $"REMOTE_COMMAND shutdown sender=\"{TrimDebugText(sender, 40)}\" senderGuid={chat.SenderGuid} gm={chat.IsGameMasterMessage}");
+        _ = await gameClient.StopMeleeAttackAsync();
+        _ = await gameClient.StopMovementAsync();
+        runCts.Cancel();
+        return true;
+    }
+
+    return false;
+}
+
+static async Task ReportGroupDebugAsync(
+    IGameClient gameClient,
+    WorldSnapshot snapshot,
+    MeleeCombatState meleeState,
+    GroupDebugState state,
+    string logPath,
+    CancellationToken cancellationToken)
+{
+    var currentGroup = gameClient.CurrentGroup;
+    if (currentGroup is null)
+    {
+        state.WasInGroup = false;
+        state.RecentMessages.Clear();
+        state.QuestDigests.Clear();
+        state.LastQuestGiverGuid = null;
+        state.LastQuestGiverStatus = null;
+        state.LastQuestGiverDistance = null;
+        state.LastQuestGiverMoveReportAtUtc = null;
+        return;
+    }
+
+    if (!state.WasInGroup)
+    {
+        state.WasInGroup = true;
+        await TrySendGroupDebugMessageAsync(
+            gameClient,
+            state,
+            logPath,
+            $"botdbg: groupe actif membres={currentGroup.OtherMemberCount + 1}",
+            cancellationToken);
+    }
+
+    await ReportQuestGiverDebugAsync(gameClient, snapshot, meleeState, state, logPath, cancellationToken);
+    await ReportQuestStateDebugAsync(gameClient, snapshot, state, logPath, cancellationToken);
+}
+
+static async Task ReportQuestGiverDebugAsync(
+    IGameClient gameClient,
+    WorldSnapshot snapshot,
+    MeleeCombatState meleeState,
+    GroupDebugState state,
+    string logPath,
+    CancellationToken cancellationToken)
+{
+    if (snapshot.Player is null)
+    {
+        return;
+    }
+
+    var nearestQuestGiver = snapshot.NearbyUnits
+        .Where(x => x.IsQuestGiver && x.X.HasValue && x.Y.HasValue && x.Z.HasValue)
+        .Select(x => new
+        {
+            Unit = x,
+            Distance = Distance2D(snapshot.Player.X, snapshot.Player.Y, x.X!.Value, x.Y!.Value)
+        })
+        .OrderBy(x => x.Distance)
+        .FirstOrDefault();
+
+    if (nearestQuestGiver is null)
+    {
+        state.LastQuestGiverGuid = null;
+        state.LastQuestGiverStatus = null;
+        state.LastQuestGiverDistance = null;
+        state.LastQuestGiverMoveReportAtUtc = null;
+        return;
+    }
+
+    var questGiver = nearestQuestGiver.Unit;
+    var questGiverStatus = questGiver.QuestGiverStatus?.ToString() ?? "Unknown";
+    if (state.LastQuestGiverGuid != questGiver.Guid || state.LastQuestGiverStatus != questGiver.QuestGiverStatus)
+    {
+        await TrySendGroupDebugMessageAsync(
+            gameClient,
+            state,
+            logPath,
+            $"botdbg: questgiver visible entry={questGiver.EntryId?.ToString() ?? "?"} dist={nearestQuestGiver.Distance:F1} status={questGiverStatus}",
+            cancellationToken);
+    }
+    else if (!meleeState.AttackActive &&
+             meleeState.EngagedTargetGuid == 0 &&
+             state.LastQuestGiverDistance.HasValue &&
+             state.LastQuestGiverGuid == questGiver.Guid &&
+             state.LastQuestGiverDistance.Value - nearestQuestGiver.Distance >= 2.0f &&
+             nearestQuestGiver.Distance > 7.0f &&
+             (state.LastQuestGiverMoveReportAtUtc is null ||
+              DateTimeOffset.UtcNow - state.LastQuestGiverMoveReportAtUtc.Value >= TimeSpan.FromSeconds(20)))
+    {
+        if (await TrySendGroupDebugMessageAsync(
+                gameClient,
+                state,
+                logPath,
+                $"botdbg: deplacement vers questgiver entry={questGiver.EntryId?.ToString() ?? "?"} dist={nearestQuestGiver.Distance:F1}",
+                cancellationToken))
+        {
+            state.LastQuestGiverMoveReportAtUtc = DateTimeOffset.UtcNow;
+        }
+    }
+
+    state.LastQuestGiverGuid = questGiver.Guid;
+    state.LastQuestGiverStatus = questGiver.QuestGiverStatus;
+    state.LastQuestGiverDistance = nearestQuestGiver.Distance;
+}
+
+static async Task ReportQuestStateDebugAsync(
+    IGameClient gameClient,
+    WorldSnapshot snapshot,
+    GroupDebugState state,
+    string logPath,
+    CancellationToken cancellationToken)
+{
+    var activeQuestIds = new HashSet<uint>();
+    foreach (var quest in snapshot.ActiveQuests.OrderBy(x => x.QuestId))
+    {
+        activeQuestIds.Add(quest.QuestId);
+        var digest = BuildQuestProgressDigest(quest);
+        if (!state.QuestDigests.TryGetValue(quest.QuestId, out var previous))
+        {
+            await TrySendGroupDebugMessageAsync(
+                gameClient,
+                state,
+                logPath,
+                $"botdbg: quete acceptee id={quest.QuestId} {digest.ProgressSummary}",
+                cancellationToken);
+        }
+        else if (!previous.IsCompleted && digest.IsCompleted)
+        {
+            await TrySendGroupDebugMessageAsync(
+                gameClient,
+                state,
+                logPath,
+                $"botdbg: quete terminee id={quest.QuestId} title=\"{TrimDebugText(digest.Title, 42)}\"",
+                cancellationToken);
+        }
+        else if (!string.Equals(previous.ProgressKey, digest.ProgressKey, StringComparison.Ordinal))
+        {
+            await TrySendGroupDebugMessageAsync(
+                gameClient,
+                state,
+                logPath,
+                $"botdbg: quete progression id={quest.QuestId} {digest.ProgressSummary}",
+                cancellationToken);
+        }
+
+        state.QuestDigests[quest.QuestId] = digest;
+    }
+
+    foreach (var removedQuestId in state.QuestDigests.Keys.Where(x => !activeQuestIds.Contains(x)).ToArray())
+    {
+        var digest = state.QuestDigests[removedQuestId];
+        await TrySendGroupDebugMessageAsync(
+            gameClient,
+            state,
+            logPath,
+            $"botdbg: quete retiree id={removedQuestId} title=\"{TrimDebugText(digest.Title, 42)}\"",
+            cancellationToken);
+        state.QuestDigests.Remove(removedQuestId);
+    }
+}
+
+static QuestProgressDigest BuildQuestProgressDigest(ActiveQuestSnapshot quest)
+{
+    var title = string.IsNullOrWhiteSpace(quest.Title)
+        ? $"quest-{quest.QuestId}"
+        : quest.Title!;
+    var segments = new List<string>();
+    foreach (var objective in quest.Objectives.OrderBy(x => x.ObjectiveIndex).Take(3))
+    {
+        segments.Add($"{FormatQuestObjectiveLabel(objective.Text, objective.Kind.ToString(), objective.TargetEntryId)} {objective.CurrentCount}/{objective.RequiredCount}");
+    }
+
+    foreach (var objective in quest.ItemObjectives.OrderBy(x => x.ObjectiveIndex).Take(Math.Max(0, 3 - segments.Count)))
+    {
+        var current = objective.CurrentCount?.ToString(CultureInfo.InvariantCulture) ?? "?";
+        segments.Add($"item {objective.ItemId} {current}/{objective.RequiredCount}");
+    }
+
+    if (segments.Count == 0)
+    {
+        segments.Add(quest.IsCompleted ? "complete" : "sans progression visible");
+    }
+
+    var progressKey = $"{quest.IsCompleted}:{string.Join("|", segments)}";
+    var progressSummary = $"title=\"{TrimDebugText(title, 42)}\" {string.Join(", ", segments)}";
+    return new QuestProgressDigest(title, progressKey, progressSummary, quest.IsCompleted);
+}
+
+static string FormatQuestObjectiveLabel(string? text, string fallbackKind, uint? targetEntryId)
+{
+    if (!string.IsNullOrWhiteSpace(text))
+    {
+        return TrimDebugText(text, 24);
+    }
+
+    return targetEntryId.HasValue
+        ? $"{fallbackKind.ToLowerInvariant()}:{targetEntryId.Value}"
+        : fallbackKind.ToLowerInvariant();
+}
+
+static async Task<bool> TrySendGroupDebugMessageAsync(
+    IGameClient gameClient,
+    GroupDebugState state,
+    string logPath,
+    string message,
+    CancellationToken cancellationToken)
+{
+    var normalized = TrimDebugText(message.Replace(Environment.NewLine, " "), 180);
+    if (string.IsNullOrWhiteSpace(normalized))
+    {
+        return false;
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    foreach (var stale in state.RecentMessages.Where(x => now - x.Value > TimeSpan.FromMinutes(2)).Select(x => x.Key).ToArray())
+    {
+        state.RecentMessages.Remove(stale);
+    }
+
+    if (state.RecentMessages.TryGetValue(normalized, out var lastSentAtUtc) &&
+        now - lastSentAtUtc < TimeSpan.FromSeconds(20))
+    {
+        return false;
+    }
+
+    var minGap = TimeSpan.FromSeconds(2);
+    if (state.LastGroupMessageAtUtc != DateTimeOffset.MinValue)
+    {
+        var wait = minGap - (now - state.LastGroupMessageAtUtc);
+        if (wait > TimeSpan.Zero)
+        {
+            await Task.Delay(wait, cancellationToken);
+        }
+    }
+
+    var sent = await gameClient.SendChatMessageAsync(
+        ChatChannel.Group,
+        normalized,
+        language: ChatLanguage.Auto,
+        cancellationToken: cancellationToken);
+    await WriteLogAsync(
+        logPath,
+        sent
+            ? $"GROUP_DEBUG_SEND message=\"{normalized}\""
+            : $"GROUP_DEBUG_FAIL message=\"{normalized}\"");
+    if (!sent)
+    {
+        return false;
+    }
+
+    state.LastGroupMessageAtUtc = DateTimeOffset.UtcNow;
+    state.RecentMessages[normalized] = state.LastGroupMessageAtUtc;
+    return true;
+}
+
+static string TrimDebugText(string value, int maxLength)
+{
+    var normalized = value.Replace('\r', ' ').Replace('\n', ' ').Trim();
+    if (normalized.Length <= maxLength)
+    {
+        return normalized;
+    }
+
+    return normalized[..Math.Max(0, maxLength - 3)] + "...";
+}
+
+static async Task ResetRunArtifactsAsync(params string[] filePaths)
+{
+    foreach (var filePath in filePaths)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            continue;
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(filePath, string.Empty);
+    }
 }
 
 static async Task<T> RunPhaseWithWatchdogAsync<T>(
@@ -321,14 +675,42 @@ static async Task<T> RunPhaseWithWatchdogAsync<T>(
         if (timeoutMs > 0 && elapsed >= timeoutMs)
         {
             phaseCts.Cancel();
-            // Hard timeout: do not await the underlying task, it may ignore cancellation and block the tick.
+            var settled = await Task.WhenAny(phaseTask, Task.Delay(250, cancellationToken));
+            if (settled == phaseTask)
+            {
+                try
+                {
+                    _ = await phaseTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected if the phase honored cancellation during grace period
+                }
+                catch (Exception ex)
+                {
+                    await WriteLogAsync(logPath, $"BOT_TICK_PHASE_TIMEOUT_FAULT phase={phaseName} error={ex.Message}");
+                }
+            }
+
             _ = phaseTask.ContinueWith(
                 t =>
                 {
-                    _ = t.Exception;
+                    if (t.IsCanceled)
+                    {
+                        WriteLogAsync(logPath, $"BOT_TICK_PHASE_LATE_CANCEL phase={phaseName}").GetAwaiter().GetResult();
+                        return;
+                    }
+
+                    if (t.IsFaulted)
+                    {
+                        WriteLogAsync(logPath, $"BOT_TICK_PHASE_LATE_FAULT phase={phaseName} error={t.Exception?.GetBaseException().Message}").GetAwaiter().GetResult();
+                        return;
+                    }
+
+                    WriteLogAsync(logPath, $"BOT_TICK_PHASE_LATE_COMPLETE phase={phaseName}").GetAwaiter().GetResult();
                 },
                 CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted,
+                TaskContinuationOptions.None,
                 TaskScheduler.Default);
 
             await WriteLogAsync(logPath, $"BOT_TICK_PHASE_TIMEOUT phase={phaseName} timeoutMs={timeoutMs} elapsedMs={elapsed}");
@@ -339,7 +721,7 @@ static async Task<T> RunPhaseWithWatchdogAsync<T>(
 
 static async Task EnsureFollowGroundCsvHeaderAsync(string csvPath)
 {
-    if (File.Exists(csvPath))
+    if (File.Exists(csvPath) && new FileInfo(csvPath).Length > 0)
     {
         return;
     }
@@ -887,6 +1269,7 @@ static async Task RunMeleeCombatTickAsync(
     BotSettings settings,
     FactionTemplateStore factionTemplates,
     MeleeCombatState state,
+    HazardAwarenessState hazardState,
     RunMetrics metrics,
     string logPath,
     CancellationToken cancellationToken)
@@ -922,6 +1305,42 @@ static async Task RunMeleeCombatTickAsync(
         state.AttackingGuid = 0;
         state.LastActionAtUtc = now;
         await WriteLogAsync(logPath, $"COMBAT_RECOVER hostile={hostileWithPosition.Length} reason=idle_timeout");
+    }
+
+    if (!state.AttackActive &&
+        state.EngagedTargetGuid == 0)
+    {
+        if (await TryRunForcedHazardRetreatAsync(
+                gameClient,
+                player,
+                settings,
+                hazardState,
+                logPath,
+                "combat_idle",
+                settings.Navigation.RepositionStepTimeoutMs,
+                cancellationToken))
+        {
+            state.LastActionAtUtc = now;
+            state.LastChaseAtUtc = now;
+            return;
+        }
+
+        if (await TryRunHazardEscapeAsync(
+                gameClient,
+                snapshot,
+                player,
+                null,
+                settings,
+                hazardState,
+                logPath,
+                "combat_idle",
+                settings.Navigation.RepositionStepTimeoutMs,
+                cancellationToken))
+        {
+            state.LastActionAtUtc = now;
+            state.LastChaseAtUtc = now;
+            return;
+        }
     }
 
     NearbyUnitSnapshot? selectedTarget = null;
@@ -1060,9 +1479,18 @@ static async Task RunMeleeCombatTickAsync(
                 $"COMBAT_TARGET_LOST_RESET guid={lostGuid} missingMs={(long)missingFor.TotalMilliseconds}");
         }
 
-        selectedTarget = SelectCombatTarget(snapshot, player, factionTemplates, settings, state, now, targetSelector, options);
+        selectedTarget = SelectCombatTarget(snapshot, player, factionTemplates, settings, state, hazardState, now, targetSelector, options);
         if (selectedTarget is null)
         {
+            var blockedByHazard = CountHazardBlockedTargets(hostileWithPosition, player, settings, hazardState);
+            if (hostileWithPosition.Length > 0 && blockedByHazard > 0)
+            {
+                await WriteLogAsync(
+                    logPath,
+                    $"COMBAT_IDLE no_hazard_safe_target hostile={hostileWithPosition.Length} blocked={blockedByHazard}");
+                state.LastActionAtUtc = now;
+            }
+
             if (state.AttackActive)
             {
                 _ = await gameClient.StopMeleeAttackAsync(cancellationToken);
@@ -1155,6 +1583,26 @@ static async Task RunMeleeCombatTickAsync(
         return;
     }
 
+    var preferredMeleeDistance = BuildPreferredMeleeDistance(settings);
+    var preferredMeleeTolerance = MathF.Max(0.10f, settings.Navigation.PreferredMeleeTolerance);
+    if (await TryRunHazardEscapeAsync(
+            gameClient,
+            snapshot,
+            player,
+            selectedTarget,
+            settings,
+            hazardState,
+            logPath,
+            "combat",
+            settings.Navigation.RepositionStepTimeoutMs,
+            cancellationToken))
+    {
+        state.LastActionAtUtc = now;
+        state.LastRepositionAtUtc = now;
+        state.LastChaseAtUtc = now;
+        return;
+    }
+
     var targetDistance = Distance3D(
         player.X,
         player.Y,
@@ -1200,10 +1648,6 @@ static async Task RunMeleeCombatTickAsync(
         state.LastFacingTelemetryAtUtc = now;
     }
 
-    var preferredMeleeDistance = MathF.Min(
-        settings.Navigation.MeleeRange - 0.05f,
-        MathF.Max(settings.Navigation.PreferredMeleeDistance, settings.Navigation.MinMeleeDistance));
-    var preferredMeleeTolerance = MathF.Max(0.10f, settings.Navigation.PreferredMeleeTolerance);
     var needBackstepDistance = preferredMeleeDistance - preferredMeleeTolerance;
     if (targetDistance < needBackstepDistance &&
         now - state.LastRepositionAtUtc >= TimeSpan.FromMilliseconds(settings.Navigation.RepositionCooldownMs))
@@ -1225,13 +1669,20 @@ static async Task RunMeleeCombatTickAsync(
             selectedTarget.X.Value + (nx * desiredDistance),
             selectedTarget.Y.Value + (ny * desiredDistance),
             player.Z);
-        var repositionOk = await RunMoveStepAsync(
+        var repositionOk = await RunHazardAwareMoveStepAsync(
             gameClient,
+            snapshot,
+            player,
             repositionPoint,
             0.25f,
             settings,
+            hazardState,
+            logPath,
+            "combat_reposition",
             settings.Navigation.RepositionStepTimeoutMs,
-            cancellationToken);
+            cancellationToken,
+            new NavigationPoint(selectedTarget.X.Value, selectedTarget.Y.Value, selectedTarget.Z.Value),
+            desiredDistance);
         state.LastRepositionAtUtc = now;
         state.LastActionAtUtc = now;
         if (repositionOk)
@@ -1252,6 +1703,23 @@ static async Task RunMeleeCombatTickAsync(
         settings.Navigation.MeleeRange + settings.Navigation.ChaseStartBuffer,
         preferredMeleeDistance + preferredMeleeTolerance);
     var chaseDestination = GetChaseDestination(selectedTarget, player, state, now, settings, out var predicted);
+    if (TryClampChaseDestination(player, chaseDestination, settings, out var clampedChaseDestination, out var unclampedDistance))
+    {
+        if (now - state.LastChaseClampLogAtUtc >= TimeSpan.FromMilliseconds(900))
+        {
+            await WriteLogAsync(
+                logPath,
+                $"COMBAT_CHASE_CLAMP guid={selectedTarget.Guid} rawDist={unclampedDistance:F3} " +
+                $"limit={settings.Navigation.ChaseCommandMaxDistance:F3} " +
+                $"from=({player.X:F3},{player.Y:F3},{player.Z:F3}) " +
+                $"to=({chaseDestination.X:F3},{chaseDestination.Y:F3},{chaseDestination.Z:F3}) " +
+                $"clamped=({clampedChaseDestination.X:F3},{clampedChaseDestination.Y:F3},{clampedChaseDestination.Z:F3})");
+            state.LastChaseClampLogAtUtc = now;
+        }
+
+        chaseDestination = clampedChaseDestination;
+    }
+
     if (predicted && now - state.LastPredictionLogAtUtc >= TimeSpan.FromMilliseconds(900))
     {
         await WriteLogAsync(
@@ -1274,22 +1742,32 @@ static async Task RunMeleeCombatTickAsync(
                                         failureCountBeforeAttempt * settings.Navigation.ChaseAdaptiveArrivalPerFailure);
         var moveOk = await RunChaseStepAsync(
             gameClient,
+            snapshot,
+            player,
             selectedTarget,
             chaseDestination,
             adaptiveArrivalRadius,
             settings.Navigation.ChaseStepTimeoutMs,
             settings,
+            hazardState,
+            logPath,
+            "combat_approach",
             cancellationToken);
         if (!moveOk && predicted)
         {
             var rawDestination = new NavigationPoint(selectedTarget.X.Value, selectedTarget.Y.Value, selectedTarget.Z.Value);
             var retryOk = await RunChaseStepAsync(
                 gameClient,
+                snapshot,
+                player,
                 selectedTarget,
                 rawDestination,
                 settings.Navigation.MeleeRange + settings.Navigation.ChaseRetryArrivalBuffer,
                 settings.Navigation.ChaseRetryTimeoutMs,
                 settings,
+                hazardState,
+                logPath,
+                "combat_approach_retry",
                 cancellationToken);
             await WriteLogAsync(
                 logPath,
@@ -1387,11 +1865,16 @@ static async Task RunMeleeCombatTickAsync(
     {
         var nudgeOk = await RunChaseStepAsync(
             gameClient,
+            snapshot,
+            player,
             selectedTarget,
             chaseDestination,
             settings.Navigation.MeleeRange,
             settings.Navigation.ChaseStepTimeoutMs,
             settings,
+            hazardState,
+            logPath,
+            "combat_close_nudge",
             cancellationToken);
         if (nudgeOk)
         {
@@ -1517,6 +2000,7 @@ static async Task RunExplorationTickAsync(
     FactionTemplateStore factionTemplates,
     MeleeCombatState meleeState,
     ExplorationState explorationState,
+    HazardAwarenessState hazardState,
     string logPath,
     CancellationToken cancellationToken)
 {
@@ -1569,6 +2053,42 @@ static async Task RunExplorationTickAsync(
     {
         explorationState.LastObservedPosition = null;
         explorationState.NoProgressSinceUtc = null;
+    }
+
+    if (await TryRunForcedHazardRetreatAsync(
+            gameClient,
+            player,
+            settings,
+            hazardState,
+            logPath,
+            "explore",
+            settings.Exploration.StepTimeoutMs,
+            cancellationToken))
+    {
+        explorationState.IsActive = false;
+        explorationState.LastDestination = null;
+        explorationState.NoProgressSinceUtc = null;
+        explorationState.LastObservedPosition = null;
+        return;
+    }
+
+    if (await TryRunHazardEscapeAsync(
+            gameClient,
+            snapshot,
+            player,
+            null,
+            settings,
+            hazardState,
+            logPath,
+            "explore",
+            settings.Exploration.StepTimeoutMs,
+            cancellationToken))
+    {
+        explorationState.IsActive = false;
+        explorationState.LastDestination = null;
+        explorationState.NoProgressSinceUtc = null;
+        explorationState.LastAttemptAtUtc = now;
+        return;
     }
 
     if (meleeState.AttackActive || meleeState.EngagedTargetGuid != 0)
@@ -1628,11 +2148,16 @@ static async Task RunExplorationTickAsync(
         logPath,
         $"EXPLORE_MOVE_START to=({destination.X:F3},{destination.Y:F3},{destination.Z:F3}) score={score:F2}");
 
-    var moveOk = await RunMoveStepAsync(
+    var moveOk = await RunHazardAwareMoveStepAsync(
         gameClient,
+        snapshot,
+        player,
         destination,
         settings.Exploration.ArrivalRadius,
         settings,
+        hazardState,
+        logPath,
+        "explore_move",
         settings.Exploration.StepTimeoutMs,
         cancellationToken);
 
@@ -1756,10 +2281,12 @@ static bool TryPickExploreDestination(
     out NavigationPoint destination,
     out float score)
 {
-    destination = new NavigationPoint(player.X, player.Y, player.Z);
+    var mapId = settings.Navigation.FollowProjectionMapId;
+    var startPoint = new NavigationPoint(player.X, player.Y, player.Z);
+    var startProjected = pathfinder.ProjectToSurface(mapId, startPoint);
+    destination = startProjected;
     score = float.MinValue;
     var found = false;
-    var mapId = settings.Navigation.FollowProjectionMapId;
     var minRadius = MathF.Max(2.0f, settings.Exploration.StepMinDistance);
     var maxRadius = MathF.Max(minRadius + 1.0f, settings.Exploration.StepMaxDistance);
     var cellSize = MathF.Max(1.0f, settings.Exploration.GridCellSize);
@@ -1773,20 +2300,30 @@ static bool TryPickExploreDestination(
             player.Y + (MathF.Sin(angle) * radius),
             player.Z);
         var projected = pathfinder.ProjectToSurface(mapId, raw);
+        if (MathF.Abs(projected.Z - startProjected.Z) > settings.Exploration.MaxCandidateVerticalDelta)
+        {
+            continue;
+        }
+
         var dist = Distance3D(player.X, player.Y, player.Z, projected.X, projected.Y, projected.Z);
         if (dist < minRadius * 0.8f)
         {
             continue;
         }
 
-        var startPoint = new NavigationPoint(player.X, player.Y, player.Z);
-        var path = pathfinder.FindPath(mapId, startPoint, projected);
+        var path = pathfinder.FindPath(mapId, startProjected, projected);
         if (path.Count < 2)
         {
             continue;
         }
 
-        if (!pathfinder.HasLineOfSight(mapId, startPoint, projected))
+        var directPlanarDistance = Distance2D(startProjected.X, startProjected.Y, projected.X, projected.Y);
+        if (path.Count <= 2 && directPlanarDistance > settings.Exploration.MaxDirectPathDistance)
+        {
+            continue;
+        }
+
+        if (!pathfinder.HasLineOfSight(mapId, startProjected, projected))
         {
             var pathDistance = 0f;
             for (var p = 1; p < path.Count; p++)
@@ -2005,11 +2542,16 @@ static int GetApproachFailureCount(
 
 static async Task<bool> RunChaseStepAsync(
     IGameClient gameClient,
+    WorldSnapshot snapshot,
+    PlayerSnapshot player,
     NearbyUnitSnapshot target,
     NavigationPoint chaseDestination,
     float arrivalRadius,
     int timeoutMs,
     BotSettings settings,
+    HazardAwarenessState hazardState,
+    string logPath,
+    string context,
     CancellationToken cancellationToken)
 {
     if (!target.X.HasValue || !target.Y.HasValue || !target.Z.HasValue)
@@ -2017,13 +2559,20 @@ static async Task<bool> RunChaseStepAsync(
         return false;
     }
 
-    return await RunMoveStepAsync(
+    return await RunHazardAwareMoveStepAsync(
         gameClient,
+        snapshot,
+        player,
         chaseDestination,
         arrivalRadius,
         settings,
+        hazardState,
+        logPath,
+        context,
         timeoutMs,
-        cancellationToken);
+        cancellationToken,
+        new NavigationPoint(target.X.Value, target.Y.Value, target.Z.Value),
+        BuildPreferredMeleeDistance(settings));
 }
 
 static void UpdateTargetMotionSamples(WorldSnapshot snapshot, MeleeCombatState state, DateTimeOffset now)
@@ -2065,6 +2614,11 @@ static NavigationPoint GetChaseDestination(
     predicted = false;
     var raw = new NavigationPoint(target.X!.Value, target.Y!.Value, target.Z!.Value);
     if (!state.TargetMotionSamples.TryGetValue(target.Guid, out var pair))
+    {
+        return raw;
+    }
+
+    if (MathF.Abs(raw.Z - player.Z) > settings.Navigation.TargetPredictionMaxVerticalDelta)
     {
         return raw;
     }
@@ -2118,6 +2672,38 @@ static NavigationPoint GetChaseDestination(
     return new NavigationPoint(px, py, pz);
 }
 
+static bool TryClampChaseDestination(
+    PlayerSnapshot player,
+    NavigationPoint destination,
+    BotSettings settings,
+    out NavigationPoint clampedDestination,
+    out float rawDistance)
+{
+    rawDistance = Distance3D(player.X, player.Y, player.Z, destination.X, destination.Y, destination.Z);
+    if (rawDistance <= settings.Navigation.ChaseCommandMaxDistance)
+    {
+        clampedDestination = destination;
+        return false;
+    }
+
+    var dx = destination.X - player.X;
+    var dy = destination.Y - player.Y;
+    var dz = destination.Z - player.Z;
+    var distance = MathF.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
+    if (distance <= 0.001f)
+    {
+        clampedDestination = destination;
+        return false;
+    }
+
+    var scale = settings.Navigation.ChaseCommandMaxDistance / distance;
+    clampedDestination = new NavigationPoint(
+        player.X + (dx * scale),
+        player.Y + (dy * scale),
+        player.Z + (dz * scale));
+    return true;
+}
+
 static async Task<bool> RunMoveStepAsync(
     IGameClient gameClient,
     NavigationPoint destination,
@@ -2143,19 +2729,995 @@ static async Task<bool> RunMoveStepAsync(
     }
 }
 
+static async Task UpdateHazardAwarenessAsync(
+    WorldSnapshot snapshot,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    string logPath)
+{
+    var now = DateTimeOffset.UtcNow;
+    PurgeHazardMemories(hazardState, now);
+    PurgeHazardBlockStates(hazardState, settings, now);
+
+    if (!settings.Hazard.Enabled)
+    {
+        hazardState.LastPlayerHpPercent = snapshot.Player?.HealthPercent;
+        return;
+    }
+
+    if (snapshot.NearbyWorldObjects.Count > 0)
+    {
+        RefreshHazardMemories(snapshot, settings, hazardState, now);
+    }
+
+    var player = snapshot.Player;
+    if (player is null)
+    {
+        hazardState.LastPlayerHpPercent = null;
+        return;
+    }
+
+    if (!hazardState.LastPlayerHpPercent.HasValue)
+    {
+        hazardState.LastPlayerHpPercent = player.HealthPercent;
+        return;
+    }
+
+    var hpDrop = hazardState.LastPlayerHpPercent.Value - player.HealthPercent;
+    hazardState.LastPlayerHpPercent = player.HealthPercent;
+    if (hpDrop <= 0 || player.IsGhost || player.IsDeadHint || snapshot.NearbyWorldObjects.Count == 0)
+    {
+        return;
+    }
+
+    var suspects = snapshot.NearbyWorldObjects
+        .Where(o => o.X.HasValue && o.Y.HasValue && o.Z.HasValue)
+        .Select(o => new
+        {
+            Object = o,
+            Distance2D = Distance2D(player.X, player.Y, o.X!.Value, o.Y!.Value),
+            DeltaZ = MathF.Abs(player.Z - o.Z!.Value)
+        })
+        .Where(x => x.Distance2D <= settings.Hazard.DamageProbeRadius)
+        .Where(x => x.DeltaZ <= settings.Hazard.VerticalProbeTolerance)
+        .OrderBy(x => x.Distance2D)
+        .ToArray();
+    if (suspects.Length == 0)
+    {
+        return;
+    }
+
+    var rememberedKnown = false;
+    foreach (var suspect in suspects.Where(x => x.Object.EntryId.HasValue && settings.Hazard.KnownEntryIds.Contains(x.Object.EntryId.Value)))
+    {
+        RememberHazard(
+            hazardState,
+            suspect.Object,
+            settings.Hazard.KnownHazardRadius,
+            "known-entry",
+            now,
+            settings.Hazard.MemorySeconds);
+
+        if (ShouldLogHazard(hazardState, $"detect:{suspect.Object.Guid}", now, TimeSpan.FromSeconds(2)))
+        {
+            await WriteLogAsync(
+                logPath,
+                $"HAZARD_DETECT source=damage kind=known guid={suspect.Object.Guid} entry={(suspect.Object.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(suspect.Object.TypeId)} dist={suspect.Distance2D:F3} dz={suspect.DeltaZ:F3} radius={settings.Hazard.KnownHazardRadius:F2} hpDrop={hpDrop}");
+        }
+
+        rememberedKnown = true;
+    }
+
+    if (rememberedKnown)
+    {
+        return;
+    }
+
+    var nearest = suspects[0];
+    var shouldRememberUnknown =
+        nearest.Distance2D <= settings.Hazard.ContactProbeRadius &&
+        ((nearest.Object.IsGameObject && settings.Hazard.TreatUnknownGameObjectsAsHazardsOnDamage) ||
+         (nearest.Object.IsDynamicObject && settings.Hazard.TreatUnknownDynamicObjectsAsHazardsOnDamage));
+    if (!shouldRememberUnknown)
+    {
+        return;
+    }
+
+    var suspectedRadius = MathF.Max(settings.Hazard.SuspectedHazardRadius, nearest.Distance2D + settings.Hazard.EscapeBuffer);
+    RememberHazard(
+        hazardState,
+        nearest.Object,
+        suspectedRadius,
+        "damage-probe",
+        now,
+        settings.Hazard.SuspectedMemorySeconds);
+
+    if (ShouldLogHazard(hazardState, $"detect:{nearest.Object.Guid}", now, TimeSpan.FromSeconds(2)))
+    {
+        await WriteLogAsync(
+            logPath,
+            $"HAZARD_DETECT source=damage kind=suspected guid={nearest.Object.Guid} entry={(nearest.Object.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(nearest.Object.TypeId)} dist={nearest.Distance2D:F3} dz={nearest.DeltaZ:F3} radius={suspectedRadius:F2} hpDrop={hpDrop}");
+    }
+}
+
+static void RefreshHazardMemories(
+    WorldSnapshot snapshot,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    DateTimeOffset now)
+{
+    foreach (var worldObject in snapshot.NearbyWorldObjects)
+    {
+        if (!worldObject.X.HasValue || !worldObject.Y.HasValue || !worldObject.Z.HasValue)
+        {
+            continue;
+        }
+
+        if (hazardState.Memories.TryGetValue(worldObject.Guid, out var memory))
+        {
+            memory.TypeId = worldObject.TypeId;
+            memory.EntryId = worldObject.EntryId;
+            memory.OwnerGuid = worldObject.OwnerGuid;
+            memory.X = worldObject.X.Value;
+            memory.Y = worldObject.Y.Value;
+            memory.Z = worldObject.Z.Value;
+            memory.LastSeenAtUtc = now;
+            if (string.Equals(memory.Source, "known-entry", StringComparison.Ordinal))
+            {
+                memory.ExpiresAtUtc = now.AddSeconds(Math.Max(5, settings.Hazard.MemorySeconds));
+            }
+            continue;
+        }
+
+        if (worldObject.EntryId.HasValue && settings.Hazard.KnownEntryIds.Contains(worldObject.EntryId.Value))
+        {
+            RememberHazard(
+                hazardState,
+                worldObject,
+                settings.Hazard.KnownHazardRadius,
+                "known-entry",
+                now,
+                settings.Hazard.MemorySeconds);
+        }
+    }
+}
+
+static void RememberHazard(
+    HazardAwarenessState hazardState,
+    NearbyWorldObjectSnapshot worldObject,
+    float radius,
+    string source,
+    DateTimeOffset now,
+    int memorySeconds)
+{
+    if (!worldObject.X.HasValue || !worldObject.Y.HasValue || !worldObject.Z.HasValue)
+    {
+        return;
+    }
+
+    var firstSeen = hazardState.Memories.TryGetValue(worldObject.Guid, out var existing)
+        ? existing.FirstSeenAtUtc
+        : now;
+
+    hazardState.Memories[worldObject.Guid] = new HazardMemory
+    {
+        Guid = worldObject.Guid,
+        TypeId = worldObject.TypeId,
+        EntryId = worldObject.EntryId,
+        OwnerGuid = worldObject.OwnerGuid,
+        X = worldObject.X.Value,
+        Y = worldObject.Y.Value,
+        Z = worldObject.Z.Value,
+        Radius = MathF.Max(0.5f, radius),
+        Source = source,
+        FirstSeenAtUtc = firstSeen,
+        LastSeenAtUtc = now,
+        ExpiresAtUtc = now.AddSeconds(Math.Max(5, memorySeconds))
+    };
+}
+
+static void PurgeHazardMemories(HazardAwarenessState hazardState, DateTimeOffset now)
+{
+    if (hazardState.Memories.Count == 0)
+    {
+        return;
+    }
+
+    var expired = hazardState.Memories
+        .Where(x => x.Value.ExpiresAtUtc <= now)
+        .Select(x => x.Key)
+        .ToArray();
+    foreach (var guid in expired)
+    {
+        hazardState.Memories.Remove(guid);
+    }
+}
+
+static void PurgeHazardBlockStates(
+    HazardAwarenessState hazardState,
+    BotSettings settings,
+    DateTimeOffset now)
+{
+    if (hazardState.BlockedHazards.Count == 0)
+    {
+        return;
+    }
+
+    var window = TimeSpan.FromSeconds(Math.Max(3, settings.Hazard.BlockedHazardWindowSeconds));
+    var expired = hazardState.BlockedHazards
+        .Where(x => now - x.Value.LastBlockedAtUtc > window || !hazardState.Memories.ContainsKey(x.Key))
+        .Select(x => x.Key)
+        .ToArray();
+    foreach (var guid in expired)
+    {
+        hazardState.BlockedHazards.Remove(guid);
+    }
+}
+
+static int RegisterHazardBlocked(
+    HazardAwarenessState hazardState,
+    BotSettings settings,
+    HazardInstance hazard,
+    DateTimeOffset now)
+{
+    PurgeHazardBlockStates(hazardState, settings, now);
+
+    if (!hazardState.BlockedHazards.TryGetValue(hazard.Guid, out var state))
+    {
+        hazardState.BlockedHazards[hazard.Guid] = new HazardBlockState(1, now, now);
+        return 1;
+    }
+
+    var window = TimeSpan.FromSeconds(Math.Max(3, settings.Hazard.BlockedHazardWindowSeconds));
+    if (now - state.LastBlockedAtUtc > window)
+    {
+        hazardState.BlockedHazards[hazard.Guid] = new HazardBlockState(1, now, now);
+        return 1;
+    }
+
+    var next = state with
+    {
+        Count = state.Count + 1,
+        LastBlockedAtUtc = now
+    };
+    hazardState.BlockedHazards[hazard.Guid] = next;
+    return next.Count;
+}
+
+static void ClearHazardBlocked(
+    HazardAwarenessState hazardState,
+    ulong hazardGuid)
+{
+    if (hazardGuid == 0)
+    {
+        return;
+    }
+
+    hazardState.BlockedHazards.Remove(hazardGuid);
+}
+
+static IReadOnlyList<HazardInstance> GetActiveHazards(HazardAwarenessState hazardState, DateTimeOffset now)
+{
+    if (hazardState.Memories.Count == 0)
+    {
+        return [];
+    }
+
+    return hazardState.Memories.Values
+        .Where(x => x.ExpiresAtUtc > now)
+        .Select(x => new HazardInstance(
+            x.Guid,
+            x.TypeId,
+            x.EntryId,
+            x.OwnerGuid,
+            x.X,
+            x.Y,
+            x.Z,
+            x.Radius,
+            x.Source))
+        .ToArray();
+}
+
+static IReadOnlyList<HazardInstance> GetRouteHazards(
+    WorldSnapshot snapshot,
+    PlayerSnapshot player,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    DateTimeOffset now)
+{
+    var hazards = GetActiveHazards(hazardState, now).ToList();
+    if (!settings.Hazard.Enabled ||
+        !settings.Hazard.EnableWorldObjectRouteBlocking ||
+        snapshot.NearbyWorldObjects.Count == 0)
+    {
+        return hazards;
+    }
+
+    foreach (var worldObject in snapshot.NearbyWorldObjects)
+    {
+        if (!worldObject.IsGameObject ||
+            worldObject.OwnerGuid != 0 ||
+            !worldObject.X.HasValue ||
+            !worldObject.Y.HasValue ||
+            !worldObject.Z.HasValue)
+        {
+            continue;
+        }
+
+        if (hazards.Any(x => x.Guid == worldObject.Guid))
+        {
+            continue;
+        }
+
+        var distance2D = Distance2D(player.X, player.Y, worldObject.X.Value, worldObject.Y.Value);
+        if (distance2D > settings.Hazard.WorldObjectRouteDetectionRadius)
+        {
+            continue;
+        }
+
+        var deltaZ = MathF.Abs(player.Z - worldObject.Z.Value);
+        if (deltaZ > settings.Hazard.WorldObjectRouteVerticalTolerance)
+        {
+            continue;
+        }
+
+        hazards.Add(new HazardInstance(
+            worldObject.Guid,
+            worldObject.TypeId,
+            worldObject.EntryId,
+            worldObject.OwnerGuid,
+            worldObject.X.Value,
+            worldObject.Y.Value,
+            worldObject.Z.Value,
+            settings.Hazard.WorldObjectRouteBlockRadius,
+            "route-object"));
+    }
+
+    return hazards;
+}
+
+static async Task<bool> TryRunHazardEscapeAsync(
+    IGameClient gameClient,
+    WorldSnapshot snapshot,
+    PlayerSnapshot player,
+    NearbyUnitSnapshot? target,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    string logPath,
+    string context,
+    int timeoutMs,
+    CancellationToken cancellationToken)
+{
+    if (!settings.Hazard.Enabled)
+    {
+        return false;
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    if (hazardState.LastEscapeAtUtc != DateTimeOffset.MinValue &&
+        now - hazardState.LastEscapeAtUtc < TimeSpan.FromMilliseconds(Math.Max(250, settings.Hazard.EscapeCooldownMs)))
+    {
+        return false;
+    }
+
+    var hazards = GetActiveHazards(hazardState, now);
+    if (hazards.Count == 0)
+    {
+        return false;
+    }
+
+    var playerPoint = new NavigationPoint(player.X, player.Y, player.Z);
+    if (!TryGetContainingHazard(playerPoint, hazards, 0.0f, out var containingHazard))
+    {
+        return false;
+    }
+
+    NavigationPoint escapeDestination;
+    if (target is not null &&
+        target.X.HasValue &&
+        target.Y.HasValue &&
+        target.Z.HasValue &&
+        TryFindSafeOrbitDestination(
+            playerPoint,
+            playerPoint,
+            new NavigationPoint(target.X.Value, target.Y.Value, target.Z.Value),
+            BuildPreferredMeleeDistance(settings),
+            hazards,
+            settings.Hazard.CandidateCount,
+            settings.Hazard.RouteSafetyBuffer,
+            out escapeDestination,
+            containingHazard.Guid))
+    {
+    }
+    else if (!TryBuildRadialEscapeDestination(playerPoint, containingHazard, hazards, settings, out escapeDestination))
+    {
+        var blockedCount = RegisterHazardBlocked(hazardState, settings, containingHazard, now);
+        if (ShouldLogHazard(hazardState, $"escape-blocked:{containingHazard.Guid}", now, TimeSpan.FromSeconds(2)))
+        {
+            await WriteLogAsync(
+                logPath,
+                $"HAZARD_ESCAPE_BLOCKED context={context} guid={containingHazard.Guid} entry={(containingHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(containingHazard.TypeId)} radius={containingHazard.Radius:F2} blockedCount={blockedCount}");
+        }
+
+        return false;
+    }
+
+    hazardState.LastEscapeAtUtc = now;
+    await WriteLogAsync(
+        logPath,
+        $"HAZARD_ESCAPE_START context={context} guid={containingHazard.Guid} entry={(containingHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(containingHazard.TypeId)} radius={containingHazard.Radius:F2} to=({escapeDestination.X:F3},{escapeDestination.Y:F3},{escapeDestination.Z:F3})");
+
+    var moveOk = await RunMoveStepAsync(
+        gameClient,
+        escapeDestination,
+        MathF.Max(0.25f, settings.Hazard.EscapeArrivalRadius),
+        settings,
+        timeoutMs,
+        cancellationToken);
+
+    await WriteLogAsync(
+        logPath,
+        moveOk
+            ? $"HAZARD_ESCAPE_OK context={context} guid={containingHazard.Guid}"
+            : $"HAZARD_ESCAPE_KO context={context} guid={containingHazard.Guid}");
+    if (moveOk)
+    {
+        ClearHazardBlocked(hazardState, containingHazard.Guid);
+    }
+
+    return true;
+}
+
+static async Task<bool> TryRunForcedHazardRetreatAsync(
+    IGameClient gameClient,
+    PlayerSnapshot player,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    string logPath,
+    string context,
+    int timeoutMs,
+    CancellationToken cancellationToken)
+{
+    if (!settings.Hazard.Enabled)
+    {
+        return false;
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    if (hazardState.LastEscapeAtUtc != DateTimeOffset.MinValue &&
+        now - hazardState.LastEscapeAtUtc < TimeSpan.FromMilliseconds(Math.Max(250, settings.Hazard.EscapeCooldownMs)))
+    {
+        return false;
+    }
+
+    PurgeHazardBlockStates(hazardState, settings, now);
+    if (hazardState.BlockedHazards.Count == 0)
+    {
+        return false;
+    }
+
+    var hazards = GetActiveHazards(hazardState, now);
+    if (hazards.Count == 0)
+    {
+        return false;
+    }
+
+    var retreatHazard = default(HazardInstance);
+    var hasRetreatHazard = false;
+    var highestCount = 0;
+    foreach (var blocked in hazardState.BlockedHazards)
+    {
+        if (blocked.Value.Count < settings.Hazard.ForcedRetreatThreshold)
+        {
+            continue;
+        }
+
+        var hazard = hazards.FirstOrDefault(x => x.Guid == blocked.Key);
+        if (hazard.Guid == 0)
+        {
+            continue;
+        }
+
+        if (!hasRetreatHazard ||
+            blocked.Value.Count > highestCount ||
+            blocked.Value.LastBlockedAtUtc > hazardState.BlockedHazards[retreatHazard.Guid].LastBlockedAtUtc)
+        {
+            retreatHazard = hazard;
+            highestCount = blocked.Value.Count;
+            hasRetreatHazard = true;
+        }
+    }
+
+    if (!hasRetreatHazard)
+    {
+        return false;
+    }
+
+    var playerPoint = new NavigationPoint(player.X, player.Y, player.Z);
+    if (!TryBuildHazardRetreatDestination(playerPoint, retreatHazard, hazards, settings, out var retreatDestination))
+    {
+        if (ShouldLogHazard(hazardState, $"retreat-blocked:{retreatHazard.Guid}", now, TimeSpan.FromSeconds(2)))
+        {
+            await WriteLogAsync(
+                logPath,
+                $"HAZARD_RETREAT_BLOCKED context={context} guid={retreatHazard.Guid} entry={(retreatHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(retreatHazard.TypeId)} blockedCount={highestCount}");
+        }
+
+        return false;
+    }
+
+    hazardState.LastEscapeAtUtc = now;
+    await WriteLogAsync(
+        logPath,
+        $"HAZARD_RETREAT_START context={context} guid={retreatHazard.Guid} entry={(retreatHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(retreatHazard.TypeId)} blockedCount={highestCount} to=({retreatDestination.X:F3},{retreatDestination.Y:F3},{retreatDestination.Z:F3})");
+
+    var moveOk = await RunMoveStepAsync(
+        gameClient,
+        retreatDestination,
+        MathF.Max(0.35f, settings.Hazard.EscapeArrivalRadius),
+        settings,
+        timeoutMs,
+        cancellationToken);
+
+    await WriteLogAsync(
+        logPath,
+        moveOk
+            ? $"HAZARD_RETREAT_OK context={context} guid={retreatHazard.Guid}"
+            : $"HAZARD_RETREAT_KO context={context} guid={retreatHazard.Guid}");
+
+    if (moveOk)
+    {
+        ClearHazardBlocked(hazardState, retreatHazard.Guid);
+        if (hazardState.Memories.TryGetValue(retreatHazard.Guid, out var memory) &&
+            string.Equals(memory.Source, "damage-probe", StringComparison.Ordinal))
+        {
+            memory.ExpiresAtUtc = now.AddSeconds(Math.Max(3, settings.Hazard.SuspectedMemorySeconds / 2));
+        }
+    }
+
+    return true;
+}
+
+static async Task<bool> RunHazardAwareMoveStepAsync(
+    IGameClient gameClient,
+    WorldSnapshot snapshot,
+    PlayerSnapshot player,
+    NavigationPoint destination,
+    float arrivalRadius,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    string logPath,
+    string context,
+    int timeoutMs,
+    CancellationToken cancellationToken,
+    NavigationPoint? orbitAnchor = null,
+    float orbitRadius = 0.0f)
+{
+    var now = DateTimeOffset.UtcNow;
+    var routeHazards = GetRouteHazards(snapshot, player, settings, hazardState, now);
+
+    var adjustedDestination = destination;
+    if (settings.Hazard.Enabled &&
+        TryAdjustDestinationForHazards(
+            player,
+            destination,
+            routeHazards,
+            settings,
+            orbitAnchor,
+            orbitRadius,
+            out var candidate,
+            out var blockingHazard))
+    {
+        adjustedDestination = candidate;
+        await WriteLogAsync(
+            logPath,
+            $"HAZARD_AVOID_ADJUST context={context} guid={blockingHazard.Guid} entry={(blockingHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(blockingHazard.TypeId)} source={blockingHazard.Source} radius={blockingHazard.Radius:F2} from=({destination.X:F3},{destination.Y:F3},{destination.Z:F3}) to=({adjustedDestination.X:F3},{adjustedDestination.Y:F3},{adjustedDestination.Z:F3})");
+    }
+    else if (settings.Hazard.Enabled &&
+             TryGetBlockingHazard(
+                 new NavigationPoint(player.X, player.Y, player.Z),
+                 destination,
+                 routeHazards,
+                 settings.Hazard.RouteSafetyBuffer,
+                 out var blockedHazard))
+    {
+        var blockedCount = RegisterHazardBlocked(hazardState, settings, blockedHazard, now);
+        await WriteLogAsync(
+            logPath,
+            $"HAZARD_AVOID_BLOCKED context={context} guid={blockedHazard.Guid} entry={(blockedHazard.EntryId?.ToString() ?? "n/a")} type={FormatWorldObjectKind(blockedHazard.TypeId)} source={blockedHazard.Source} radius={blockedHazard.Radius:F2} blockedCount={blockedCount} from=({destination.X:F3},{destination.Y:F3},{destination.Z:F3})");
+        return false;
+    }
+
+    return await RunMoveStepAsync(
+        gameClient,
+        adjustedDestination,
+        arrivalRadius,
+        settings,
+        timeoutMs,
+        cancellationToken);
+}
+
+static bool TryAdjustDestinationForHazards(
+    PlayerSnapshot player,
+    NavigationPoint destination,
+    IReadOnlyList<HazardInstance> hazards,
+    BotSettings settings,
+    NavigationPoint? orbitAnchor,
+    float orbitRadius,
+    out NavigationPoint candidate,
+    out HazardInstance blockingHazard)
+{
+    candidate = destination;
+    if (hazards.Count == 0)
+    {
+        blockingHazard = default;
+        return false;
+    }
+
+    var playerPoint = new NavigationPoint(player.X, player.Y, player.Z);
+    if (!TryGetBlockingHazard(playerPoint, destination, hazards, settings.Hazard.RouteSafetyBuffer, out blockingHazard))
+    {
+        return false;
+    }
+
+    if (orbitAnchor is not null &&
+        orbitRadius > 0.05f &&
+        TryFindSafeOrbitDestination(
+            playerPoint,
+            destination,
+            orbitAnchor,
+            orbitRadius,
+            hazards,
+            settings.Hazard.CandidateCount,
+            settings.Hazard.RouteSafetyBuffer,
+            out candidate))
+    {
+        return true;
+    }
+
+    var sampleRadius = MathF.Max(settings.Hazard.SuspectedHazardRadius, blockingHazard.Radius + settings.Hazard.EscapeBuffer);
+    return TryFindSafeScatterDestination(
+        playerPoint,
+        destination,
+        hazards,
+        sampleRadius,
+        settings.Hazard.CandidateCount,
+        settings.Hazard.RouteSafetyBuffer,
+        out candidate);
+}
+
+static bool TryFindSafeOrbitDestination(
+    NavigationPoint playerPoint,
+    NavigationPoint preferredPoint,
+    NavigationPoint orbitAnchor,
+    float orbitRadius,
+    IReadOnlyList<HazardInstance> hazards,
+    int candidateCount,
+    float routeSafetyBuffer,
+    out NavigationPoint candidate,
+    ulong ignoreHazardGuid = 0)
+{
+    candidate = preferredPoint;
+    if (candidateCount <= 0)
+    {
+        return false;
+    }
+
+    var angleStep = (MathF.PI * 2f) / Math.Max(6, candidateCount);
+    var preferredAngle = MathF.Atan2(playerPoint.Y - orbitAnchor.Y, playerPoint.X - orbitAnchor.X);
+    var bestScore = float.MaxValue;
+    var found = false;
+    for (var i = 0; i < Math.Max(6, candidateCount); i++)
+    {
+        var angle = preferredAngle + GetAlternatingAngleOffset(i, angleStep);
+        var probe = new NavigationPoint(
+            orbitAnchor.X + (MathF.Cos(angle) * orbitRadius),
+            orbitAnchor.Y + (MathF.Sin(angle) * orbitRadius),
+            orbitAnchor.Z);
+        if (TryGetBlockingHazard(playerPoint, probe, hazards, routeSafetyBuffer, out _, ignoreHazardGuid))
+        {
+            continue;
+        }
+
+        var score =
+            Distance2D(probe.X, probe.Y, preferredPoint.X, preferredPoint.Y) +
+            (Distance2D(probe.X, probe.Y, playerPoint.X, playerPoint.Y) * 0.35f);
+        if (score >= bestScore)
+        {
+            continue;
+        }
+
+        bestScore = score;
+        candidate = probe;
+        found = true;
+    }
+
+    return found;
+}
+
+static bool TryFindSafeScatterDestination(
+    NavigationPoint playerPoint,
+    NavigationPoint destination,
+    IReadOnlyList<HazardInstance> hazards,
+    float sampleRadius,
+    int candidateCount,
+    float routeSafetyBuffer,
+    out NavigationPoint candidate,
+    ulong ignoreHazardGuid = 0)
+{
+    candidate = destination;
+    if (candidateCount <= 0)
+    {
+        return false;
+    }
+
+    var angleStep = (MathF.PI * 2f) / Math.Max(6, candidateCount);
+    var baseAngle = MathF.Atan2(destination.Y - playerPoint.Y, destination.X - playerPoint.X);
+    var bestScore = float.MaxValue;
+    var found = false;
+    for (var i = 0; i < Math.Max(6, candidateCount); i++)
+    {
+        var angle = baseAngle + GetAlternatingAngleOffset(i, angleStep);
+        var probe = new NavigationPoint(
+            destination.X + (MathF.Cos(angle) * sampleRadius),
+            destination.Y + (MathF.Sin(angle) * sampleRadius),
+            destination.Z);
+        if (TryGetBlockingHazard(playerPoint, probe, hazards, routeSafetyBuffer, out _, ignoreHazardGuid))
+        {
+            continue;
+        }
+
+        var score = Distance2D(probe.X, probe.Y, destination.X, destination.Y);
+        if (score >= bestScore)
+        {
+            continue;
+        }
+
+        bestScore = score;
+        candidate = probe;
+        found = true;
+    }
+
+    return found;
+}
+
+static bool TryBuildRadialEscapeDestination(
+    NavigationPoint playerPoint,
+    HazardInstance containingHazard,
+    IReadOnlyList<HazardInstance> hazards,
+    BotSettings settings,
+    out NavigationPoint candidate)
+{
+    candidate = playerPoint;
+
+    var dx = playerPoint.X - containingHazard.X;
+    var dy = playerPoint.Y - containingHazard.Y;
+    var length = MathF.Sqrt((dx * dx) + (dy * dy));
+    if (length < 0.001f)
+    {
+        dx = 1.0f;
+        dy = 0.0f;
+        length = 1.0f;
+    }
+
+    var nx = dx / length;
+    var ny = dy / length;
+    var sampleRadius = containingHazard.Radius + settings.Hazard.EscapeBuffer;
+    var desired = new NavigationPoint(
+        containingHazard.X + (nx * sampleRadius),
+        containingHazard.Y + (ny * sampleRadius),
+        playerPoint.Z);
+
+    if (!TryGetBlockingHazard(
+            playerPoint,
+            desired,
+            hazards,
+            settings.Hazard.RouteSafetyBuffer,
+            out _,
+            containingHazard.Guid))
+    {
+        candidate = desired;
+        return true;
+    }
+
+    return TryFindSafeScatterDestination(
+        playerPoint,
+        desired,
+        hazards,
+        MathF.Max(settings.Hazard.SuspectedHazardRadius, settings.Hazard.EscapeBuffer + settings.Hazard.ForcedRetreatBuffer),
+        settings.Hazard.CandidateCount,
+        settings.Hazard.RouteSafetyBuffer,
+        out candidate,
+        containingHazard.Guid);
+}
+
+static bool TryBuildHazardRetreatDestination(
+    NavigationPoint playerPoint,
+    HazardInstance hazard,
+    IReadOnlyList<HazardInstance> hazards,
+    BotSettings settings,
+    out NavigationPoint candidate)
+{
+    candidate = playerPoint;
+
+    var distanceToHazard = Distance2D(playerPoint.X, playerPoint.Y, hazard.X, hazard.Y);
+    var isInsideHazard = distanceToHazard <= hazard.Radius + 0.05f;
+    var dx = playerPoint.X - hazard.X;
+    var dy = playerPoint.Y - hazard.Y;
+    var length = MathF.Sqrt((dx * dx) + (dy * dy));
+    if (length < 0.001f)
+    {
+        dx = 1.0f;
+        dy = 0.0f;
+        length = 1.0f;
+    }
+
+    var nx = dx / length;
+    var ny = dy / length;
+    var retreatRadius = hazard.Radius + settings.Hazard.EscapeBuffer + settings.Hazard.ForcedRetreatBuffer;
+    var desired = new NavigationPoint(
+        hazard.X + (nx * retreatRadius),
+        hazard.Y + (ny * retreatRadius),
+        playerPoint.Z);
+    var ignoreHazardGuid = isInsideHazard ? hazard.Guid : 0UL;
+
+    if (!TryGetBlockingHazard(
+            playerPoint,
+            desired,
+            hazards,
+            settings.Hazard.RouteSafetyBuffer,
+            out _,
+            ignoreHazardGuid))
+    {
+        candidate = desired;
+        return true;
+    }
+
+    return TryFindSafeScatterDestination(
+        playerPoint,
+        desired,
+        hazards,
+        MathF.Max(settings.Hazard.SuspectedHazardRadius, settings.Hazard.ForcedRetreatBuffer + settings.Hazard.EscapeBuffer),
+        Math.Max(settings.Hazard.CandidateCount, 16),
+        settings.Hazard.RouteSafetyBuffer,
+        out candidate,
+        ignoreHazardGuid);
+}
+
+static bool TryGetContainingHazard(
+    NavigationPoint point,
+    IReadOnlyList<HazardInstance> hazards,
+    float buffer,
+    out HazardInstance hazard)
+{
+    var bestDistance = float.MaxValue;
+    hazard = default;
+    var found = false;
+    foreach (var candidate in hazards)
+    {
+        var distance = Distance2D(point.X, point.Y, candidate.X, candidate.Y);
+        if (distance > candidate.Radius + buffer || distance >= bestDistance)
+        {
+            continue;
+        }
+
+        bestDistance = distance;
+        hazard = candidate;
+        found = true;
+    }
+
+    return found;
+}
+
+static bool TryGetBlockingHazard(
+    NavigationPoint start,
+    NavigationPoint end,
+    IReadOnlyList<HazardInstance> hazards,
+    float buffer,
+    out HazardInstance blockingHazard,
+    ulong ignoreHazardGuid = 0)
+{
+    var bestDistance = float.MaxValue;
+    blockingHazard = default;
+    var found = false;
+    foreach (var candidate in hazards)
+    {
+        if (ignoreHazardGuid != 0 && candidate.Guid == ignoreHazardGuid)
+        {
+            continue;
+        }
+
+        var distance = DistancePointToSegment2D(candidate.X, candidate.Y, start.X, start.Y, end.X, end.Y);
+        if (distance > candidate.Radius + buffer || distance >= bestDistance)
+        {
+            continue;
+        }
+
+        bestDistance = distance;
+        blockingHazard = candidate;
+        found = true;
+    }
+
+    return found;
+}
+
+static float DistancePointToSegment2D(float px, float py, float ax, float ay, float bx, float by)
+{
+    var dx = bx - ax;
+    var dy = by - ay;
+    var lengthSq = (dx * dx) + (dy * dy);
+    if (lengthSq <= 0.0001f)
+    {
+        return Distance2D(px, py, ax, ay);
+    }
+
+    var t = (((px - ax) * dx) + ((py - ay) * dy)) / lengthSq;
+    t = Math.Clamp(t, 0.0f, 1.0f);
+    var closestX = ax + (dx * t);
+    var closestY = ay + (dy * t);
+    return Distance2D(px, py, closestX, closestY);
+}
+
+static float GetAlternatingAngleOffset(int index, float step)
+{
+    if (index == 0)
+    {
+        return 0.0f;
+    }
+
+    var ring = (index + 1) / 2;
+    var sign = index % 2 == 0 ? -1.0f : 1.0f;
+    return sign * ring * step;
+}
+
+static bool ShouldLogHazard(
+    HazardAwarenessState hazardState,
+    string key,
+    DateTimeOffset now,
+    TimeSpan cooldown)
+{
+    if (hazardState.LastHazardLogAtUtc.TryGetValue(key, out var lastAt) &&
+        now - lastAt < cooldown)
+    {
+        return false;
+    }
+
+    hazardState.LastHazardLogAtUtc[key] = now;
+    return true;
+}
+
+static string FormatWorldObjectKind(byte typeId)
+{
+    return typeId switch
+    {
+        5 => "gameobject",
+        6 => "dynamicobject",
+        _ => $"type{typeId}"
+    };
+}
+
+static float BuildPreferredMeleeDistance(BotSettings settings)
+{
+    return MathF.Min(
+        settings.Navigation.MeleeRange - 0.05f,
+        MathF.Max(settings.Navigation.PreferredMeleeDistance, settings.Navigation.MinMeleeDistance));
+}
+
 static NearbyUnitSnapshot? SelectCombatTarget(
     WorldSnapshot snapshot,
     PlayerSnapshot player,
     FactionTemplateStore factionTemplates,
     BotSettings settings,
     MeleeCombatState state,
+    HazardAwarenessState hazardState,
     DateTimeOffset now,
     ITargetSelector targetSelector,
     TargetSelectionOptions options)
 {
     var preferred = targetSelector.Select(snapshot, options);
     if (preferred is not null &&
-        IsTargetAttackable(preferred, player, factionTemplates, settings, state, now))
+        IsTargetAttackable(preferred, player, factionTemplates, settings, state, now) &&
+        !IsTargetBlockedByHazard(player, preferred, settings, hazardState, out _))
     {
         return preferred;
     }
@@ -2165,6 +3727,7 @@ static NearbyUnitSnapshot? SelectCombatTarget(
     var currentPlayer = player;
     var attacker = snapshot.NearbyUnits
         .Where(u => IsTargetAttackable(u, player, factionTemplates, settings, state, now))
+        .Where(u => !IsTargetBlockedByHazard(player, u, settings, hazardState, out _))
         .Where(u => u.TargetGuid == player.Guid)
         .Where(u => u.X.HasValue && u.Y.HasValue && u.Z.HasValue)
         .Select(u => new
@@ -2184,6 +3747,7 @@ static NearbyUnitSnapshot? SelectCombatTarget(
 
     return snapshot.NearbyUnits
         .Where(u => IsTargetAttackable(u, player, factionTemplates, settings, state, now))
+        .Where(u => !IsTargetBlockedByHazard(player, u, settings, hazardState, out _))
         .Where(u => u.X.HasValue && u.Y.HasValue && u.Z.HasValue)
         .Select(u => new
         {
@@ -2196,6 +3760,59 @@ static NearbyUnitSnapshot? SelectCombatTarget(
         .ThenBy(x => x.Unit.Guid)
         .Select(x => x.Unit)
         .FirstOrDefault();
+}
+
+static bool IsTargetBlockedByHazard(
+    PlayerSnapshot player,
+    NearbyUnitSnapshot target,
+    BotSettings settings,
+    HazardAwarenessState hazardState,
+    out HazardInstance blockingHazard)
+{
+    blockingHazard = default;
+    if (!settings.Hazard.Enabled ||
+        !target.X.HasValue ||
+        !target.Y.HasValue ||
+        !target.Z.HasValue)
+    {
+        return false;
+    }
+
+    var hazards = GetActiveHazards(hazardState, DateTimeOffset.UtcNow);
+    if (hazards.Count == 0)
+    {
+        return false;
+    }
+
+    return TryGetBlockingHazard(
+        new NavigationPoint(player.X, player.Y, player.Z),
+        new NavigationPoint(target.X.Value, target.Y.Value, target.Z.Value),
+        hazards,
+        MathF.Max(0.05f, settings.Hazard.RouteSafetyBuffer),
+        out blockingHazard);
+}
+
+static int CountHazardBlockedTargets(
+    IReadOnlyList<NearbyUnitSnapshot> targets,
+    PlayerSnapshot player,
+    BotSettings settings,
+    HazardAwarenessState hazardState)
+{
+    if (!settings.Hazard.Enabled || targets.Count == 0)
+    {
+        return 0;
+    }
+
+    var blocked = 0;
+    foreach (var target in targets)
+    {
+        if (IsTargetBlockedByHazard(player, target, settings, hazardState, out _))
+        {
+            blocked++;
+        }
+    }
+
+    return blocked;
 }
 
 static bool IsTargetAttackable(
@@ -2312,6 +3929,7 @@ static async Task DetectAndLogAnomaliesAsync(
     BotSettings settings,
     MeleeCombatState meleeState,
     DeathRecoveryState deathState,
+    ExplorationState explorationState,
     RunMetrics metrics,
     BotAnomalyState anomalyState,
     string logPath)
@@ -2355,27 +3973,6 @@ static async Task DetectAndLogAnomaliesAsync(
             TimeSpan.FromSeconds(2));
     }
 
-    if (anomalyState.LastPlayerSample is { } previous)
-    {
-        var dt = (float)(now - previous.AtUtc).TotalSeconds;
-        if (dt > 0.02f)
-        {
-            var distance = Distance3D(player.X, player.Y, player.Z, previous.X, previous.Y, previous.Z);
-            var speed = distance / dt;
-            if (distance >= 8.0f && speed >= 20.0f)
-            {
-                await LogAnomalyAsync(
-                    metrics,
-                    anomalyState,
-                    logPath,
-                    "position_jump",
-                    $"ANOMALY_POSITION_JUMP dist={distance:F3} dt={dt:F3}s speed={speed:F2}mps from=({previous.X:F3},{previous.Y:F3},{previous.Z:F3}) to=({player.X:F3},{player.Y:F3},{player.Z:F3})",
-                    now,
-                    TimeSpan.FromMilliseconds(700));
-            }
-        }
-    }
-
     var movementIntent = false;
     var intentReason = string.Empty;
     if (meleeState.LastChaseCommandAtUtc > now - TimeSpan.FromMilliseconds(Math.Max(1500, settings.Navigation.ChaseCommandIntervalMs * 3)))
@@ -2393,6 +3990,67 @@ static async Task DetectAndLogAnomaliesAsync(
     {
         movementIntent = true;
         intentReason = "ghost_move";
+    }
+    else if (explorationState.IsActive ||
+             (explorationState.LastAttemptAtUtc.HasValue &&
+              now - explorationState.LastAttemptAtUtc.Value < TimeSpan.FromMilliseconds(Math.Max(2500, settings.Exploration.ExploreCommandIntervalMs * 2))))
+    {
+        movementIntent = true;
+        intentReason = "explore_move";
+    }
+
+    if (movementIntent)
+    {
+        anomalyState.LastMovementIntentAtUtc = now;
+        anomalyState.LastMovementIntentReason = intentReason;
+    }
+
+    var recentMovementIntent =
+        movementIntent ||
+        (anomalyState.LastMovementIntentAtUtc.HasValue &&
+         now - anomalyState.LastMovementIntentAtUtc.Value < TimeSpan.FromMilliseconds(2500));
+    var recentMovementIntentReason = movementIntent
+        ? intentReason
+        : anomalyState.LastMovementIntentReason;
+
+    if (anomalyState.LastPlayerSample is { } previous)
+    {
+        var dt = (float)(now - previous.AtUtc).TotalSeconds;
+        if (dt > 0.02f)
+        {
+            var distance = Distance3D(player.X, player.Y, player.Z, previous.X, previous.Y, previous.Z);
+            var planarDistance = Distance2D(player.X, player.Y, previous.X, previous.Y);
+            var deltaZ = MathF.Abs(player.Z - previous.Z);
+            var speed = distance / dt;
+            var normalJump = distance >= 8.0f && speed >= 20.0f;
+            var severeJumpWhileMoving =
+                distance >= 28.0f ||
+                planarDistance >= 24.0f ||
+                (deltaZ >= 6.0f && speed >= 30.0f) ||
+                (distance >= 12.0f && speed >= 85.0f);
+            if (!recentMovementIntent && normalJump)
+            {
+                await LogAnomalyAsync(
+                    metrics,
+                    anomalyState,
+                    logPath,
+                    "position_jump",
+                    $"ANOMALY_POSITION_JUMP dist={distance:F3} planar={planarDistance:F3} dz={deltaZ:F3} dt={dt:F3}s speed={speed:F2}mps from=({previous.X:F3},{previous.Y:F3},{previous.Z:F3}) to=({player.X:F3},{player.Y:F3},{player.Z:F3})",
+                    now,
+                    TimeSpan.FromMilliseconds(700));
+            }
+            else if (recentMovementIntent && severeJumpWhileMoving)
+            {
+                await LogAnomalyAsync(
+                    metrics,
+                    anomalyState,
+                    logPath,
+                    "position_teleport_during_move",
+                    $"ANOMALY_POSITION_TELEPORT dist={distance:F3} planar={planarDistance:F3} dz={deltaZ:F3} dt={dt:F3}s speed={speed:F2}mps movementIntent={recentMovementIntentReason} from=({previous.X:F3},{previous.Y:F3},{previous.Z:F3}) to=({player.X:F3},{player.Y:F3},{player.Z:F3})",
+                    now,
+                    TimeSpan.FromMilliseconds(900));
+            }
+        }
     }
 
     if (movementIntent && anomalyState.LastPlayerSample is { } movementPrevious)
@@ -2574,6 +4232,13 @@ static float Distance3D(float ax, float ay, float az, float bx, float by, float 
     return MathF.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
 }
 
+static float Distance2D(float ax, float ay, float bx, float by)
+{
+    var dx = ax - bx;
+    var dy = ay - by;
+    return MathF.Sqrt((dx * dx) + (dy * dy));
+}
+
 static float DistanceSquared(PlayerSnapshot player, NearbyUnitSnapshot target)
 {
     var dx = player.X - target.X!.Value;
@@ -2619,6 +4284,7 @@ file sealed class MeleeCombatState
     public DateTimeOffset LastFaceNudgeAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset LastFacingTelemetryAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset LastPredictionLogAtUtc { get; set; } = DateTimeOffset.MinValue;
+    public DateTimeOffset LastChaseClampLogAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset? LastEngagedTargetSeenAtUtc { get; set; }
     public Dictionary<ulong, DateTimeOffset> BlacklistedTargets { get; } = new();
     public Dictionary<ulong, MotionSamplePair> TargetMotionSamples { get; } = new();
@@ -2663,12 +4329,39 @@ file sealed class ExplorationState
     public Dictionary<ExplorationGridCell, DateTimeOffset> BlacklistedCells { get; } = new();
 }
 
+file sealed class HazardAwarenessState
+{
+    public int? LastPlayerHpPercent { get; set; }
+    public DateTimeOffset LastEscapeAtUtc { get; set; } = DateTimeOffset.MinValue;
+    public Dictionary<ulong, HazardMemory> Memories { get; } = new();
+    public Dictionary<ulong, HazardBlockState> BlockedHazards { get; } = new();
+    public Dictionary<string, DateTimeOffset> LastHazardLogAtUtc { get; } = new(StringComparer.Ordinal);
+}
+
+file sealed class HazardMemory
+{
+    public ulong Guid { get; init; }
+    public byte TypeId { get; set; }
+    public uint? EntryId { get; set; }
+    public ulong OwnerGuid { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Z { get; set; }
+    public float Radius { get; set; }
+    public string Source { get; set; } = string.Empty;
+    public DateTimeOffset FirstSeenAtUtc { get; set; }
+    public DateTimeOffset LastSeenAtUtc { get; set; }
+    public DateTimeOffset ExpiresAtUtc { get; set; }
+}
+
 file sealed class BotAnomalyState
 {
     public PlayerMotionSample? LastPlayerSample { get; set; }
     public DateTimeOffset? NoProgressSinceUtc { get; set; }
     public string LastNoProgressReason { get; set; } = string.Empty;
     public DateTimeOffset? GhostWithoutCorpseSinceUtc { get; set; }
+    public DateTimeOffset? LastMovementIntentAtUtc { get; set; }
+    public string LastMovementIntentReason { get; set; } = string.Empty;
     public Dictionary<string, DateTimeOffset> LastAnomalyLogAtUtc { get; } = new(StringComparer.Ordinal);
 }
 
@@ -2677,6 +4370,18 @@ file sealed class BotActivityState
     public string LastActionLabel { get; set; } = string.Empty;
     public DateTimeOffset LastActionAtUtc { get; set; } = DateTimeOffset.MinValue;
     public DateTimeOffset LastNoActionLogAtUtc { get; set; } = DateTimeOffset.MinValue;
+}
+
+file sealed class GroupDebugState
+{
+    public bool WasInGroup { get; set; }
+    public DateTimeOffset LastGroupMessageAtUtc { get; set; } = DateTimeOffset.MinValue;
+    public Dictionary<string, DateTimeOffset> RecentMessages { get; } = new(StringComparer.Ordinal);
+    public Dictionary<uint, QuestProgressDigest> QuestDigests { get; } = [];
+    public ulong? LastQuestGiverGuid { get; set; }
+    public QuestGiverStatus? LastQuestGiverStatus { get; set; }
+    public float? LastQuestGiverDistance { get; set; }
+    public DateTimeOffset? LastQuestGiverMoveReportAtUtc { get; set; }
 }
 
 file sealed class RunMetrics
@@ -2845,6 +4550,21 @@ file readonly record struct ApproachFailureState(int Count, DateTimeOffset First
 file readonly record struct PlayerMotionSample(float X, float Y, float Z, DateTimeOffset AtUtc);
 file readonly record struct ExplorationGridCell(int X, int Y);
 file readonly record struct ExplorationPositionSample(float X, float Y, float Z, DateTimeOffset AtUtc);
+file readonly record struct QuestProgressDigest(string Title, string ProgressKey, string ProgressSummary, bool IsCompleted);
+file readonly record struct HazardInstance(
+    ulong Guid,
+    byte TypeId,
+    uint? EntryId,
+    ulong OwnerGuid,
+    float X,
+    float Y,
+    float Z,
+    float Radius,
+    string Source);
+file readonly record struct HazardBlockState(
+    int Count,
+    DateTimeOffset FirstBlockedAtUtc,
+    DateTimeOffset LastBlockedAtUtc);
 file readonly record struct FactionTemplateEntryLite(
     int Id,
     int Faction,
@@ -2984,6 +4704,7 @@ internal sealed class BotSettings
     public required BehaviorSettings Behavior { get; init; }
     public required LoggingSettings Logging { get; init; }
     public ExplorationSettings Exploration { get; init; } = new();
+    public HazardSettings Hazard { get; init; } = new();
 
     public static async Task<BotSettings> LoadAsync(string path)
     {
@@ -3027,7 +4748,8 @@ internal sealed class BotSettings
                 WorldHost = "127.0.0.1",
                 WorldPort = 8085,
                 LogoutTimeoutSeconds = 25,
-                CharacterName = "test"
+                CharacterName = "test",
+                AutoEnableGmWhispers = false
             },
             Combat = new CombatSettings
             {
@@ -3087,12 +4809,14 @@ internal sealed class BotSettings
                 FaceNudgeNoProgressMs = 1600,
                 FaceNudgeStepTimeoutMs = 500,
                 FaceRefreshBackAngleDeg = 130f,
+                ChaseCommandMaxDistance = 8.0f,
                 TargetPredictionMaxAgeMs = 1200,
                 TargetPredictionMinLeadSeconds = 0.15f,
                 TargetPredictionMaxLeadSeconds = 0.90f,
                 TargetPredictionMinSpeed = 0.40f,
                 TargetPredictionMaxSpeed = 9.0f,
-                TargetPredictionMaxDistance = 6.0f
+                TargetPredictionMaxDistance = 6.0f,
+                TargetPredictionMaxVerticalDelta = 1.75f
             },
             Behavior = new BehaviorSettings
             {
@@ -3125,10 +4849,37 @@ internal sealed class BotSettings
                 ArrivalRadius = 2.5f,
                 StepTimeoutMs = 3500,
                 GridCellSize = 14.0f,
+                MaxCandidateVerticalDelta = 3.0f,
+                MaxDirectPathDistance = 18.0f,
                 VisitDecaySeconds = 120,
                 BlacklistSeconds = 20,
                 NoProgressTimeoutMs = 4000,
                 MinProgressDistance = 0.30f
+            },
+            Hazard = new HazardSettings
+            {
+                Enabled = true,
+                DamageProbeRadius = 3.25f,
+                ContactProbeRadius = 1.65f,
+                VerticalProbeTolerance = 2.0f,
+                KnownHazardRadius = 2.75f,
+                SuspectedHazardRadius = 2.35f,
+                EnableWorldObjectRouteBlocking = true,
+                WorldObjectRouteBlockRadius = 1.45f,
+                WorldObjectRouteDetectionRadius = 18.0f,
+                WorldObjectRouteVerticalTolerance = 6.0f,
+                EscapeBuffer = 0.85f,
+                RouteSafetyBuffer = 0.15f,
+                EscapeArrivalRadius = 0.60f,
+                EscapeCooldownMs = 900,
+                MemorySeconds = 90,
+                SuspectedMemorySeconds = 18,
+                CandidateCount = 12,
+                BlockedHazardWindowSeconds = 8,
+                ForcedRetreatThreshold = 3,
+                ForcedRetreatBuffer = 2.20f,
+                TreatUnknownGameObjectsAsHazardsOnDamage = true,
+                TreatUnknownDynamicObjectsAsHazardsOnDamage = true
             }
         };
     }
@@ -3145,6 +4896,7 @@ internal sealed class ConnectionSettings
     public required int WorldPort { get; init; }
     public required int LogoutTimeoutSeconds { get; init; }
     public required string CharacterName { get; init; }
+    public bool AutoEnableGmWhispers { get; init; }
 }
 
 internal sealed class CombatSettings
@@ -3223,12 +4975,14 @@ internal sealed class NavigationSettings
     public int FaceNudgeNoProgressMs { get; init; } = 1600;
     public int FaceNudgeStepTimeoutMs { get; init; } = 500;
     public float FaceRefreshBackAngleDeg { get; init; } = 130f;
+    public float ChaseCommandMaxDistance { get; init; } = 8.0f;
     public int TargetPredictionMaxAgeMs { get; init; } = 1200;
     public float TargetPredictionMinLeadSeconds { get; init; } = 0.15f;
     public float TargetPredictionMaxLeadSeconds { get; init; } = 0.90f;
     public float TargetPredictionMinSpeed { get; init; } = 0.40f;
     public float TargetPredictionMaxSpeed { get; init; } = 9.0f;
     public float TargetPredictionMaxDistance { get; init; } = 6.0f;
+    public float TargetPredictionMaxVerticalDelta { get; init; } = 1.75f;
 }
 
 internal sealed class LoggingSettings
@@ -3248,8 +5002,37 @@ internal sealed class ExplorationSettings
     public float ArrivalRadius { get; init; } = 2.5f;
     public int StepTimeoutMs { get; init; } = 3500;
     public float GridCellSize { get; init; } = 14.0f;
+    public float MaxCandidateVerticalDelta { get; init; } = 3.0f;
+    public float MaxDirectPathDistance { get; init; } = 18.0f;
     public int VisitDecaySeconds { get; init; } = 120;
     public int BlacklistSeconds { get; init; } = 20;
     public int NoProgressTimeoutMs { get; init; } = 4000;
     public float MinProgressDistance { get; init; } = 0.30f;
+}
+
+internal sealed class HazardSettings
+{
+    public bool Enabled { get; init; } = true;
+    public float DamageProbeRadius { get; init; } = 3.25f;
+    public float ContactProbeRadius { get; init; } = 1.65f;
+    public float VerticalProbeTolerance { get; init; } = 2.0f;
+    public float KnownHazardRadius { get; init; } = 2.75f;
+    public float SuspectedHazardRadius { get; init; } = 2.35f;
+    public bool EnableWorldObjectRouteBlocking { get; init; } = true;
+    public float WorldObjectRouteBlockRadius { get; init; } = 1.45f;
+    public float WorldObjectRouteDetectionRadius { get; init; } = 18.0f;
+    public float WorldObjectRouteVerticalTolerance { get; init; } = 6.0f;
+    public float EscapeBuffer { get; init; } = 0.85f;
+    public float RouteSafetyBuffer { get; init; } = 0.15f;
+    public float EscapeArrivalRadius { get; init; } = 0.60f;
+    public int EscapeCooldownMs { get; init; } = 900;
+    public int MemorySeconds { get; init; } = 90;
+    public int SuspectedMemorySeconds { get; init; } = 18;
+    public int CandidateCount { get; init; } = 12;
+    public int BlockedHazardWindowSeconds { get; init; } = 8;
+    public int ForcedRetreatThreshold { get; init; } = 3;
+    public float ForcedRetreatBuffer { get; init; } = 2.20f;
+    public List<uint> KnownEntryIds { get; init; } = [];
+    public bool TreatUnknownGameObjectsAsHazardsOnDamage { get; init; } = true;
+    public bool TreatUnknownDynamicObjectsAsHazardsOnDamage { get; init; } = true;
 }

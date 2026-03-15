@@ -97,7 +97,9 @@ public static class WorldPacketCodec
             index += 8;
 
             var name = ReadCString(payload, ref index);
-            index += 3; // race, class, gender
+            var race = payload[index++];
+            var @class = payload[index++];
+            var gender = payload[index++];
             index += 5; // bytes skin/face/hair...
             var level = payload[index++];
 
@@ -115,7 +117,7 @@ public static class WorldPacketCodec
             index += 19 * 9; // equipped items
             index += 4 * 9; // bags
 
-            list.Add(new WorldCharacterEntry(guid, name, level));
+            list.Add(new WorldCharacterEntry(guid, name, level, race, @class, gender));
         }
 
         return list;

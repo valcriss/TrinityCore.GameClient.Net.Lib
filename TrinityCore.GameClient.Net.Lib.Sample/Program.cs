@@ -11,19 +11,22 @@ var settings = await BotSettings.LoadAsync(settingsPath);
 var logsDirectory = Path.Combine(AppContext.BaseDirectory, settings.Logging.Directory);
 Directory.CreateDirectory(logsDirectory);
 var sampleLogPath = Path.Combine(logsDirectory, "sample.log");
+var packetLogPath = Path.Combine(logsDirectory, "packets.log");
+await ResetRunArtifactsAsync(sampleLogPath, packetLogPath);
 if (settings.Logging.EnablePacketTrace)
 {
     Trace.Listeners.Clear();
-    Trace.Listeners.Add(new TextWriterTraceListener(Path.Combine(logsDirectory, "packets.log")));
+    Trace.Listeners.Add(new TextWriterTraceListener(packetLogPath));
     Trace.AutoFlush = true;
 }
 
 await using var services = new ServiceCollection()
-    .AddTrinityCoreGameClientSkeleton()
+    .AddTrinityCoreGameClientCore()
     .BuildServiceProvider();
 
 var gameClient = services.GetRequiredService<IGameClient>();
 var gameState = services.GetRequiredService<IGameStateStore>();
+var gameSession = services.GetRequiredService<IGameClientSession>();
 
 while (true)
 {
@@ -57,13 +60,13 @@ while (true)
                 await ListRealmsAsync(gameClient, sampleLogPath);
                 break;
             case "3":
-                await FullLoginAsync(gameClient, settings, sampleLogPath);
+                await FullLoginAsync(gameSession, settings, sampleLogPath);
                 break;
             case "4":
                 PrintSettings(settings);
                 break;
             case "5":
-                await LogoutAsync(gameClient, settings, sampleLogPath);
+                await LogoutAsync(gameSession, settings, sampleLogPath);
                 break;
             case "6":
                 PrintGameState(gameState);
@@ -119,57 +122,21 @@ static async Task ListRealmsAsync(IGameClient gameClient, string logPath)
     }
 }
 
-static async Task FullLoginAsync(IGameClient gameClient, BotSettings settings, string logPath)
+static async Task FullLoginAsync(IGameClientSession gameSession, BotSettings settings, string logPath)
 {
     await WriteLogAsync(logPath, "Full login started");
-    var authOk = await gameClient.LoginAsync(
+    var worldOk = await gameSession.ConnectAsync(new GameClientSessionOptions(
         new AuthServerInfo(settings.Connection.Host, settings.Connection.Port),
-        new AuthServerCredentials(settings.Connection.Login, settings.Connection.Password));
-
-    if (!authOk)
-    {
-        Console.WriteLine("Auth KO");
-        await WriteLogAsync(logPath, "Full login failed at auth");
-        return;
-    }
-
-    var realms = await gameClient.GetRealmsAsync();
-    var realm = realms.FirstOrDefault(r => r.Name.Equals(settings.Connection.RealmName, StringComparison.OrdinalIgnoreCase))
-                ?? realms.FirstOrDefault();
-    if (realm is null)
-    {
-        Console.WriteLine("Aucun realm");
-        await WriteLogAsync(logPath, "Full login failed at realm list");
-        return;
-    }
-
-    var realmForConnection = new RealmInfo(
-        realm.Id,
-        realm.Name,
+        new AuthServerCredentials(settings.Connection.Login, settings.Connection.Password),
+        settings.Connection.RealmName,
         settings.Connection.WorldHost,
-        settings.Connection.WorldPort);
+        settings.Connection.WorldPort,
+        settings.Connection.CharacterName,
+        settings.Connection.LogoutTimeoutSeconds));
 
-    var realmOk = await gameClient.ConnectRealmAsync(realmForConnection);
-    if (!realmOk)
-    {
-        Console.WriteLine("Connexion realm KO");
-        await WriteLogAsync(logPath, "Full login failed at realm auth");
-        return;
-    }
-
-    var characters = await gameClient.GetCharactersAsync();
-    var character = characters.FirstOrDefault(c => c.Name.Equals(settings.Connection.CharacterName, StringComparison.OrdinalIgnoreCase))
-                    ?? characters.FirstOrDefault();
-    if (character is null)
-    {
-        Console.WriteLine("Aucun personnage");
-        await WriteLogAsync(logPath, "Full login failed at character list");
-        return;
-    }
-
-    var worldOk = await gameClient.EnterWorldAsync(character);
-    Console.WriteLine(worldOk ? $"Entree monde OK ({character.Name})" : "Entree monde KO");
-    await WriteLogAsync(logPath, worldOk ? $"Full login success with {character.Name}" : "Full login failed at enter world");
+    var characterName = gameSession.CurrentCharacter?.Name ?? settings.Connection.CharacterName;
+    Console.WriteLine(worldOk ? $"Entree monde OK ({characterName})" : "Entree monde KO");
+    await WriteLogAsync(logPath, worldOk ? $"Full login success with {characterName}" : "Full login failed");
 }
 
 static void PrintSettings(BotSettings settings)
@@ -177,10 +144,10 @@ static void PrintSettings(BotSettings settings)
     Console.WriteLine(JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
 }
 
-static async Task LogoutAsync(IGameClient gameClient, BotSettings settings, string logPath)
+static async Task LogoutAsync(IGameClientSession gameSession, BotSettings settings, string logPath)
 {
     await WriteLogAsync(logPath, $"Logout started timeout={settings.Connection.LogoutTimeoutSeconds}s");
-    var ok = await gameClient.LogoutAsync(settings.Connection.LogoutTimeoutSeconds);
+    var ok = await gameSession.DisconnectAsync(settings.Connection.LogoutTimeoutSeconds);
     Console.WriteLine(ok ? "Logout OK" : "Logout annule/KO");
     await WriteLogAsync(logPath, ok ? "Logout success" : "Logout canceled or failed");
 }
@@ -222,6 +189,25 @@ static async Task WriteLogAsync(string logPath, string message)
 {
     var line = $"{DateTimeOffset.UtcNow:O} {message}{Environment.NewLine}";
     await File.AppendAllTextAsync(logPath, line);
+}
+
+static async Task ResetRunArtifactsAsync(params string[] filePaths)
+{
+    foreach (var filePath in filePaths)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            continue;
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllTextAsync(filePath, string.Empty);
+    }
 }
 
 internal sealed class BotSettings

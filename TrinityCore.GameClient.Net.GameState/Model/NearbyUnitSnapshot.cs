@@ -1,3 +1,5 @@
+using TrinityCore.GameClient.Net.Protocol.World;
+
 namespace TrinityCore.GameClient.Net.GameState.Model;
 
 public sealed record NearbyUnitSnapshot(
@@ -14,4 +16,8 @@ public sealed record NearbyUnitSnapshot(
     float? X,
     float? Y,
     float? Z,
-    int? HealthPercent);
+    int? HealthPercent,
+    uint? EntryId,
+    uint? NpcFlags,
+    bool IsQuestGiver,
+    QuestGiverStatus? QuestGiverStatus);

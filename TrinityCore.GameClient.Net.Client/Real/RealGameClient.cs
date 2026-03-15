@@ -4,6 +4,7 @@ using System.Net;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Buffers.Binary;
+using System.Text;
 using TrinityCore.GameClient.Net.Client.Abstractions;
 using TrinityCore.GameClient.Net.Client.Models;
 using TrinityCore.GameClient.Net.GameState.Abstractions;
@@ -28,7 +29,7 @@ public sealed class RealGameClient(
     private const int ChaseRepathMinIntervalMs = 1500;
     private const float ChaseStepMinDistance = 0.12f;
     private const float ChaseStepSpeedMultiplier = 1.00f;
-    private const float ServerForceLogThreshold = 0.20f;
+    private const float ServerForceLogThreshold = 0.03f;
     private const int DuplicateMovementCommandWindowMs = 250;
     private const int OutgoingValidationSampleLimitPerOpcode = 32;
     private const int OutgoingValidationHexPreviewBytes = 48;
@@ -36,11 +37,30 @@ public sealed class RealGameClient(
     private const int VisibilityCheckIntervalMs = 750;
     private const int VisibilityLookAheadMinPathPoints = 3;
     private const int VisibilityLookAheadMaxPoints = 8;
+    private const float VisibilityShortcutMaxDistance = 14.0f;
+    private const float VisibilityShortcutMaxDeviation = 1.25f;
+    private const float HeartbeatGroundRecoveryDeltaZ = 0.18f;
+    private const float HeartbeatGroundProbeUpgradeMinDeltaZ = 0.08f;
+    private const float HeartbeatGroundProbeHighOffsetZ = 1.10f;
+    private const float HeartbeatGroundProbeLowOffsetZ = 0.90f;
+    private const float HeartbeatGroundContinuityMaxDeltaZ = 1.25f;
+    private const float HeartbeatGroundDirectionalIntentMinDeltaZ = 0.25f;
+    private const float HeartbeatGroundProbeOvershootPenaltyDeltaZ = 0.20f;
+    private const float HeartbeatGroundCurrentFallbackPenaltyDeltaZ = 0.20f;
+    private const float HeartbeatGroundChaseEnvelopeMarginZ = 0.35f;
+    private const float HeartbeatGroundChaseNonStepPenalty = 0.35f;
+    private const float HeartbeatGroundChaseStepDeviationPenaltyDeltaZ = 0.45f;
+    private const float HeartbeatGroundChaseContinuityPenaltyDeltaZ = 0.65f;
     private const int SelfUpdateObjectPositionFreshMs = 1200;
     private const float SelfUpdateObjectStaleDistance = 3.0f;
     private const int SnapshotProjectionIntervalMs = 100;
     private readonly WorldCrypto _worldCrypto = new();
     private readonly SemaphoreSlim _worldSendLock = new(1, 1);
+    private readonly SemaphoreSlim _movementExecutionGate = new(1, 1);
+    private readonly object _movementCommandSync = new();
+    private readonly SemaphoreSlim _questRequestLock = new(1, 1);
+    private readonly object _questStateSync = new();
+    private readonly object _socialStateSync = new();
 
     private IConnection? _authConnection;
     private IConnection? _worldConnection;
@@ -96,6 +116,62 @@ public sealed class RealGameClient(
     private int _deathReleaseMapId = -1;
     private long _deathReleaseLocationUntilTick;
     private bool _deathMovementResetApplied;
+    private CancellationTokenSource? _activeMovementCommandCts;
+    private long _activeMovementCommandId;
+    private string? _activeMovementCommandName;
+    private long _movementCommandSequence;
+    private TaskCompletionSource<QuestGiverStatusInfo>? _questStatusTcs;
+    private TaskCompletionSource<QuestGiverMenu>? _questMenuTcs;
+    private TaskCompletionSource<QuestDialog>? _questDialogTcs;
+    private TaskCompletionSource<QuestDefinition>? _questDefinitionTcs;
+    private TaskCompletionSource<IReadOnlyList<QuestPoiInfo>>? _questPoiTcs;
+    private TaskCompletionSource<byte>? _questInvalidTcs;
+    private TaskCompletionSource<QuestTurnInResult>? _questTurnInResultTcs;
+    private readonly Dictionary<uint, QuestDefinition> _questDefinitions = [];
+    private readonly Dictionary<uint, QuestPoiInfo> _questPois = [];
+    private readonly Dictionary<uint, ActiveQuestState> _activeQuests = [];
+    private GroupMembershipInfo? _currentGroup;
+    private GroupInviteInfo? _pendingGroupInvite;
+    private readonly Queue<ReceivedChatMessage> _incomingChatMessages = new();
+
+    public bool AutoAcceptGroupInvites { get; set; } = true;
+
+    public GroupMembershipInfo? CurrentGroup
+    {
+        get
+        {
+            lock (_socialStateSync)
+            {
+                return _currentGroup;
+            }
+        }
+    }
+
+    public GroupInviteInfo? PendingGroupInvite
+    {
+        get
+        {
+            lock (_socialStateSync)
+            {
+                return _pendingGroupInvite;
+            }
+        }
+    }
+
+    public IReadOnlyList<ReceivedChatMessage> DrainIncomingChatMessages()
+    {
+        lock (_socialStateSync)
+        {
+            if (_incomingChatMessages.Count == 0)
+            {
+                return [];
+            }
+
+            var messages = _incomingChatMessages.ToArray();
+            _incomingChatMessages.Clear();
+            return messages;
+        }
+    }
 
     public async Task<bool> LoginAsync(AuthServerInfo server, AuthServerCredentials credentials, CancellationToken cancellationToken = default)
     {
@@ -222,7 +298,7 @@ public sealed class RealGameClient(
                 case WorldOpcode.SmsgCharEnum:
                     return WorldPacketCodec
                         .ParseCharacterList(packet.Payload)
-                        .Select(x => new CharacterInfo(x.Guid, x.Name, x.Level))
+                        .Select(x => new CharacterInfo(x.Guid, x.Name, x.Level, x.RaceId, x.ClassId, x.GenderId))
                         .ToArray();
                 case WorldOpcode.SmsgTimeSyncReq:
                     await RespondTimeSyncAsync(packet.Payload, cancellationToken);
@@ -267,6 +343,12 @@ public sealed class RealGameClient(
                     StartKeepAliveLoop();
                     StartWorldReceiveLoop();
                     StartSnapshotProjectionLoop();
+                    await SendWorldPacketAsync(
+                        _worldConnection,
+                        WorldOpcode.CmsgQuestgiverStatusMultipleQuery,
+                        [],
+                        cancellationToken);
+                    Trace.WriteLine("NET WORLD QUEST STATUS_MULTIPLE_QUERY_SEND reason=enter-world");
                     return true;
                 }
                 case WorldOpcode.SmsgTimeSyncReq:
@@ -288,6 +370,15 @@ public sealed class RealGameClient(
             return false;
         }
 
+        var movementScope = await BeginMovementCommandAsync("MoveTo", cancelPrevious: true, cancellationToken);
+        if (movementScope is null)
+        {
+            return false;
+        }
+
+        using var exclusiveMovement = movementScope;
+        var movementToken = exclusiveMovement.CancellationToken;
+
         var arrivalRadiusSq = arrivalRadius * arrivalRadius;
         var finalDestination = destination;
         var lastRepathAt = Environment.TickCount64;
@@ -303,7 +394,7 @@ public sealed class RealGameClient(
         var endPoint = pathfinder.ProjectToSurface(_currentMapId, finalDestination);
         var path = pathfinder.FindPath(_currentMapId, startPoint, endPoint);
         Trace.WriteLine(
-            $"NET WORLD MOVE INIT map={_currentMapId} " +
+            $"NET WORLD MOVE INIT op={exclusiveMovement.OperationId} map={_currentMapId} " +
             $"startRaw=({_currentPlayer.X:F3},{_currentPlayer.Y:F3},{_currentPlayer.Z:F3}) startProj=({startPoint.X:F3},{startPoint.Y:F3},{startPoint.Z:F3}) " +
             $"endRaw=({finalDestination.X:F3},{finalDestination.Y:F3},{finalDestination.Z:F3}) endProj=({endPoint.X:F3},{endPoint.Y:F3},{endPoint.Z:F3}) pathPoints={path.Count}");
 
@@ -326,15 +417,15 @@ public sealed class RealGameClient(
                 WorldOpcode.MsgMoveStartForward,
                 new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z),
                 MovementPacketCodec.MovementFlags.Forward,
-                cancellationToken);
+                movementToken);
         }
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!movementToken.IsCancellationRequested)
         {
             var snapshot = _currentPlayer;
             if (snapshot is null)
             {
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(100, movementToken);
                 continue;
             }
 
@@ -346,7 +437,7 @@ public sealed class RealGameClient(
                 arrivedSinceTick ??= now;
                 if (now - arrivedSinceTick.Value >= 250)
                 {
-                    await SendStopSequenceAsync(finalDestination, cancellationToken);
+                    await SendStopSequenceAsync(finalDestination, movementToken);
                     return true;
                 }
             }
@@ -362,8 +453,8 @@ public sealed class RealGameClient(
             }
             else if (now - lastProgressAt >= stuckTimeoutMs)
             {
-                Trace.WriteLine($"NET WORLD MOVE stuck detected after {stuckTimeoutMs}ms");
-                await SendStopSequenceAsync(new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z), cancellationToken);
+                Trace.WriteLine($"NET WORLD MOVE STUCK op={exclusiveMovement.OperationId} after={stuckTimeoutMs}ms");
+                await SendStopSequenceAsync(new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z), movementToken);
                 return false;
             }
 
@@ -384,7 +475,7 @@ public sealed class RealGameClient(
                 }
                 lastRepathAt = now;
                 Trace.WriteLine(
-                    $"NET WORLD MOVE REPATH map={_currentMapId} " +
+                    $"NET WORLD MOVE REPATH op={exclusiveMovement.OperationId} map={_currentMapId} " +
                     $"from=({snapshot.X:F3},{snapshot.Y:F3},{snapshot.Z:F3}) fromProj=({repathStart.X:F3},{repathStart.Y:F3},{repathStart.Z:F3}) " +
                     $"to=({finalDestination.X:F3},{finalDestination.Y:F3},{finalDestination.Z:F3}) toProj=({repathEnd.X:F3},{repathEnd.Y:F3},{repathEnd.Z:F3}) " +
                     $"points={path.Count} wpIndex={waypointIndex + 1}/{Math.Max(path.Count, 1)} interval={adaptiveRepathIntervalMs}ms");
@@ -392,14 +483,14 @@ public sealed class RealGameClient(
 
             if (path.Count == 0)
             {
-                await SendStopSequenceAsync(new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z), cancellationToken);
+                await SendStopSequenceAsync(new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z), movementToken);
                 return true;
             }
 
             if (waypointIndex >= path.Count)
             {
-                await SendStopSequenceAsync(finalDestination, cancellationToken);
-                Trace.WriteLine("NET WORLD MOVE ARRIVED (path completed)");
+                await SendStopSequenceAsync(finalDestination, movementToken);
+                Trace.WriteLine($"NET WORLD MOVE ARRIVED op={exclusiveMovement.OperationId} reason=path-completed");
                 return true;
             }
 
@@ -411,21 +502,33 @@ public sealed class RealGameClient(
             {
                 var currentPoint = new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z);
                 var lookAheadIndex = waypointIndex;
-                if (pathfinder.HasLineOfSight(_currentMapId, currentPoint, endPoint))
+                if (CanAdvanceWaypointByVisibility(path, waypointIndex, path.Count - 1, currentPoint, out var endDistance2D, out var endDeviation2D, out var endDecision))
                 {
                     lookAheadIndex = path.Count - 1;
+                    Trace.WriteLine(
+                        $"NET WORLD MOVE LOOKAHEAD op={exclusiveMovement.OperationId} mode=end " +
+                        $"from={waypointIndex + 1}/{path.Count} to={lookAheadIndex + 1}/{path.Count} " +
+                        $"decision={endDecision} dist2d={endDistance2D:F3} deviation2d={endDeviation2D:F3}");
                 }
                 else
                 {
+                    Trace.WriteLine(
+                        $"NET WORLD MOVE LOOKAHEAD op={exclusiveMovement.OperationId} mode=end-blocked " +
+                        $"from={waypointIndex + 1}/{path.Count} to={path.Count}/{path.Count} " +
+                        $"decision={endDecision} dist2d={endDistance2D:F3} deviation2d={endDeviation2D:F3}");
                     var maxCandidate = Math.Min(path.Count - 1, waypointIndex + VisibilityLookAheadMaxPoints);
                     for (var candidate = maxCandidate; candidate > waypointIndex; candidate--)
                     {
-                        if (!pathfinder.HasLineOfSight(_currentMapId, currentPoint, path[candidate]))
+                        if (!CanAdvanceWaypointByVisibility(path, waypointIndex, candidate, currentPoint, out var candidateDistance2D, out var candidateDeviation2D, out var candidateDecision))
                         {
                             continue;
                         }
 
                         lookAheadIndex = candidate;
+                        Trace.WriteLine(
+                            $"NET WORLD MOVE LOOKAHEAD op={exclusiveMovement.OperationId} mode=candidate " +
+                            $"from={waypointIndex + 1}/{path.Count} to={lookAheadIndex + 1}/{path.Count} " +
+                            $"decision={candidateDecision} dist2d={candidateDistance2D:F3} deviation2d={candidateDeviation2D:F3}");
                         break;
                     }
                 }
@@ -433,7 +536,7 @@ public sealed class RealGameClient(
                 if (lookAheadIndex > waypointIndex)
                 {
                     Trace.WriteLine(
-                        $"NET WORLD MOVE LOOKAHEAD fromWp={waypointIndex + 1} toWp={lookAheadIndex + 1} totalWp={path.Count}");
+                        $"NET WORLD MOVE LOOKAHEAD op={exclusiveMovement.OperationId} fromWp={waypointIndex + 1} toWp={lookAheadIndex + 1} totalWp={path.Count}");
                     waypointIndex = lookAheadIndex;
                     projectedWaypointIndex = -1;
                 }
@@ -449,8 +552,8 @@ public sealed class RealGameClient(
                 projectedWaypointIndex = -1;
                 if (waypointIndex >= path.Count)
                 {
-                    await SendStopSequenceAsync(finalDestination, cancellationToken);
-                    Trace.WriteLine("NET WORLD MOVE ARRIVED (waypoints completed)");
+                    await SendStopSequenceAsync(finalDestination, movementToken);
+                    Trace.WriteLine($"NET WORLD MOVE ARRIVED op={exclusiveMovement.OperationId} reason=waypoints-completed");
                     return true;
                 }
 
@@ -463,7 +566,7 @@ public sealed class RealGameClient(
                     WorldOpcode.MsgMoveStartForward,
                     new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z),
                     MovementPacketCodec.MovementFlags.Forward,
-                    cancellationToken);
+                    movementToken);
             }
 
             if (projectedWaypointIndex != waypointIndex)
@@ -494,13 +597,26 @@ public sealed class RealGameClient(
                 safeWaypoint,
                 maxStepDistance);
             // Re-project interpolated XY every heartbeat to keep Z aligned with local terrain.
-            var steppedGround = pathfinder.ProjectToSurface(
-                _currentMapId,
-                new NavigationPoint(steppedWaypoint.X, steppedWaypoint.Y, snapshot.Z));
+            var (steppedGround, groundProbeSource, groundProbeZ, groundDeltaToStep, groundDeltaToPlayer, groundDeltaToTarget) =
+                ResolveHeartbeatGroundPoint(
+                    new NavigationPoint(snapshot.X, snapshot.Y, snapshot.Z),
+                    steppedWaypoint,
+                    safeWaypoint,
+                    chaseMode,
+                    deathRecoveryMove);
             var heartbeatPoint = new NavigationPoint(
                 steppedWaypoint.X,
                 steppedWaypoint.Y,
                 steppedGround.Z);
+            if (!string.Equals(groundProbeSource, "step-z", StringComparison.Ordinal) ||
+                MathF.Abs(groundDeltaToStep) >= HeartbeatGroundRecoveryDeltaZ)
+            {
+                Trace.WriteLine(
+                    $"NET WORLD MOVE GROUND_PROBE op={exclusiveMovement.OperationId} source={groundProbeSource} probeZ={groundProbeZ:F3} " +
+                    $"deltaStep={groundDeltaToStep:F3} deltaPlayer={groundDeltaToPlayer:F3} deltaTarget={groundDeltaToTarget:F3} " +
+                    $"player=({snapshot.X:F3},{snapshot.Y:F3},{snapshot.Z:F3}) step=({steppedWaypoint.X:F3},{steppedWaypoint.Y:F3},{steppedWaypoint.Z:F3}) " +
+                    $"target=({safeWaypoint.X:F3},{safeWaypoint.Y:F3},{safeWaypoint.Z:F3}) ground=({steppedGround.X:F3},{steppedGround.Y:F3},{steppedGround.Z:F3})");
+            }
             var heartbeatBeforeDriftComp = heartbeatPoint;
             if (!deathRecoveryMove)
             {
@@ -521,17 +637,18 @@ public sealed class RealGameClient(
             var nearestPlayerLog = BuildNearestPlayerLog(snapshot.X, snapshot.Y, snapshot.Z);
             var selfDriftLog = BuildSelfDriftLog(snapshot.X, snapshot.Y, snapshot.Z);
             Trace.WriteLine(
-                $"NET WORLD MOVE HB#{heartbeatCount} wp={waypointIndex + 1}/{path.Count} " +
+                $"NET WORLD MOVE HB#{heartbeatCount} op={exclusiveMovement.OperationId} wp={waypointIndex + 1}/{path.Count} " +
                 $"player=({snapshot.X:F3},{snapshot.Y:F3},{snapshot.Z:F3}) " +
                 $"wpRaw=({waypoint.X:F3},{waypoint.Y:F3},{waypoint.Z:F3}) " +
                 $"wpProj=({safeProjectedWaypoint.X:F3},{safeProjectedWaypoint.Y:F3},{safeProjectedWaypoint.Z:F3}) " +
                 $"wpSafe=({safeWaypoint.X:F3},{safeWaypoint.Y:F3},{safeWaypoint.Z:F3}) " +
                 $"wpStep=({steppedWaypoint.X:F3},{steppedWaypoint.Y:F3},{steppedWaypoint.Z:F3}) " +
-                $"hbGround=({steppedGround.X:F3},{steppedGround.Y:F3},{steppedGround.Z:F3}) " +
+                $"hbGround=({steppedGround.X:F3},{steppedGround.Y:F3},{steppedGround.Z:F3}) hbGroundSource={groundProbeSource} hbGroundProbeZ={groundProbeZ:F3} " +
+                $"hbGroundDeltaStep={groundDeltaToStep:F3} hbGroundDeltaPlayer={groundDeltaToPlayer:F3} hbGroundDeltaTarget={groundDeltaToTarget:F3} " +
                 $"hbPos=({heartbeatPoint.X:F3},{heartbeatPoint.Y:F3},{heartbeatPoint.Z:F3}) hbMove2d={hbMove2d:F3} hbDriftComp={driftCompApplied:F3} hbFlags={heartbeatFlags} stepMax={maxStepDistance:F3} tick={tickSeconds:F3}s chaseMode={chaseMode} deathMove={deathRecoveryMove} " +
                 $"{nearestPlayerLog} {selfDriftLog}");
 
-            await SendMovementPacketAsync(WorldOpcode.MsgMoveHeartbeat, heartbeatPoint, heartbeatFlags, cancellationToken);
+            await SendMovementPacketAsync(WorldOpcode.MsgMoveHeartbeat, heartbeatPoint, heartbeatFlags, movementToken);
             lastLoopTick = now;
 
             var nowAfterSend = Environment.TickCount64;
@@ -544,12 +661,12 @@ public sealed class RealGameClient(
             var delayMs = (int)(nextHeartbeatTick - nowAfterSend);
             if (delayMs > 0)
             {
-                await Task.Delay(delayMs, cancellationToken);
+                await Task.Delay(delayMs, movementToken);
             }
             nextHeartbeatTick += HeartbeatIntervalMs;
         }
 
-        if (_currentPlayer is not null)
+        if (_currentPlayer is not null && IsMovementCommandCurrent(exclusiveMovement.OperationId))
         {
             try
             {
@@ -563,6 +680,9 @@ public sealed class RealGameClient(
             }
         }
 
+        Trace.WriteLine(
+            $"NET WORLD MOVE CANCELLED op={exclusiveMovement.OperationId} current={IsMovementCommandCurrent(exclusiveMovement.OperationId)}");
+
         return false;
     }
 
@@ -573,7 +693,14 @@ public sealed class RealGameClient(
             return false;
         }
 
-        await SendStopSequenceAsync(new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z), cancellationToken);
+        var movementScope = await BeginMovementCommandAsync("StopMovement", cancelPrevious: true, cancellationToken);
+        if (movementScope is null)
+        {
+            return false;
+        }
+
+        using var exclusiveMovement = movementScope;
+        await SendStopSequenceAsync(new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z), exclusiveMovement.CancellationToken);
         return true;
     }
 
@@ -592,11 +719,18 @@ public sealed class RealGameClient(
         }
 
         var forcedOrientation = MathF.Atan2(dy, dx);
+        var movementScope = await BeginMovementCommandAsync("FaceTowards", cancelPrevious: true, cancellationToken);
+        if (movementScope is null)
+        {
+            return false;
+        }
+
+        using var exclusiveMovement = movementScope;
         await SendMovementPacketAsync(
             WorldOpcode.MsgMoveHeartbeat,
             new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z),
             MovementPacketCodec.MovementFlags.None,
-            cancellationToken,
+            exclusiveMovement.CancellationToken,
             forcedOrientation);
         return true;
     }
@@ -607,10 +741,12 @@ public sealed class RealGameClient(
         {
             // Do not skip STOP when local state says idle: local/server movement flags can drift
             // after authority resets, and this hard stop clears "run on place" loops server-side.
-            Trace.WriteLine("NET WORLD MOVE STOP_SEQUENCE force-send reason=local-inactive");
+            Trace.WriteLine($"NET WORLD MOVE STOP_SEQUENCE {BuildMovementCommandLog()} force-send reason=local-inactive");
         }
 
         // Trinity movement state is more stable when a neutral heartbeat follows STOP.
+        Trace.WriteLine(
+            $"NET WORLD MOVE STOP_SEQUENCE {BuildMovementCommandLog()} point=({point.X:F3},{point.Y:F3},{point.Z:F3})");
         await SendMovementPacketAsync(
             WorldOpcode.MsgMoveStop,
             point,
@@ -775,6 +911,619 @@ public sealed class RealGameClient(
         return true;
     }
 
+    public async Task<bool> AcceptPendingGroupInviteAsync(CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            return false;
+        }
+
+        GroupInviteInfo? invite;
+        lock (_socialStateSync)
+        {
+            invite = _pendingGroupInvite;
+        }
+
+        if (invite is null)
+        {
+            Trace.WriteLine("NET WORLD GROUP ACCEPT skip reason=no_pending_invite");
+            return false;
+        }
+
+        await SendWorldPacketAsync(
+            _worldConnection,
+            WorldOpcode.CmsgGroupAccept,
+            SocialPacketCodec.BuildGroupAcceptPayload(invite.ProposedRoles),
+            cancellationToken);
+        Trace.WriteLine(
+            $"NET WORLD GROUP ACCEPT sent inviter=\"{invite.InviterName}\" proposedRoles={invite.ProposedRoles}");
+        return true;
+    }
+
+    public async Task<bool> DeclinePendingGroupInviteAsync(CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            return false;
+        }
+
+        GroupInviteInfo? invite;
+        lock (_socialStateSync)
+        {
+            invite = _pendingGroupInvite;
+        }
+
+        if (invite is null)
+        {
+            Trace.WriteLine("NET WORLD GROUP DECLINE skip reason=no_pending_invite");
+            return false;
+        }
+
+        await SendWorldPacketAsync(
+            _worldConnection,
+            WorldOpcode.CmsgGroupDecline,
+            SocialPacketCodec.BuildGroupDeclinePayload(),
+            cancellationToken);
+        Trace.WriteLine($"NET WORLD GROUP DECLINE sent inviter=\"{invite.InviterName}\"");
+        lock (_socialStateSync)
+        {
+            _pendingGroupInvite = null;
+        }
+
+        return true;
+    }
+
+    public async Task<bool> SendChatMessageAsync(
+        ChatChannel channel,
+        string message,
+        string? whisperTarget = null,
+        string? channelName = null,
+        ChatLanguage language = ChatLanguage.Auto,
+        CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected || _currentCharacter is null)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        if (channel == ChatChannel.Whisper && string.IsNullOrWhiteSpace(whisperTarget))
+        {
+            Trace.WriteLine("NET WORLD CHAT SEND skip channel=Whisper reason=missing_target");
+            return false;
+        }
+
+        if (channel == ChatChannel.Channel && string.IsNullOrWhiteSpace(channelName))
+        {
+            Trace.WriteLine("NET WORLD CHAT SEND skip channel=Channel reason=missing_channel_name");
+            return false;
+        }
+
+        var resolvedLanguage = ResolveChatLanguage(language, _currentCharacter.RaceId);
+        var trimmedMessage = message.Trim();
+        await SendWorldPacketAsync(
+            _worldConnection,
+            WorldOpcode.CmsgMessagechat,
+            SocialPacketCodec.BuildChatMessagePayload(channel, resolvedLanguage, trimmedMessage, whisperTarget, channelName),
+            cancellationToken);
+        Trace.WriteLine(
+            $"NET WORLD CHAT SEND channel={channel} language={resolvedLanguage} whisperTarget=\"{whisperTarget ?? string.Empty}\" channelName=\"{channelName ?? string.Empty}\" message=\"{trimmedMessage}\"");
+        return true;
+    }
+
+    public async Task<bool> SendEmoteAsync(uint emoteId, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected || emoteId == 0)
+        {
+            return false;
+        }
+
+        await SendWorldPacketAsync(
+            _worldConnection,
+            WorldOpcode.CmsgEmote,
+            SocialPacketCodec.BuildEmotePayload(emoteId),
+            cancellationToken);
+        Trace.WriteLine($"NET WORLD EMOTE SEND emoteId={emoteId}");
+        return true;
+    }
+
+    public async Task<bool> SendTextEmoteAsync(
+        uint textEmoteId,
+        ulong targetGuid = 0,
+        uint emoteNum = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected || textEmoteId == 0)
+        {
+            return false;
+        }
+
+        await SendWorldPacketAsync(
+            _worldConnection,
+            WorldOpcode.CmsgTextEmote,
+            SocialPacketCodec.BuildTextEmotePayload(textEmoteId, emoteNum, targetGuid),
+            cancellationToken);
+        Trace.WriteLine($"NET WORLD TEXT_EMOTE SEND textEmoteId={textEmoteId} emoteNum={emoteNum} targetGuid={targetGuid}");
+        return true;
+    }
+
+    public async Task<QuestDefinition?> QueryQuestDefinitionAsync(uint questId, CancellationToken cancellationToken = default)
+    {
+        if (questId == 0)
+        {
+            return null;
+        }
+
+        lock (_questStateSync)
+        {
+            if (_questDefinitions.TryGetValue(questId, out var cached))
+            {
+                return cached;
+            }
+        }
+
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST QUERY_INFO skip questId={questId} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questDefinitionTcs = NewTcs<QuestDefinition>();
+
+            Trace.WriteLine($"NET WORLD QUEST QUERY_INFO_SEND questId={questId}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestQuery,
+                QuestPacketCodec.BuildQuestQueryPayload(questId),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var definition = await WaitAsync(_questDefinitionTcs.Task, timeoutCts.Token);
+            CacheQuestDefinition(definition);
+            Trace.WriteLine(
+                $"NET WORLD QUEST QUERY_INFO_RECV questId={questId} title=\"{definition.Title}\" objectives={definition.Objectives.Count} itemObjectives={definition.ItemObjectives.Count}");
+            UpdateSnapshot(_currentPlayer, _currentTarget);
+            return definition;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Trace.WriteLine($"NET WORLD QUEST QUERY_INFO_TIMEOUT questId={questId}");
+            return null;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<IReadOnlyList<QuestPoiInfo>> QueryQuestPoiAsync(IReadOnlyList<uint> questIds, CancellationToken cancellationToken = default)
+    {
+        var safeQuestIds = questIds
+            .Where(x => x != 0)
+            .Distinct()
+            .ToArray();
+        if (safeQuestIds.Length == 0)
+        {
+            return [];
+        }
+
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST POI_QUERY skip count={safeQuestIds.Length} reason=world_not_connected");
+            return [];
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questPoiTcs = NewTcs<IReadOnlyList<QuestPoiInfo>>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST POI_QUERY_SEND count={safeQuestIds.Length} questIds={string.Join(",", safeQuestIds)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestPoiQuery,
+                QuestPacketCodec.BuildQuestPoiQueryPayload(safeQuestIds),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var pois = await WaitAsync(_questPoiTcs.Task, timeoutCts.Token);
+            CacheQuestPois(pois);
+            Trace.WriteLine(
+                $"NET WORLD QUEST POI_QUERY_RECV count={pois.Count} questIds={string.Join(",", pois.Select(x => x.QuestId))}");
+            UpdateSnapshot(_currentPlayer, _currentTarget);
+            return pois;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Trace.WriteLine($"NET WORLD QUEST POI_QUERY_TIMEOUT count={safeQuestIds.Length}");
+            return [];
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<QuestGiverStatusInfo?> QueryQuestGiverStatusAsync(ulong questGiverGuid, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST STATUS_QUERY skip questGiver={questGiverGuid} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questStatusTcs = NewTcs<QuestGiverStatusInfo>();
+
+            Trace.WriteLine($"NET WORLD QUEST STATUS_QUERY_SEND questGiver={questGiverGuid} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverStatusQuery,
+                QuestPacketCodec.BuildQuestGiverStatusQueryPayload(questGiverGuid),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var status = await WaitAsync(_questStatusTcs.Task, timeoutCts.Token);
+            Trace.WriteLine(
+                $"NET WORLD QUEST STATUS_QUERY_RECV questGiver={questGiverGuid} status={status.Status} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            return status;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Trace.WriteLine($"NET WORLD QUEST STATUS_QUERY_TIMEOUT questGiver={questGiverGuid}");
+            return null;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<QuestGiverMenu?> OpenQuestGiverAsync(ulong questGiverGuid, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST HELLO skip questGiver={questGiverGuid} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questMenuTcs = NewTcs<QuestGiverMenu>();
+            _questDialogTcs = NewTcs<QuestDialog>();
+
+            Trace.WriteLine($"NET WORLD QUEST HELLO_SEND questGiver={questGiverGuid} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverHello,
+                QuestPacketCodec.BuildQuestGiverHelloPayload(questGiverGuid),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var completed = await Task.WhenAny(
+                _questMenuTcs.Task,
+                _questDialogTcs.Task,
+                Task.Delay(Timeout.Infinite, timeoutCts.Token));
+            if (completed == _questMenuTcs.Task)
+            {
+                var menu = await _questMenuTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST HELLO_MENU questGiver={questGiverGuid} items={menu.Items.Count} greetingLen={menu.Greeting.Length}");
+                return menu;
+            }
+
+            if (completed == _questDialogTcs.Task)
+            {
+                var dialog = await _questDialogTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST HELLO_DIRECT_DIALOG questGiver={questGiverGuid} questId={dialog.QuestId} kind={dialog.Kind} title=\"{dialog.Title}\"");
+                return new QuestGiverMenu(
+                    questGiverGuid,
+                    dialog.Text,
+                    0,
+                    0,
+                    [new QuestGiverMenuItem(dialog.QuestId, 0, 0, dialog.Flags, false, dialog.Title)]);
+            }
+
+            Trace.WriteLine($"NET WORLD QUEST HELLO_TIMEOUT questGiver={questGiverGuid}");
+            return null;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Trace.WriteLine($"NET WORLD QUEST HELLO_TIMEOUT questGiver={questGiverGuid}");
+            return null;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<QuestDialog?> QueryQuestAsync(ulong questGiverGuid, uint questId, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST QUERY skip questGiver={questGiverGuid} questId={questId} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questDialogTcs = NewTcs<QuestDialog>();
+            _questInvalidTcs = NewTcs<byte>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST QUERY_SEND questGiver={questGiverGuid} questId={questId} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverQueryQuest,
+                QuestPacketCodec.BuildQuestGiverQueryQuestPayload(questGiverGuid, questId),
+                cancellationToken);
+
+            return await WaitForQuestDialogAsync("QUERY", questGiverGuid, questId, cancellationToken);
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<bool> AcceptQuestAsync(ulong questGiverGuid, uint questId, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST ACCEPT skip questGiver={questGiverGuid} questId={questId} reason=world_not_connected");
+            return false;
+        }
+
+        var accepted = false;
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questInvalidTcs = NewTcs<byte>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST ACCEPT_SEND questGiver={questGiverGuid} questId={questId} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverAcceptQuest,
+                QuestPacketCodec.BuildQuestGiverAcceptQuestPayload(questGiverGuid, questId),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken, 750);
+            var completed = await Task.WhenAny(
+                _questInvalidTcs.Task,
+                Task.Delay(Timeout.Infinite, timeoutCts.Token));
+            if (completed == _questInvalidTcs.Task)
+            {
+                var reason = await _questInvalidTcs.Task;
+                Trace.WriteLine($"NET WORLD QUEST ACCEPT_REJECTED questGiver={questGiverGuid} questId={questId} reason={reason}");
+                return false;
+            }
+
+            Trace.WriteLine($"NET WORLD QUEST ACCEPT_OK questGiver={questGiverGuid} questId={questId}");
+            accepted = true;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Trace.WriteLine($"NET WORLD QUEST ACCEPT_OK questGiver={questGiverGuid} questId={questId} mode=no_immediate_reject");
+            accepted = true;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+
+        if (!accepted)
+        {
+            return false;
+        }
+
+        RegisterAcceptedQuest(questId);
+        await WarmQuestKnowledgeAsync(questId, cancellationToken);
+        UpdateSnapshot(_currentPlayer, _currentTarget);
+        return true;
+    }
+
+    public async Task<QuestDialog?> CompleteQuestAsync(ulong questGiverGuid, uint questId, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST COMPLETE skip questGiver={questGiverGuid} questId={questId} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questDialogTcs = NewTcs<QuestDialog>();
+            _questInvalidTcs = NewTcs<byte>();
+            _questTurnInResultTcs = NewTcs<QuestTurnInResult>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST COMPLETE_SEND questGiver={questGiverGuid} questId={questId} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverCompleteQuest,
+                QuestPacketCodec.BuildQuestGiverCompleteQuestPayload(questGiverGuid, questId),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var completed = await Task.WhenAny(
+                _questDialogTcs.Task,
+                _questInvalidTcs.Task,
+                _questTurnInResultTcs.Task,
+                Task.Delay(Timeout.Infinite, timeoutCts.Token));
+            if (completed == _questDialogTcs.Task)
+            {
+                var dialog = await _questDialogTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST COMPLETE_DIALOG questGiver={questGiverGuid} questId={questId} kind={dialog.Kind} canComplete={dialog.CanComplete}");
+                return dialog;
+            }
+
+            if (completed == _questInvalidTcs.Task)
+            {
+                var reason = await _questInvalidTcs.Task;
+                Trace.WriteLine($"NET WORLD QUEST COMPLETE_REJECTED questGiver={questGiverGuid} questId={questId} reason={reason}");
+                return null;
+            }
+
+            if (completed == _questTurnInResultTcs.Task)
+            {
+                var turnIn = await _questTurnInResultTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST COMPLETE_RESULT questGiver={questGiverGuid} questId={turnIn.QuestId} xp={turnIn.RewardXp} money={turnIn.RewardMoney}");
+                RemoveActiveQuest(turnIn.QuestId);
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                return new QuestDialog(
+                    QuestDialogKind.OfferReward,
+                    questGiverGuid,
+                    turnIn.QuestId,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    false,
+                    0,
+                    0,
+                    true,
+                    false,
+                    0,
+                    turnIn.RewardMoney,
+                    turnIn.RewardXp,
+                    [],
+                    [],
+                    []);
+            }
+
+            Trace.WriteLine($"NET WORLD QUEST COMPLETE_TIMEOUT questGiver={questGiverGuid} questId={questId}");
+            return null;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<QuestDialog?> RequestQuestRewardAsync(ulong questGiverGuid, uint questId, CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST REWARD_REQUEST skip questGiver={questGiverGuid} questId={questId} reason=world_not_connected");
+            return null;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questDialogTcs = NewTcs<QuestDialog>();
+            _questInvalidTcs = NewTcs<byte>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST REWARD_REQUEST_SEND questGiver={questGiverGuid} questId={questId} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverRequestReward,
+                QuestPacketCodec.BuildQuestGiverRequestRewardPayload(questGiverGuid, questId),
+                cancellationToken);
+
+            return await WaitForQuestDialogAsync("REWARD_REQUEST", questGiverGuid, questId, cancellationToken);
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
+    public async Task<bool> ChooseQuestRewardAsync(
+        ulong questGiverGuid,
+        uint questId,
+        uint rewardIndex = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (_worldConnection is null || !_worldConnection.IsConnected)
+        {
+            Trace.WriteLine($"NET WORLD QUEST REWARD_CHOOSE skip questGiver={questGiverGuid} questId={questId} reason=world_not_connected");
+            return false;
+        }
+
+        await _questRequestLock.WaitAsync(cancellationToken);
+        try
+        {
+            ResetQuestAwaiters();
+            _questInvalidTcs = NewTcs<byte>();
+            _questTurnInResultTcs = NewTcs<QuestTurnInResult>();
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST REWARD_CHOOSE_SEND questGiver={questGiverGuid} questId={questId} rewardIndex={rewardIndex} {BuildQuestGiverDebugLog(questGiverGuid)}");
+            await SendWorldPacketAsync(
+                _worldConnection,
+                WorldOpcode.CmsgQuestgiverChooseReward,
+                QuestPacketCodec.BuildQuestGiverChooseRewardPayload(questGiverGuid, questId, rewardIndex),
+                cancellationToken);
+
+            using var timeoutCts = CreateTimeoutToken(cancellationToken);
+            var completed = await Task.WhenAny(
+                _questTurnInResultTcs.Task,
+                _questInvalidTcs.Task,
+                Task.Delay(Timeout.Infinite, timeoutCts.Token));
+            if (completed == _questTurnInResultTcs.Task)
+            {
+                var turnIn = await _questTurnInResultTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST REWARD_CHOOSE_OK questGiver={questGiverGuid} questId={turnIn.QuestId} rewardIndex={rewardIndex} xp={turnIn.RewardXp} money={turnIn.RewardMoney}");
+                RemoveActiveQuest(turnIn.QuestId);
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                return true;
+            }
+
+            if (completed == _questInvalidTcs.Task)
+            {
+                var reason = await _questInvalidTcs.Task;
+                Trace.WriteLine(
+                    $"NET WORLD QUEST REWARD_CHOOSE_REJECTED questGiver={questGiverGuid} questId={questId} rewardIndex={rewardIndex} reason={reason}");
+                return false;
+            }
+
+            Trace.WriteLine(
+                $"NET WORLD QUEST REWARD_CHOOSE_TIMEOUT questGiver={questGiverGuid} questId={questId} rewardIndex={rewardIndex}");
+            return false;
+        }
+        finally
+        {
+            ResetQuestAwaiters();
+            _questRequestLock.Release();
+        }
+    }
+
     public async Task<bool> RequestRepopAsync(CancellationToken cancellationToken = default)
     {
         if (_worldConnection is null || !_worldConnection.IsConnected)
@@ -865,6 +1614,8 @@ public sealed class RealGameClient(
                 {
                     _entities.Clear();
                 }
+                ClearQuestState();
+                ClearSocialState();
                 await _worldConnection.DisconnectAsync(cancellationToken);
                 StopWorldReceiveLoop();
                 StopSnapshotProjectionLoop();
@@ -885,6 +1636,8 @@ public sealed class RealGameClient(
             {
                 _entities.Clear();
             }
+            ClearQuestState();
+            ClearSocialState();
             await _worldConnection.DisconnectAsync(cancellationToken);
             StopWorldReceiveLoop();
             StopSnapshotProjectionLoop();
@@ -1030,6 +1783,8 @@ public sealed class RealGameClient(
         {
             _entities.Clear();
         }
+        ClearQuestState();
+        ClearSocialState();
         if (_worldConnection is not null)
         {
             await _worldConnection.DisconnectAsync(cancellationToken);
@@ -1050,6 +1805,581 @@ public sealed class RealGameClient(
         var cts = CancellationTokenSource.CreateLinkedTokenSource(source);
         cts.CancelAfter(timeoutMs);
         return cts;
+    }
+
+    private async Task<MovementCommandScope?> BeginMovementCommandAsync(
+        string commandName,
+        bool cancelPrevious,
+        CancellationToken cancellationToken)
+    {
+        CancellationTokenSource? previousCommandCts = null;
+        CancellationTokenSource commandCts;
+        long operationId;
+
+        lock (_movementCommandSync)
+        {
+            if (cancelPrevious)
+            {
+                previousCommandCts = _activeMovementCommandCts;
+            }
+
+            operationId = Interlocked.Increment(ref _movementCommandSequence);
+            commandCts = new CancellationTokenSource();
+            _activeMovementCommandCts = commandCts;
+            _activeMovementCommandId = operationId;
+            _activeMovementCommandName = commandName;
+        }
+
+        if (previousCommandCts is not null && !ReferenceEquals(previousCommandCts, commandCts))
+        {
+            Trace.WriteLine(
+                $"NET WORLD MOVE OP_SUPERSEDE nextOp={operationId} nextKind={commandName} prev={BuildMovementCommandLog()}");
+            previousCommandCts.Cancel();
+        }
+
+        await _movementExecutionGate.WaitAsync(cancellationToken);
+        try
+        {
+            lock (_movementCommandSync)
+            {
+                if (!ReferenceEquals(_activeMovementCommandCts, commandCts))
+                {
+                    Trace.WriteLine(
+                        $"NET WORLD MOVE OP_ABORT_BEFORE_START op={operationId} kind={commandName} reason=superseded-before-gate");
+                    commandCts.Dispose();
+                    _movementExecutionGate.Release();
+                    return null;
+                }
+            }
+
+            var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, commandCts.Token);
+            Trace.WriteLine($"NET WORLD MOVE OP_BEGIN op={operationId} kind={commandName}");
+            return new MovementCommandScope(this, operationId, commandName, commandCts, linkedCts);
+        }
+        catch
+        {
+            commandCts.Dispose();
+            _movementExecutionGate.Release();
+            throw;
+        }
+    }
+
+    private void EndMovementCommand(MovementCommandScope scope)
+    {
+        lock (_movementCommandSync)
+        {
+            if (ReferenceEquals(_activeMovementCommandCts, scope.CommandCts))
+            {
+                _activeMovementCommandCts = null;
+                _activeMovementCommandId = 0;
+                _activeMovementCommandName = null;
+            }
+        }
+
+        scope.LinkedCts.Dispose();
+        scope.CommandCts.Dispose();
+        _movementExecutionGate.Release();
+        Trace.WriteLine($"NET WORLD MOVE OP_END op={scope.OperationId} kind={scope.CommandName}");
+    }
+
+    private bool IsMovementCommandCurrent(long operationId)
+    {
+        lock (_movementCommandSync)
+        {
+            return _activeMovementCommandId == operationId;
+        }
+    }
+
+    private string BuildMovementCommandLog()
+    {
+        lock (_movementCommandSync)
+        {
+            return _activeMovementCommandId > 0
+                ? $"op={_activeMovementCommandId} kind={_activeMovementCommandName}"
+                : "op=none";
+        }
+    }
+
+    private void ResetQuestAwaiters()
+    {
+        _questStatusTcs = null;
+        _questMenuTcs = null;
+        _questDialogTcs = null;
+        _questDefinitionTcs = null;
+        _questPoiTcs = null;
+        _questInvalidTcs = null;
+        _questTurnInResultTcs = null;
+    }
+
+    private async Task<QuestDialog?> WaitForQuestDialogAsync(
+        string operationName,
+        ulong questGiverGuid,
+        uint questId,
+        CancellationToken cancellationToken)
+    {
+        using var timeoutCts = CreateTimeoutToken(cancellationToken);
+        var completed = await Task.WhenAny(
+            _questDialogTcs!.Task,
+            _questInvalidTcs!.Task,
+            Task.Delay(Timeout.Infinite, timeoutCts.Token));
+        if (completed == _questDialogTcs.Task)
+        {
+            var dialog = await _questDialogTcs.Task;
+            Trace.WriteLine(
+                $"NET WORLD QUEST {operationName}_DIALOG questGiver={questGiverGuid} questId={dialog.QuestId} kind={dialog.Kind} canComplete={dialog.CanComplete} rewardChoices={dialog.ChoiceItems.Count} rewardItems={dialog.RewardItems.Count} requiredItems={dialog.RequiredItems.Count}");
+            return dialog;
+        }
+
+        if (completed == _questInvalidTcs.Task)
+        {
+            var reason = await _questInvalidTcs.Task;
+            Trace.WriteLine(
+                $"NET WORLD QUEST {operationName}_REJECTED questGiver={questGiverGuid} questId={questId} reason={reason}");
+            return null;
+        }
+
+        Trace.WriteLine($"NET WORLD QUEST {operationName}_TIMEOUT questGiver={questGiverGuid} questId={questId}");
+        return null;
+    }
+
+    private string BuildQuestGiverDebugLog(ulong questGiverGuid)
+    {
+        lock (_entitiesSync)
+        {
+            if (!_entities.TryGetValue(questGiverGuid, out var state))
+            {
+                return "questGiver=unknown";
+            }
+
+            return
+                $"questGiver(entry={state.EntryId?.ToString() ?? "n/a"},npcFlags=0x{state.NpcFlags:X8},isQuestGiver={state.IsQuestGiver},status={state.QuestGiverStatus?.ToString() ?? "n/a"},pos={FormatEntityPosition(state)})";
+        }
+    }
+
+    private static string FormatEntityPosition(EntityState state)
+    {
+        return state.HasPosition
+            ? $"({state.X!.Value:F3},{state.Y!.Value:F3},{state.Z!.Value:F3})"
+            : "n/a";
+    }
+
+    private static string BuildPayloadHexPreview(byte[] payload, int maxBytes = 48)
+    {
+        return payload.Length > 0
+            ? Convert.ToHexString(payload.AsSpan(0, Math.Min(payload.Length, maxBytes)))
+            : "empty";
+    }
+
+    private static string SanitizeChatLogText(string? value, int maxLength = 64)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Replace('\r', ' ').Replace('\n', ' ').Replace('"', '\'').Trim();
+        return normalized.Length <= maxLength
+            ? normalized
+            : normalized[..Math.Max(0, maxLength - 3)] + "...";
+    }
+
+    private static ChatLanguage ResolveChatLanguage(ChatLanguage requestedLanguage, byte? raceId)
+    {
+        if (requestedLanguage != ChatLanguage.Auto)
+        {
+            return requestedLanguage;
+        }
+
+        return raceId switch
+        {
+            2 or 5 or 6 or 8 or 10 => ChatLanguage.Orcish,
+            _ => ChatLanguage.Common
+        };
+    }
+
+    private void SetPendingGroupInvite(GroupInviteInfo? invite)
+    {
+        lock (_socialStateSync)
+        {
+            _pendingGroupInvite = invite;
+        }
+    }
+
+    private void SetCurrentGroup(GroupMembershipInfo? group)
+    {
+        lock (_socialStateSync)
+        {
+            _currentGroup = group;
+        }
+    }
+
+    private void ClearSocialState()
+    {
+        lock (_socialStateSync)
+        {
+            _currentGroup = null;
+            _pendingGroupInvite = null;
+            _incomingChatMessages.Clear();
+        }
+    }
+
+    private void EnqueueIncomingChatMessage(ReceivedChatMessage message)
+    {
+        lock (_socialStateSync)
+        {
+            if (_incomingChatMessages.Count >= 64)
+            {
+                _ = _incomingChatMessages.Dequeue();
+            }
+
+            _incomingChatMessages.Enqueue(message);
+        }
+    }
+
+    private string? ResolveKnownPlayerName(ulong guid)
+    {
+        if (guid == 0)
+        {
+            return null;
+        }
+
+        lock (_socialStateSync)
+        {
+            if (_currentCharacter is not null && _currentCharacter.Guid == guid)
+            {
+                return _currentCharacter.Name;
+            }
+
+            if (_currentGroup is not null)
+            {
+                var member = _currentGroup.Members.FirstOrDefault(x => x.Guid == guid);
+                if (member is not null && !string.IsNullOrWhiteSpace(member.Name))
+                {
+                    return member.Name;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private async Task WarmQuestKnowledgeAsync(uint questId, CancellationToken cancellationToken)
+    {
+        var needDefinition = false;
+        var needPoi = false;
+        lock (_questStateSync)
+        {
+            needDefinition = !_questDefinitions.ContainsKey(questId);
+            needPoi = !_questPois.ContainsKey(questId);
+        }
+
+        if (needDefinition)
+        {
+            try
+            {
+                _ = await QueryQuestDefinitionAsync(questId, cancellationToken);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+            }
+        }
+
+        if (needPoi)
+        {
+            try
+            {
+                _ = await QueryQuestPoiAsync([questId], cancellationToken);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+            }
+        }
+    }
+
+    private void RegisterAcceptedQuest(uint questId)
+    {
+        lock (_questStateSync)
+        {
+            if (!_activeQuests.TryGetValue(questId, out var questState))
+            {
+                questState = new ActiveQuestState(questId);
+                _activeQuests[questId] = questState;
+            }
+
+            questState.IsCompleted = false;
+            questState.LastUpdatedAtUtc = DateTimeOffset.UtcNow;
+            if (_questDefinitions.TryGetValue(questId, out var definition))
+            {
+                ApplyQuestDefinition(questState, definition);
+            }
+        }
+    }
+
+    private void RemoveActiveQuest(uint questId)
+    {
+        lock (_questStateSync)
+        {
+            _activeQuests.Remove(questId);
+        }
+    }
+
+    private void CacheQuestDefinition(QuestDefinition definition)
+    {
+        lock (_questStateSync)
+        {
+            _questDefinitions[definition.QuestId] = definition;
+            if (_activeQuests.TryGetValue(definition.QuestId, out var questState))
+            {
+                ApplyQuestDefinition(questState, definition);
+            }
+        }
+    }
+
+    private void CacheQuestPois(IReadOnlyList<QuestPoiInfo> pois)
+    {
+        lock (_questStateSync)
+        {
+            foreach (var poi in pois)
+            {
+                _questPois[poi.QuestId] = poi;
+                if (!_activeQuests.TryGetValue(poi.QuestId, out var questState))
+                {
+                    continue;
+                }
+
+                questState.LastUpdatedAtUtc = DateTimeOffset.UtcNow;
+            }
+        }
+    }
+
+    private void ClearQuestState()
+    {
+        lock (_questStateSync)
+        {
+            _questDefinitions.Clear();
+            _questPois.Clear();
+            _activeQuests.Clear();
+        }
+    }
+
+    private void MarkQuestCompleted(uint questId, bool isCompleted)
+    {
+        lock (_questStateSync)
+        {
+            if (!_activeQuests.TryGetValue(questId, out var questState))
+            {
+                questState = new ActiveQuestState(questId);
+                _activeQuests[questId] = questState;
+            }
+
+            questState.IsCompleted = isCompleted;
+            questState.LastUpdatedAtUtc = DateTimeOffset.UtcNow;
+
+            if (!isCompleted || !_questDefinitions.TryGetValue(questId, out var definition))
+            {
+                return;
+            }
+
+            foreach (var objective in definition.Objectives)
+            {
+                if (objective.ObjectiveIndex is < 0 or >= 4)
+                {
+                    continue;
+                }
+
+                questState.CreatureOrGoCounts[objective.ObjectiveIndex] = Math.Max(
+                    questState.CreatureOrGoCounts[objective.ObjectiveIndex],
+                    objective.RequiredCount);
+                questState.CreatureOrGoKnown[objective.ObjectiveIndex] = true;
+            }
+
+            foreach (var itemObjective in definition.ItemObjectives)
+            {
+                if (itemObjective.ObjectiveIndex is < 0 or >= 6)
+                {
+                    continue;
+                }
+
+                questState.ItemCounts[itemObjective.ObjectiveIndex] = itemObjective.RequiredCount;
+            }
+        }
+    }
+
+    private void UpdateQuestObjectiveProgress(uint questId, uint rawObjectiveEntry, uint currentCount, uint requiredCount)
+    {
+        lock (_questStateSync)
+        {
+            if (!_activeQuests.TryGetValue(questId, out var questState))
+            {
+                questState = new ActiveQuestState(questId);
+                _activeQuests[questId] = questState;
+            }
+
+            questState.LastUpdatedAtUtc = DateTimeOffset.UtcNow;
+            questState.PendingObjectiveProgress[rawObjectiveEntry] = new QuestObjectiveRuntimeProgress(currentCount, requiredCount);
+
+            if (_questDefinitions.TryGetValue(questId, out var definition))
+            {
+                ApplyDefinitionProgress(questState, definition, rawObjectiveEntry, currentCount, requiredCount);
+            }
+        }
+    }
+
+    private void ApplyQuestDefinition(ActiveQuestState questState, QuestDefinition definition)
+    {
+        foreach (var objective in definition.Objectives)
+        {
+            if (objective.ObjectiveIndex is < 0 or >= 4)
+            {
+                continue;
+            }
+
+            questState.CreatureOrGoCounts[objective.ObjectiveIndex] = Math.Min(
+                questState.CreatureOrGoCounts[objective.ObjectiveIndex],
+                objective.RequiredCount);
+            if (!questState.CreatureOrGoKnown[objective.ObjectiveIndex] &&
+                objective.Kind is QuestObjectiveKind.Creature or QuestObjectiveKind.GameObject or QuestObjectiveKind.None)
+            {
+                questState.CreatureOrGoKnown[objective.ObjectiveIndex] = true;
+            }
+
+            var wireEntry = GetQuestObjectiveWireEntry(objective);
+            if (wireEntry.HasValue &&
+                questState.PendingObjectiveProgress.TryGetValue(wireEntry.Value, out var pending))
+            {
+                ApplyDefinitionProgress(questState, definition, wireEntry.Value, pending.CurrentCount, pending.RequiredCount);
+            }
+        }
+    }
+
+    private static void ApplyDefinitionProgress(
+        ActiveQuestState questState,
+        QuestDefinition definition,
+        uint rawObjectiveEntry,
+        uint currentCount,
+        uint requiredCount)
+    {
+        foreach (var objective in definition.Objectives)
+        {
+            var wireEntry = GetQuestObjectiveWireEntry(objective);
+            if (!wireEntry.HasValue || wireEntry.Value != rawObjectiveEntry)
+            {
+                continue;
+            }
+
+            if (objective.ObjectiveIndex is < 0 or >= 4)
+            {
+                continue;
+            }
+
+            questState.CreatureOrGoCounts[objective.ObjectiveIndex] = currentCount;
+            questState.CreatureOrGoKnown[objective.ObjectiveIndex] = true;
+            if (requiredCount > 0 && currentCount >= requiredCount)
+            {
+                questState.CreatureOrGoCounts[objective.ObjectiveIndex] = requiredCount;
+            }
+        }
+    }
+
+    private IReadOnlyList<ActiveQuestSnapshot> BuildActiveQuestSnapshots()
+    {
+        lock (_questStateSync)
+        {
+            return _activeQuests.Values
+                .OrderBy(x => x.QuestId)
+                .Select(x => BuildActiveQuestSnapshot(x))
+                .ToArray();
+        }
+    }
+
+    private ActiveQuestSnapshot BuildActiveQuestSnapshot(ActiveQuestState questState)
+    {
+        _questDefinitions.TryGetValue(questState.QuestId, out var definition);
+        _questPois.TryGetValue(questState.QuestId, out var poi);
+
+        var objectives = definition?.Objectives
+            .Select(objective =>
+            {
+                var currentCount = 0u;
+                if (objective.ObjectiveIndex is >= 0 and < 4 && questState.CreatureOrGoKnown[objective.ObjectiveIndex])
+                {
+                    currentCount = questState.CreatureOrGoCounts[objective.ObjectiveIndex];
+                }
+
+                if (questState.IsCompleted && currentCount < objective.RequiredCount)
+                {
+                    currentCount = objective.RequiredCount;
+                }
+
+                return new QuestObjectiveProgressSnapshot(
+                    objective.ObjectiveIndex,
+                    objective.Kind,
+                    objective.TargetEntryId,
+                    objective.Text,
+                    objective.RequiredCount,
+                    currentCount,
+                    objective.RequiredCount > 0 && currentCount >= objective.RequiredCount);
+            })
+            .ToArray() ?? [];
+
+        var itemObjectives = definition?.ItemObjectives
+            .Select(itemObjective =>
+            {
+                uint? currentCount = null;
+                if (itemObjective.ObjectiveIndex is >= 0 and < 6)
+                {
+                    currentCount = questState.ItemCounts[itemObjective.ObjectiveIndex];
+                }
+
+                if (questState.IsCompleted && currentCount is null)
+                {
+                    currentCount = itemObjective.RequiredCount;
+                }
+
+                return new QuestItemObjectiveProgressSnapshot(
+                    itemObjective.ObjectiveIndex,
+                    itemObjective.ItemId,
+                    itemObjective.RequiredCount,
+                    currentCount,
+                    currentCount.HasValue && currentCount.Value >= itemObjective.RequiredCount);
+            })
+            .ToArray() ?? [];
+
+        var poiBlobs = poi?.Blobs
+            .Select(blob => new QuestPoiBlobSnapshot(
+                blob.BlobIndex,
+                blob.ObjectiveIndex,
+                blob.MapId,
+                blob.WorldMapAreaId,
+                blob.Floor,
+                blob.Priority,
+                blob.Flags,
+                blob.Points.Select(point => new QuestPoiPointSnapshot(point.X, point.Y)).ToArray()))
+            .ToArray() ?? [];
+
+        return new ActiveQuestSnapshot(
+            questState.QuestId,
+            definition?.Title,
+            definition?.ObjectivesSummary ?? string.Empty,
+            questState.IsCompleted,
+            objectives,
+            itemObjectives,
+            poiBlobs);
+    }
+
+    private static uint? GetQuestObjectiveWireEntry(QuestObjectiveDefinition objective)
+    {
+        if (!objective.TargetEntryId.HasValue)
+        {
+            return null;
+        }
+
+        return objective.Kind switch
+        {
+            QuestObjectiveKind.GameObject => objective.TargetEntryId.Value | 0x80000000,
+            QuestObjectiveKind.Creature => objective.TargetEntryId.Value,
+            _ => null
+        };
     }
 
     private void StartKeepAliveLoop()
@@ -1633,6 +2963,322 @@ public sealed class RealGameClient(
                 Trace.WriteLine($"NET WORLD COMBAT ATTACK_STOP_RECV payload={payload.Length}");
                 break;
 
+            case WorldOpcode.SmsgGroupInvite:
+            {
+                var invite = SocialPacketCodec.ParseGroupInvitePayload(payload);
+                SetPendingGroupInvite(invite);
+                Trace.WriteLine(
+                    $"NET WORLD GROUP INVITE_RECV inviter=\"{invite.InviterName}\" canAccept={invite.CanAccept} proposedRoles={invite.ProposedRoles} lfgSlots={invite.LfgSlots.Count} completedMask={invite.LfgCompletedMask}");
+
+                if (AutoAcceptGroupInvites && invite.CanAccept && _worldConnection is not null && _worldConnection.IsConnected)
+                {
+                    try
+                    {
+                        _ = await AcceptPendingGroupInviteAsync(cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"NET WORLD GROUP INVITE_AUTO_ACCEPT_FAIL inviter=\"{invite.InviterName}\" error={ex.Message}");
+                    }
+                }
+
+                break;
+            }
+
+            case WorldOpcode.SmsgGroupDecline:
+                Trace.WriteLine($"NET WORLD GROUP DECLINE_RECV player=\"{Encoding.UTF8.GetString(payload).TrimEnd('\0')}\"");
+                break;
+
+            case WorldOpcode.SmsgGroupCancel:
+                SetPendingGroupInvite(null);
+                Trace.WriteLine("NET WORLD GROUP CANCEL_RECV");
+                break;
+
+            case WorldOpcode.SmsgGroupDestroyed:
+                SetCurrentGroup(null);
+                Trace.WriteLine("NET WORLD GROUP DESTROYED_RECV");
+                break;
+
+            case WorldOpcode.SmsgGroupSetLeader:
+            {
+                var leaderName = SocialPacketCodec.ParseGroupSetLeaderPayload(payload);
+                Trace.WriteLine($"NET WORLD GROUP LEADER_RECV leader=\"{leaderName}\"");
+                break;
+            }
+
+            case WorldOpcode.SmsgGroupList:
+            {
+                var group = SocialPacketCodec.ParseGroupListPayload(payload);
+                SetCurrentGroup(group);
+                if (group is not null)
+                {
+                    SetPendingGroupInvite(null);
+                }
+                if (group is null)
+                {
+                    Trace.WriteLine($"NET WORLD GROUP LIST_RECV state=none payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                else
+                {
+                    Trace.WriteLine(
+                        $"NET WORLD GROUP LIST_RECV groupGuid={group.GroupGuid} leaderGuid={group.LeaderGuid} groupType=0x{group.GroupType:X2} membersOther={group.OtherMemberCount} selfSubGroup={group.MemberSubGroup} selfFlags=0x{group.MemberFlags:X2} selfRoles=0x{group.MemberRoles:X2}");
+                }
+
+                break;
+            }
+
+            case WorldOpcode.SmsgPartyCommandResult:
+            {
+                var result = SocialPacketCodec.ParsePartyCommandResultPayload(payload);
+                Trace.WriteLine(
+                    $"NET WORLD GROUP RESULT_RECV operation={result.Operation} member=\"{result.MemberName}\" result={result.Result} value={result.Value}");
+                break;
+            }
+
+            case WorldOpcode.SmsgPartyMemberStats:
+            case WorldOpcode.SmsgPartyMemberStatsFull:
+                Trace.WriteLine($"NET WORLD GROUP MEMBER_STATS_RECV opcode={opcode} payload={payload.Length}");
+                break;
+
+            case WorldOpcode.SmsgChatNotInParty:
+                Trace.WriteLine($"NET WORLD CHAT NOT_IN_PARTY payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+
+            case WorldOpcode.SmsgMessagechat:
+            case WorldOpcode.SmsgGmMessagechat:
+            {
+                var gmMessage = opcode == WorldOpcode.SmsgGmMessagechat;
+                var chat = SocialPacketCodec.ParseIncomingChatPayload(payload, gmMessage);
+                if (chat is null)
+                {
+                    Trace.WriteLine(
+                        $"NET WORLD CHAT RECV parse=failed gm={gmMessage} opcode={opcode} payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                    break;
+                }
+
+                var resolvedSenderName = chat.SenderName ?? ResolveKnownPlayerName(chat.SenderGuid);
+                var resolvedReceiverName = chat.ReceiverName ?? ResolveKnownPlayerName(chat.ReceiverGuid);
+                var enriched = chat with
+                {
+                    SenderName = resolvedSenderName,
+                    ReceiverName = resolvedReceiverName
+                };
+                EnqueueIncomingChatMessage(enriched);
+                Trace.WriteLine(
+                    $"NET WORLD CHAT RECV type={enriched.MessageType} gm={gmMessage} language={enriched.Language} senderGuid={enriched.SenderGuid} sender=\"{SanitizeChatLogText(enriched.SenderName)}\" receiverGuid={enriched.ReceiverGuid} receiver=\"{SanitizeChatLogText(enriched.ReceiverName)}\" channel=\"{SanitizeChatLogText(enriched.ChannelName)}\" tag={enriched.ChatTag} message=\"{SanitizeChatLogText(enriched.Message, 160)}\" payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestQueryResponse:
+            {
+                var definition = QuestPacketCodec.ParseQuestQueryResponse(payload);
+                CacheQuestDefinition(definition);
+                _questDefinitionTcs?.TrySetResult(definition);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST QUERY_INFO_CACHE questId={definition.QuestId} title=\"{definition.Title}\" objectives={definition.Objectives.Count} itemObjectives={definition.ItemObjectives.Count} poiHint=({definition.PoiX:F1},{definition.PoiY:F1}) payloadHex={BuildPayloadHexPreview(payload)}");
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestPoiQueryResponse:
+            {
+                var pois = QuestPacketCodec.ParseQuestPoiQueryResponse(payload);
+                CacheQuestPois(pois);
+                _questPoiTcs?.TrySetResult(pois);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST POI_RECV count={pois.Count} questIds={string.Join(",", pois.Select(x => x.QuestId))} payloadHex={BuildPayloadHexPreview(payload)}");
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverStatus:
+            {
+                var status = QuestPacketCodec.ParseQuestGiverStatus(payload);
+                lock (_entitiesSync)
+                {
+                    if (!_entities.TryGetValue(status.QuestGiverGuid, out var state))
+                    {
+                        state = new EntityState { Guid = status.QuestGiverGuid };
+                        _entities[status.QuestGiverGuid] = state;
+                    }
+
+                    state.QuestGiverStatus = status.Status;
+                }
+
+                _questStatusTcs?.TrySetResult(status);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST STATUS_RECV questGiver={status.QuestGiverGuid} status={status.Status} payloadHex={BuildPayloadHexPreview(payload)} {BuildQuestGiverDebugLog(status.QuestGiverGuid)}");
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverStatusMultiple:
+            {
+                var statuses = QuestPacketCodec.ParseQuestGiverStatusMultiple(payload);
+                lock (_entitiesSync)
+                {
+                    foreach (var status in statuses)
+                    {
+                        if (!_entities.TryGetValue(status.QuestGiverGuid, out var state))
+                        {
+                            state = new EntityState { Guid = status.QuestGiverGuid };
+                            _entities[status.QuestGiverGuid] = state;
+                        }
+
+                        state.QuestGiverStatus = status.Status;
+                    }
+                }
+
+                Trace.WriteLine(
+                    $"NET WORLD QUEST STATUS_MULTIPLE count={statuses.Count} sample={(statuses.Count > 0 ? $"{statuses[0].QuestGiverGuid}:{statuses[0].Status}" : "none")} payloadHex={BuildPayloadHexPreview(payload)}");
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverQuestList:
+            {
+                var menu = QuestPacketCodec.ParseQuestGiverQuestList(payload);
+                _questMenuTcs?.TrySetResult(menu);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST MENU_RECV questGiver={menu.QuestGiverGuid} items={menu.Items.Count} greetingLen={menu.Greeting.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestGiverQuestDetails:
+            {
+                var dialog = QuestPacketCodec.ParseQuestGiverQuestDetails(payload);
+                _questDialogTcs?.TrySetResult(dialog);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST DETAILS_RECV questGiver={dialog.QuestGiverGuid} questId={dialog.QuestId} title=\"{dialog.Title}\" rewardChoices={dialog.ChoiceItems.Count} rewardItems={dialog.RewardItems.Count} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverRequestItems:
+            {
+                var dialog = QuestPacketCodec.ParseQuestGiverRequestItems(payload);
+                _questDialogTcs?.TrySetResult(dialog);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST REQUEST_ITEMS_RECV questGiver={dialog.QuestGiverGuid} questId={dialog.QuestId} canComplete={dialog.CanComplete} requiredItems={dialog.RequiredItems.Count} requiredMoney={dialog.RequiredMoney} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestGiverOfferRewardMessage:
+            {
+                var dialog = QuestPacketCodec.ParseQuestGiverOfferReward(payload);
+                _questDialogTcs?.TrySetResult(dialog);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST OFFER_REWARD_RECV questGiver={dialog.QuestGiverGuid} questId={dialog.QuestId} choices={dialog.ChoiceItems.Count} rewardItems={dialog.RewardItems.Count} xp={dialog.RewardXp} money={dialog.RewardMoney} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverQuestInvalid:
+            {
+                var reason = QuestPacketCodec.ParseQuestGiverQuestInvalidReason(payload);
+                _questInvalidTcs?.TrySetResult(reason);
+                Trace.WriteLine($"NET WORLD QUEST INVALID_RECV reason={reason} payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverQuestComplete:
+            {
+                var turnIn = QuestPacketCodec.ParseQuestGiverQuestComplete(payload);
+                RemoveActiveQuest(turnIn.QuestId);
+                _questTurnInResultTcs?.TrySetResult(turnIn);
+                Trace.WriteLine(
+                    $"NET WORLD QUEST COMPLETE_RECV questId={turnIn.QuestId} xp={turnIn.RewardXp} money={turnIn.RewardMoney} honor={turnIn.RewardHonor} talents={turnIn.RewardTalents} arena={turnIn.RewardArenaPoints} payloadHex={BuildPayloadHexPreview(payload)}");
+                UpdateSnapshot(_currentPlayer, _currentTarget);
+                break;
+            }
+
+            case WorldOpcode.SmsgQuestgiverQuestFailed:
+                if (payload.Length >= 8)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    var reason = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4, 4));
+                    Trace.WriteLine($"NET WORLD QUEST FAILED_RECV questId={questId} reason={reason} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                else
+                {
+                    Trace.WriteLine($"NET WORLD QUEST FAILED_RECV malformed payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                break;
+
+            case WorldOpcode.SmsgQuestupdateComplete:
+                if (payload.Length >= 4)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    MarkQuestCompleted(questId, true);
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_COMPLETE questId={questId} payloadHex={BuildPayloadHexPreview(payload)}");
+                    UpdateSnapshot(_currentPlayer, _currentTarget);
+                }
+                else
+                {
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_COMPLETE malformed payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                break;
+
+            case WorldOpcode.SmsgQuestupdateAddKill:
+                if (payload.Length >= 24)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    var objectiveEntry = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4, 4));
+                    var currentCount = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(8, 4));
+                    var requiredCount = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(12, 4));
+                    var guid = BinaryPrimitives.ReadUInt64LittleEndian(payload.AsSpan(16, 8));
+                    UpdateQuestObjectiveProgress(questId, objectiveEntry, currentCount, requiredCount);
+                    Trace.WriteLine(
+                        $"NET WORLD QUEST UPDATE_ADD_KILL questId={questId} objectiveEntry={objectiveEntry} current={currentCount} required={requiredCount} guid={guid} payloadHex={BuildPayloadHexPreview(payload)}");
+                    UpdateSnapshot(_currentPlayer, _currentTarget);
+                }
+                else
+                {
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_ADD_KILL malformed payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                break;
+
+            case WorldOpcode.SmsgQuestupdateAddItem:
+                Trace.WriteLine($"NET WORLD QUEST UPDATE_ADD_ITEM payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+
+            case WorldOpcode.SmsgQuestupdateFailed:
+                if (payload.Length >= 4)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    MarkQuestCompleted(questId, false);
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_FAILED questId={questId} payloadHex={BuildPayloadHexPreview(payload)}");
+                    UpdateSnapshot(_currentPlayer, _currentTarget);
+                }
+                else
+                {
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_FAILED malformed payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                break;
+
+            case WorldOpcode.SmsgQuestupdateFailedtimer:
+                if (payload.Length >= 4)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    MarkQuestCompleted(questId, false);
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_FAILED_TIMER questId={questId} payloadHex={BuildPayloadHexPreview(payload)}");
+                    UpdateSnapshot(_currentPlayer, _currentTarget);
+                }
+                else
+                {
+                    Trace.WriteLine($"NET WORLD QUEST UPDATE_FAILED_TIMER malformed payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                break;
+
+            case WorldOpcode.SmsgGossipMessage:
+            case WorldOpcode.SmsgGossipComplete:
+            case WorldOpcode.SmsgGossipPoi:
+                Trace.WriteLine(
+                    $"NET WORLD GOSSIP RECV opcode={opcode} payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                break;
+
             default:
                 if (IsClientMovementPayloadOpcode(opcode))
                 {
@@ -1641,6 +3287,16 @@ public sealed class RealGameClient(
                 else if (IsAnyMovementOpcode(opcode))
                 {
                     Trace.WriteLine($"NET WORLD MOVE RECV opcode={opcode} parser=unsupported-layout payload={payload.Length}");
+                }
+                else if (IsQuestOrGossipOpcode(opcode))
+                {
+                    Trace.WriteLine(
+                        $"NET WORLD QUEST UNHANDLED opcode={opcode} payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
+                }
+                else if (IsSocialOpcode(opcode))
+                {
+                    Trace.WriteLine(
+                        $"NET WORLD SOCIAL UNHANDLED opcode={opcode} payload={payload.Length} payloadHex={BuildPayloadHexPreview(payload)}");
                 }
                 break;
         }
@@ -1720,8 +3376,14 @@ public sealed class RealGameClient(
             {
                 var localBefore = new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z);
                 _lastReceivedSelfMovement = new MovementTelemetry(opcode, movement.MovementTimeMs, movement.X, movement.Y, movement.Z, now);
-                _serverObservedSelfPosition = new NavigationPoint(movement.X, movement.Y, movement.Z);
                 _movingServerCorrectionStreak = 0;
+                var echoDistance = MathF.Sqrt(DistanceSquared(
+                    localBefore.X,
+                    localBefore.Y,
+                    localBefore.Z,
+                    movement.X,
+                    movement.Y,
+                    movement.Z));
                 if (_lastSentMovement is MovementTelemetry sent)
                 {
                     var dtTickMs = now - sent.LocalTickMs;
@@ -1734,21 +3396,11 @@ public sealed class RealGameClient(
                         $"dtTickMs={dtTickMs} dMoveTime={dMoveTime} dPosFromSent={dPosFromSent:F3}";
                 }
 
-                _currentPlayer = _currentPlayer with
-                {
-                    X = movement.X,
-                    Y = movement.Y,
-                    Z = movement.Z,
-                    Orientation = movement.Orientation
-                };
-                _currentOrientation = movement.Orientation;
-                LogServerForcedPosition(
-                    opcode,
-                    "MOVE_RECV",
-                    localBefore,
-                    new NavigationPoint(movement.X, movement.Y, movement.Z),
-                    now,
-                    movement.MovementTimeMs);
+                Trace.WriteLine(
+                    $"NET WORLD SELF_MOVE_ECHO opcode={opcode} applied=False " +
+                    $"local=({localBefore.X:F3},{localBefore.Y:F3},{localBefore.Z:F3},{_currentOrientation:F3}) " +
+                    $"echo=({movement.X:F3},{movement.Y:F3},{movement.Z:F3},{movement.Orientation:F3}) " +
+                    $"delta={echoDistance:F3}{sentCorrelation}");
             }
         }
 
@@ -1786,8 +3438,14 @@ public sealed class RealGameClient(
             {
                 var localBefore = new NavigationPoint(_currentPlayer.X, _currentPlayer.Y, _currentPlayer.Z);
                 _lastReceivedSelfMovement = new MovementTelemetry(opcode, null, movement.StartX, movement.StartY, movement.StartZ, now);
-                _serverObservedSelfPosition = new NavigationPoint(movement.StartX, movement.StartY, movement.StartZ);
                 _movingServerCorrectionStreak = 0;
+                var echoDistance = MathF.Sqrt(DistanceSquared(
+                    localBefore.X,
+                    localBefore.Y,
+                    localBefore.Z,
+                    movement.StartX,
+                    movement.StartY,
+                    movement.StartZ));
                 if (_lastSentMovement is MovementTelemetry sent)
                 {
                     var dtTickMs = now - sent.LocalTickMs;
@@ -1797,19 +3455,11 @@ public sealed class RealGameClient(
                         $"dtTickMs={dtTickMs} dMoveTime=n/a dPosFromSent={dPosFromSent:F3}";
                 }
 
-                _currentPlayer = _currentPlayer with
-                {
-                    X = movement.StartX,
-                    Y = movement.StartY,
-                    Z = movement.StartZ
-                };
-                LogServerForcedPosition(
-                    opcode,
-                    "MONSTER_MOVE",
-                    localBefore,
-                    new NavigationPoint(movement.StartX, movement.StartY, movement.StartZ),
-                    now,
-                    null);
+                Trace.WriteLine(
+                    $"NET WORLD SELF_MOVE_ECHO opcode={opcode} applied=False " +
+                    $"local=({localBefore.X:F3},{localBefore.Y:F3},{localBefore.Z:F3},{_currentOrientation:F3}) " +
+                    $"echo=({movement.StartX:F3},{movement.StartY:F3},{movement.StartZ:F3},{_currentOrientation:F3}) " +
+                    $"delta={echoDistance:F3}{sentCorrelation}");
             }
         }
 
@@ -1862,6 +3512,42 @@ public sealed class RealGameClient(
         return (value >= 181 && value <= 224) || value == 238 || value == (ushort)WorldOpcode.SmsgMonsterMoveTransport;
     }
 
+    private static bool IsQuestOrGossipOpcode(WorldOpcode opcode)
+    {
+        var value = (ushort)opcode;
+        return (value >= (ushort)WorldOpcode.CmsgGossipHello && value <= (ushort)WorldOpcode.SmsgQuestupdateAddItem) ||
+               value == (ushort)WorldOpcode.SmsgGossipPoi ||
+               value == (ushort)WorldOpcode.CmsgQuestQuery ||
+               value == (ushort)WorldOpcode.SmsgQuestQueryResponse ||
+               value == (ushort)WorldOpcode.CmsgQuestPoiQuery ||
+               value == (ushort)WorldOpcode.SmsgQuestPoiQueryResponse ||
+               value == (ushort)WorldOpcode.CmsgQuestgiverStatusMultipleQuery ||
+               value == (ushort)WorldOpcode.SmsgQuestgiverStatusMultiple;
+    }
+
+    private static bool IsSocialOpcode(WorldOpcode opcode)
+    {
+        return opcode is WorldOpcode.SmsgGroupInvite or
+            WorldOpcode.SmsgGroupCancel or
+            WorldOpcode.CmsgGroupAccept or
+            WorldOpcode.CmsgGroupDecline or
+            WorldOpcode.SmsgGroupDecline or
+            WorldOpcode.SmsgGroupSetLeader or
+            WorldOpcode.SmsgGroupDestroyed or
+            WorldOpcode.SmsgGroupList or
+            WorldOpcode.SmsgPartyMemberStats or
+            WorldOpcode.SmsgPartyMemberStatsFull or
+            WorldOpcode.SmsgPartyCommandResult or
+            WorldOpcode.CmsgMessagechat or
+            WorldOpcode.SmsgMessagechat or
+            WorldOpcode.SmsgGmMessagechat or
+            WorldOpcode.CmsgEmote or
+            WorldOpcode.SmsgEmote or
+            WorldOpcode.CmsgTextEmote or
+            WorldOpcode.SmsgTextEmote or
+            WorldOpcode.SmsgChatNotInParty;
+    }
+
     private void ApplyUpdateObject(UpdateObjectBatch batch)
     {
         var valuesCount = batch.Values.Count;
@@ -1874,6 +3560,9 @@ public sealed class RealGameClient(
         var guidCreatureCount = 0;
         var guidPlayerCount = 0;
         var guidCorpseCount = 0;
+        var guidGameObjectCount = 0;
+        var guidDynamicObjectCount = 0;
+        var guidQuestGiverCount = 0;
         var selfFieldsUpdated = false;
         uint? selfHealthField = null;
         uint? selfMaxHealthField = null;
@@ -1914,6 +3603,9 @@ public sealed class RealGameClient(
                     updatedFieldCount++;
                     switch (field.Key)
                     {
+                        case 3: // OBJECT_FIELD_ENTRY
+                            state.EntryId = field.Value;
+                            break;
                         case 6: // CORPSE_FIELD_OWNER (low) on corpses
                             state.OwnerLow = field.Value;
                             break;
@@ -1949,6 +3641,9 @@ public sealed class RealGameClient(
                             break;
                         case 79: // UNIT_DYNAMIC_FLAGS
                             state.DynamicFlags = field.Value;
+                            break;
+                        case 82: // UNIT_NPC_FLAGS
+                            state.NpcFlags = field.Value;
                             break;
                         case 150: // PLAYER_FLAGS
                             state.PlayerFlags = field.Value;
@@ -2010,12 +3705,27 @@ public sealed class RealGameClient(
                 {
                     guidCorpseCount++;
                 }
+
+                if (state.IsGameObject)
+                {
+                    guidGameObjectCount++;
+                }
+
+                if (state.IsDynamicObject)
+                {
+                    guidDynamicObjectCount++;
+                }
+
+                if (state.IsQuestGiver)
+                {
+                    guidQuestGiverCount++;
+                }
             }
 
             if (_currentCharacter is null || _currentPlayer is null)
             {
                 Trace.WriteLine(
-                    $"NET WORLD UPDATE_OBJECT values={valuesCount} removed={removedCount} fields={updatedFieldCount} entities={_entities.Count} levels={guidWithLevelCount} health={guidWithHealthCount} targets={guidWithTargetCount} pos={guidWithPositionCount} creatures={guidCreatureCount} players={guidPlayerCount} (no current character)");
+                    $"NET WORLD UPDATE_OBJECT values={valuesCount} removed={removedCount} fields={updatedFieldCount} entities={_entities.Count} levels={guidWithLevelCount} health={guidWithHealthCount} targets={guidWithTargetCount} pos={guidWithPositionCount} creatures={guidCreatureCount} players={guidPlayerCount} corpses={guidCorpseCount} gameObjects={guidGameObjectCount} dynObjects={guidDynamicObjectCount} questGivers={guidQuestGiverCount} (no current character)");
                 return;
             }
 
@@ -2216,8 +3926,15 @@ public sealed class RealGameClient(
                 var sentAgeForDecisionMs = sent is MovementTelemetry sentTelemetryForDecision
                     ? now - sentTelemetryForDecision.LocalTickMs
                     : long.MaxValue;
-                var recentSelfMovementAuthority = _lastReceivedSelfMovement is MovementTelemetry recvSelfForDecision &&
-                                                  now - recvSelfForDecision.LocalTickMs <= 1200;
+                var recentSelfMovementEcho = _lastReceivedSelfMovement is MovementTelemetry recvSelfForDecision &&
+                                             now - recvSelfForDecision.LocalTickMs <= 1200;
+                var recentSentMovementAuthority = sentAgeForDecisionMs <= 900;
+                var recentSelfMovementAuthority = recentSelfMovementEcho || recentSentMovementAuthority;
+                var movementAuthoritySource = recentSelfMovementEcho
+                    ? "server-move-echo"
+                    : recentSentMovementAuthority
+                        ? "recent-client-send"
+                        : "none";
                 bool hardCorrectionDuringMove;
                 if (recentlyMoving && serverPositionFresh)
                 {
@@ -2249,10 +3966,10 @@ public sealed class RealGameClient(
                 // to avoid backward ghost ping-pong.
                 var forceDeathAuthoritySnap = deathReleaseAuthorityActive && (derivedGhost || derivedDead);
                 var forceDeathServerSnap = forceDeathAuthoritySnap;
-                // Trinity does not broadcast self movement packets back to the sender.
-                // While we are moving, UPDATE_OBJECT self positions can be stale snapshots.
-                // Only allow moving-time convergence when we have a recent authoritative self movement echo.
-                var allowMovingConvergence = !recentlyMoving || (recentSelfMovementAuthority && hardCorrectionDuringMove);
+                // Trinity can correct our position via UPDATE_OBJECT without echoing back self movement.
+                // Keep rejecting stale snapshots, but accept fresh self updates when they correlate with
+                // either a recent echoed movement or a recent movement packet we just sent.
+                var allowMovingConvergence = !recentlyMoving || (serverPositionFresh && recentSelfMovementAuthority && hardCorrectionDuringMove);
                 var applyServerConvergence = forceDeathServerSnap || (!staleUpdateObjectForSelf && allowMovingConvergence);
                 var converged = forceDeathServerSnap
                     ? serverPosition
@@ -2272,6 +3989,7 @@ public sealed class RealGameClient(
                     $"forceDeathSnap={forceDeathServerSnap} " +
                     $"deathReleaseAuthoritySnap={forceDeathAuthoritySnap} " +
                     $"recentSelfMoveAuthority={recentSelfMovementAuthority} " +
+                    $"authoritySource={movementAuthoritySource} " +
                     $"hardMoveCorrection={hardCorrectionDuringMove} streak={_movingServerCorrectionStreak} " +
                     $"staleUpdateObjectReject={staleUpdateObjectForSelf} " +
                     $"sentAgeMs={(sentAgeForDecisionMs == long.MaxValue ? "n/a" : sentAgeForDecisionMs)} targetDist={(targetDistance?.ToString("F3") ?? "n/a")} " +
@@ -2341,7 +4059,7 @@ public sealed class RealGameClient(
         }
 
         Trace.WriteLine(
-            $"NET WORLD UPDATE_OBJECT values={valuesCount} removed={removedCount} fields={updatedFieldCount} entities={_entities.Count} levels={guidWithLevelCount} health={guidWithHealthCount} targets={guidWithTargetCount} pos={guidWithPositionCount} creatures={guidCreatureCount} players={guidPlayerCount} corpses={guidCorpseCount} currentTarget={_currentTarget?.Guid ?? 0}");
+            $"NET WORLD UPDATE_OBJECT values={valuesCount} removed={removedCount} fields={updatedFieldCount} entities={_entities.Count} levels={guidWithLevelCount} health={guidWithHealthCount} targets={guidWithTargetCount} pos={guidWithPositionCount} creatures={guidCreatureCount} players={guidPlayerCount} corpses={guidCorpseCount} gameObjects={guidGameObjectCount} dynObjects={guidDynamicObjectCount} questGivers={guidQuestGiverCount} currentTarget={_currentTarget?.Guid ?? 0}");
         if (_lastCorpseEntityCount != guidCorpseCount)
         {
             Trace.WriteLine($"NET WORLD CORPSE_COUNT_CHANGED from={_lastCorpseEntityCount} to={guidCorpseCount}");
@@ -2352,6 +4070,17 @@ public sealed class RealGameClient(
 
     private void ResetMovementStateForServerRelocation(string reason)
     {
+        CancellationTokenSource? activeMovementCts;
+        lock (_movementCommandSync)
+        {
+            activeMovementCts = _activeMovementCommandCts;
+        }
+
+        if (activeMovementCts is not null && !activeMovementCts.IsCancellationRequested)
+        {
+            activeMovementCts.Cancel();
+        }
+
         _isMoveForwardActive = false;
         _lastMoveStartSentAtTick = 0;
         _lastMoveStopSentAtTick = 0;
@@ -2361,7 +4090,7 @@ public sealed class RealGameClient(
             _lastSentMovement = null;
         }
 
-        Trace.WriteLine($"NET WORLD MOVE STATE_RESET reason={reason}");
+        Trace.WriteLine($"NET WORLD MOVE STATE_RESET reason={reason} {BuildMovementCommandLog()}");
     }
 
     private async Task SendMovementPacketAsync(
@@ -2421,6 +4150,8 @@ public sealed class RealGameClient(
             point.Z,
             _currentOrientation);
 
+        Trace.WriteLine(
+            $"NET WORLD MOVE SEND {BuildMovementCommandLog()} opcode={opcode} flags={flags} moveTime={movementTime} pos=({point.X:F3},{point.Y:F3},{point.Z:F3},{_currentOrientation:F3})");
         await SendWorldPacketAsync(_worldConnection, opcode, payload, cancellationToken);
         _lastMovementCommandAtTick = nowTick;
         lock (_entitiesSync)
@@ -2641,6 +4372,116 @@ public sealed class RealGameClient(
             case WorldOpcode.CmsgAttackStop:
                 Trace.WriteLine($"NET WORLD SEND_VALIDATE ATTACK_STOP payload={payload.Length}");
                 break;
+            case WorldOpcode.CmsgGroupAccept:
+                if (payload.Length >= 4)
+                {
+                    var roles = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE GROUP_ACCEPT roles=0x{roles:X8}");
+                }
+
+                break;
+            case WorldOpcode.CmsgGroupDecline:
+                Trace.WriteLine("NET WORLD SEND_VALIDATE GROUP_DECLINE");
+                break;
+            case WorldOpcode.CmsgMessagechat:
+            {
+                if (payload.Length >= 8)
+                {
+                    var type = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    var language = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4, 4));
+                    Trace.WriteLine(
+                        $"NET WORLD SEND_VALIDATE CHAT type=0x{type:X2} language=0x{language:X8} payloadHex={payloadPreview}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgEmote:
+                if (payload.Length >= 4)
+                {
+                    var emoteId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE EMOTE emoteId={emoteId}");
+                }
+
+                break;
+            case WorldOpcode.CmsgTextEmote:
+                if (payload.Length >= 16)
+                {
+                    var textEmoteId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    var emoteNum = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4, 4));
+                    var targetGuid = BinaryPrimitives.ReadUInt64LittleEndian(payload.AsSpan(8, 8));
+                    Trace.WriteLine(
+                        $"NET WORLD SEND_VALIDATE TEXT_EMOTE textEmoteId={textEmoteId} emoteNum={emoteNum} targetGuid={targetGuid}");
+                }
+
+                break;
+            case WorldOpcode.CmsgQuestgiverStatusQuery:
+            case WorldOpcode.CmsgQuestgiverHello:
+            case WorldOpcode.CmsgQuestgiverRequestReward:
+            {
+                if (payload.Length >= 8)
+                {
+                    var guid = BinaryPrimitives.ReadUInt64LittleEndian(payload.AsSpan(0, 8));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE QUEST_GUID opcode={opcode} guid={guid}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgQuestgiverQueryQuest:
+            case WorldOpcode.CmsgQuestgiverAcceptQuest:
+            case WorldOpcode.CmsgQuestgiverCompleteQuest:
+            {
+                if (payload.Length >= 12)
+                {
+                    var guid = BinaryPrimitives.ReadUInt64LittleEndian(payload.AsSpan(0, 8));
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(8, 4));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE QUEST_TARGET opcode={opcode} guid={guid} questId={questId}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgQuestgiverChooseReward:
+            {
+                if (payload.Length >= 16)
+                {
+                    var guid = BinaryPrimitives.ReadUInt64LittleEndian(payload.AsSpan(0, 8));
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(8, 4));
+                    var rewardIndex = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(12, 4));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE QUEST_REWARD opcode={opcode} guid={guid} questId={questId} rewardIndex={rewardIndex}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgQuestQuery:
+            {
+                if (payload.Length >= 4)
+                {
+                    var questId = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    Trace.WriteLine($"NET WORLD SEND_VALIDATE QUEST_QUERY questId={questId}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgQuestPoiQuery:
+            {
+                if (payload.Length >= 4)
+                {
+                    var count = BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(0, 4));
+                    var questIds = new List<uint>((int)Math.Min(count, 32));
+                    var availableCount = Math.Min((payload.Length - 4) / 4, (int)count);
+                    for (var i = 0; i < availableCount; i++)
+                    {
+                        questIds.Add(BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4 + (i * 4), 4)));
+                    }
+
+                    Trace.WriteLine(
+                        $"NET WORLD SEND_VALIDATE QUEST_POI_QUERY count={count} parsed={availableCount} questIds={string.Join(",", questIds)}");
+                }
+
+                break;
+            }
+            case WorldOpcode.CmsgQuestgiverStatusMultipleQuery:
+                Trace.WriteLine($"NET WORLD SEND_VALIDATE QUEST_STATUS_MULTIPLE payload={payload.Length}");
+                break;
         }
     }
 
@@ -2664,6 +4505,12 @@ public sealed class RealGameClient(
             return;
         }
 
+        var severity = forcedDistance >= 1.0f
+            ? "hard"
+            : forcedDistance >= 0.20f
+                ? "soft"
+                : "micro";
+
         var sentInfo = "sent=none";
         if (_lastSentMovement is MovementTelemetry sent)
         {
@@ -2681,10 +4528,11 @@ public sealed class RealGameClient(
         }
 
         Trace.WriteLine(
-            $"NET WORLD SERVER_FORCE source={source} opcode={sourceOpcode} " +
+            $"NET WORLD SERVER_FORCE severity={severity} source={source} opcode={sourceOpcode} " +
             $"delta={forcedDistance:F3} local=({localBefore.X:F3},{localBefore.Y:F3},{localBefore.Z:F3}) " +
             $"server=({serverPosition.X:F3},{serverPosition.Y:F3},{serverPosition.Z:F3}) " +
             $"recentlyMoving={_isMoveForwardActive} recvMoveTime={FormatMovementTime(recvMovementTimeMs)} " +
+            $"{BuildMovementCommandLog()} " +
             $"{sentInfo} {recvInfo}");
     }
 
@@ -2704,6 +4552,288 @@ public sealed class RealGameClient(
             current.X + (dx * scale),
             current.Y + (dy * scale),
             current.Z + (dz * scale));
+    }
+
+    private (NavigationPoint Ground, string Source, float ProbeZ, float DeltaToStep, float DeltaToPlayer, float DeltaToTarget) ResolveHeartbeatGroundPoint(
+        NavigationPoint currentPoint,
+        NavigationPoint steppedWaypoint,
+        NavigationPoint safeWaypoint,
+        bool chaseMode,
+        bool deathRecoveryMove)
+    {
+        var primaryProbe = new NavigationPoint(steppedWaypoint.X, steppedWaypoint.Y, steppedWaypoint.Z);
+        var selectedGround = pathfinder.ProjectToSurface(_currentMapId, primaryProbe);
+        var selectedSource = "step-z";
+        var selectedProbeZ = primaryProbe.Z;
+
+        if (!deathRecoveryMove)
+        {
+            var currentProbe = new NavigationPoint(steppedWaypoint.X, steppedWaypoint.Y, currentPoint.Z);
+            var highProbe = new NavigationPoint(
+                steppedWaypoint.X,
+                steppedWaypoint.Y,
+                MathF.Max(currentPoint.Z, MathF.Max(steppedWaypoint.Z, safeWaypoint.Z)) + HeartbeatGroundProbeHighOffsetZ);
+            var lowProbe = new NavigationPoint(
+                steppedWaypoint.X,
+                steppedWaypoint.Y,
+                MathF.Min(currentPoint.Z, MathF.Min(steppedWaypoint.Z, safeWaypoint.Z)) - HeartbeatGroundProbeLowOffsetZ);
+
+            var candidates = new List<(NavigationPoint Ground, string Source, float ProbeZ, float Score)>
+            {
+                (pathfinder.ProjectToSurface(_currentMapId, primaryProbe), "step-z", primaryProbe.Z, 0.0f),
+                (pathfinder.ProjectToSurface(_currentMapId, currentProbe), "current-z", currentProbe.Z, 0.0f),
+                (pathfinder.ProjectToSurface(_currentMapId, highProbe), "high-z", highProbe.Z, 0.0f),
+                (pathfinder.ProjectToSurface(_currentMapId, lowProbe), "low-z", lowProbe.Z, 0.0f)
+            };
+
+            var descendingIntent =
+                safeWaypoint.Z < currentPoint.Z - HeartbeatGroundDirectionalIntentMinDeltaZ &&
+                steppedWaypoint.Z < currentPoint.Z - (HeartbeatGroundDirectionalIntentMinDeltaZ * 0.5f);
+            var ascendingIntent =
+                safeWaypoint.Z > currentPoint.Z + HeartbeatGroundDirectionalIntentMinDeltaZ &&
+                steppedWaypoint.Z > currentPoint.Z + (HeartbeatGroundDirectionalIntentMinDeltaZ * 0.5f);
+
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                var continuity = MathF.Abs(candidate.Ground.Z - currentPoint.Z);
+                var stepDelta = MathF.Abs(candidate.Ground.Z - steppedWaypoint.Z);
+                var score = stepDelta + (continuity * 0.35f);
+
+                if (candidate.Source == "step-z")
+                {
+                    score -= 0.05f;
+                }
+
+                if (continuity > HeartbeatGroundContinuityMaxDeltaZ)
+                {
+                    score += 4.0f;
+                }
+
+                if (candidate.Source == "current-z" &&
+                    stepDelta > HeartbeatGroundCurrentFallbackPenaltyDeltaZ)
+                {
+                    score += 0.45f;
+                }
+
+                if (chaseMode)
+                {
+                    if (!string.Equals(candidate.Source, "step-z", StringComparison.Ordinal))
+                    {
+                        score += HeartbeatGroundChaseNonStepPenalty;
+                    }
+
+                    if (stepDelta > HeartbeatGroundChaseStepDeviationPenaltyDeltaZ)
+                    {
+                        score += 1.20f + ((stepDelta - HeartbeatGroundChaseStepDeviationPenaltyDeltaZ) * 1.35f);
+                    }
+
+                    if (continuity > HeartbeatGroundChaseContinuityPenaltyDeltaZ)
+                    {
+                        score += 1.00f + ((continuity - HeartbeatGroundChaseContinuityPenaltyDeltaZ) * 1.10f);
+                    }
+
+                    if (descendingIntent &&
+                        (string.Equals(candidate.Source, "high-z", StringComparison.Ordinal) ||
+                         string.Equals(candidate.Source, "current-z", StringComparison.Ordinal)) &&
+                        candidate.Ground.Z > steppedWaypoint.Z + 0.10f)
+                    {
+                        score += 1.25f;
+                    }
+
+                    if (ascendingIntent &&
+                        string.Equals(candidate.Source, "low-z", StringComparison.Ordinal) &&
+                        candidate.Ground.Z < steppedWaypoint.Z - 0.10f)
+                    {
+                        score += 1.25f;
+                    }
+                }
+
+                if (descendingIntent)
+                {
+                    if (candidate.Ground.Z > steppedWaypoint.Z + HeartbeatGroundProbeOvershootPenaltyDeltaZ)
+                    {
+                        score += 0.70f + ((candidate.Ground.Z - steppedWaypoint.Z) * 0.50f);
+                    }
+
+                    if (candidate.Ground.Z > currentPoint.Z + 0.05f)
+                    {
+                        score += 0.50f;
+                    }
+                }
+                else if (ascendingIntent)
+                {
+                    if (candidate.Ground.Z < steppedWaypoint.Z - HeartbeatGroundProbeOvershootPenaltyDeltaZ)
+                    {
+                        score += 0.70f + ((steppedWaypoint.Z - candidate.Ground.Z) * 0.50f);
+                    }
+
+                    if (candidate.Ground.Z < currentPoint.Z - 0.05f)
+                    {
+                        score += 0.50f;
+                    }
+                }
+                else if (candidate.Ground.Z < currentPoint.Z - 0.35f)
+                {
+                    score += 0.35f;
+                }
+                else if (candidate.Ground.Z > currentPoint.Z &&
+                         continuity <= HeartbeatGroundContinuityMaxDeltaZ)
+                {
+                    score -= 0.10f;
+                }
+
+                candidates[i] = (candidate.Ground, candidate.Source, candidate.ProbeZ, score);
+            }
+
+            var bestCandidate = candidates
+                .OrderBy(x => x.Score)
+                .First();
+            selectedGround = bestCandidate.Ground;
+            selectedSource = bestCandidate.Source;
+            selectedProbeZ = bestCandidate.ProbeZ;
+
+            if (!chaseMode &&
+                selectedGround.Z < steppedWaypoint.Z - HeartbeatGroundRecoveryDeltaZ &&
+                selectedGround.Z < currentPoint.Z - HeartbeatGroundRecoveryDeltaZ)
+            {
+                var liftedProbe = new NavigationPoint(
+                    steppedWaypoint.X,
+                    steppedWaypoint.Y,
+                    MathF.Max(currentPoint.Z, steppedWaypoint.Z) + HeartbeatGroundProbeHighOffsetZ);
+                var liftedGround = pathfinder.ProjectToSurface(_currentMapId, liftedProbe);
+                if (liftedGround.Z > selectedGround.Z + HeartbeatGroundProbeUpgradeMinDeltaZ &&
+                    MathF.Abs(liftedGround.Z - currentPoint.Z) <= HeartbeatGroundContinuityMaxDeltaZ)
+                {
+                    selectedGround = liftedGround;
+                    selectedSource = "recovery-high-z";
+                    selectedProbeZ = liftedProbe.Z;
+                }
+            }
+
+            if (chaseMode)
+            {
+                var envelopeMin = MathF.Min(currentPoint.Z, MathF.Min(steppedWaypoint.Z, safeWaypoint.Z)) - HeartbeatGroundChaseEnvelopeMarginZ;
+                var envelopeMax = MathF.Max(currentPoint.Z, MathF.Max(steppedWaypoint.Z, safeWaypoint.Z)) + HeartbeatGroundChaseEnvelopeMarginZ;
+                var clampedZ = Math.Clamp(selectedGround.Z, envelopeMin, envelopeMax);
+                if (MathF.Abs(clampedZ - selectedGround.Z) >= 0.001f)
+                {
+                    selectedGround = new NavigationPoint(selectedGround.X, selectedGround.Y, clampedZ);
+                    selectedSource = $"{selectedSource}-clamped";
+                }
+
+                if (!string.Equals(selectedSource, "step-z", StringComparison.Ordinal) &&
+                    MathF.Abs(selectedGround.Z - steppedWaypoint.Z) > HeartbeatGroundChaseStepDeviationPenaltyDeltaZ)
+                {
+                    var conservativeGround = pathfinder.ProjectToSurface(_currentMapId, primaryProbe);
+                    var conservativeZ = Math.Clamp(conservativeGround.Z, envelopeMin, envelopeMax);
+                    selectedGround = new NavigationPoint(conservativeGround.X, conservativeGround.Y, conservativeZ);
+                    selectedSource = "step-z-chase-fallback";
+                    selectedProbeZ = primaryProbe.Z;
+                }
+            }
+        }
+
+        return (
+            selectedGround,
+            selectedSource,
+            selectedProbeZ,
+            selectedGround.Z - steppedWaypoint.Z,
+            selectedGround.Z - currentPoint.Z,
+            selectedGround.Z - safeWaypoint.Z);
+    }
+
+    private bool CanAdvanceWaypointByVisibility(
+        IReadOnlyList<NavigationPoint> path,
+        int currentIndex,
+        int candidateIndex,
+        NavigationPoint currentPoint,
+        out float segmentDistance2D,
+        out float deviation2D,
+        out string decision)
+    {
+        segmentDistance2D = 0.0f;
+        deviation2D = 0.0f;
+        decision = "candidate-index";
+        if (candidateIndex <= currentIndex || candidateIndex >= path.Count)
+        {
+            return false;
+        }
+
+        var candidatePoint = path[candidateIndex];
+        segmentDistance2D = Distance2D(currentPoint, candidatePoint);
+        if (segmentDistance2D > VisibilityShortcutMaxDistance)
+        {
+            decision = "segment_length";
+            return false;
+        }
+
+        deviation2D = ComputeMaxDeviationFromSegment2D(path, currentIndex, candidateIndex, currentPoint, candidatePoint);
+        if (deviation2D > VisibilityShortcutMaxDeviation)
+        {
+            decision = "path_deviation";
+            return false;
+        }
+
+        if (!pathfinder.HasLineOfSight(_currentMapId, currentPoint, candidatePoint))
+        {
+            decision = "los";
+            return false;
+        }
+
+        decision = "ok";
+        return true;
+    }
+
+    private static float ComputeMaxDeviationFromSegment2D(
+        IReadOnlyList<NavigationPoint> path,
+        int startIndex,
+        int endIndex,
+        NavigationPoint segmentStart,
+        NavigationPoint segmentEnd)
+    {
+        if (endIndex <= startIndex + 1)
+        {
+            return 0.0f;
+        }
+
+        var maxDeviation = 0.0f;
+        for (var i = startIndex + 1; i < endIndex; i++)
+        {
+            var deviation = DistancePointToSegment2D(path[i], segmentStart, segmentEnd);
+            if (deviation > maxDeviation)
+            {
+                maxDeviation = deviation;
+            }
+        }
+
+        return maxDeviation;
+    }
+
+    private static float DistancePointToSegment2D(NavigationPoint point, NavigationPoint segmentStart, NavigationPoint segmentEnd)
+    {
+        var dx = segmentEnd.X - segmentStart.X;
+        var dy = segmentEnd.Y - segmentStart.Y;
+        var lengthSq = (dx * dx) + (dy * dy);
+        if (lengthSq <= 0.0001f)
+        {
+            return Distance2D(point, segmentStart);
+        }
+
+        var t = (((point.X - segmentStart.X) * dx) + ((point.Y - segmentStart.Y) * dy)) / lengthSq;
+        t = Math.Clamp(t, 0.0f, 1.0f);
+        var projection = new NavigationPoint(
+            segmentStart.X + (dx * t),
+            segmentStart.Y + (dy * t),
+            point.Z);
+        return Distance2D(point, projection);
+    }
+
+    private static float Distance2D(NavigationPoint left, NavigationPoint right)
+    {
+        var dx = left.X - right.X;
+        var dy = left.Y - right.Y;
+        return MathF.Sqrt((dx * dx) + (dy * dy));
     }
 
     private static int FindClosestWaypointIndex(IReadOnlyList<NavigationPoint> path, float x, float y, float z)
@@ -2843,15 +4973,12 @@ public sealed class RealGameClient(
     {
         lock (_entitiesSync)
         {
-            // Only trust drift compensation when we have recent self movement echoed
-            // by server movement opcodes (not just UPDATE_OBJECT snapshots).
-            if (_lastReceivedSelfMovement is not MovementTelemetry recvSelfMovement)
-            {
-                return heartbeatPoint;
-            }
-
-            var recvAgeMs = Environment.TickCount64 - recvSelfMovement.LocalTickMs;
-            if (recvAgeMs > 800)
+            var now = Environment.TickCount64;
+            var hasRecentEchoAuthority = _lastReceivedSelfMovement is MovementTelemetry recvSelfMovement &&
+                                         now - recvSelfMovement.LocalTickMs <= 800;
+            var hasRecentSentAuthority = _lastSentMovement is MovementTelemetry sentMovement &&
+                                         now - sentMovement.LocalTickMs <= 800;
+            if (!hasRecentEchoAuthority && !hasRecentSentAuthority)
             {
                 return heartbeatPoint;
             }
@@ -2861,7 +4988,7 @@ public sealed class RealGameClient(
                 return heartbeatPoint;
             }
 
-            var ageMs = Environment.TickCount64 - drift.LocalTickMs;
+            var ageMs = now - drift.LocalTickMs;
             if (ageMs > 1500 || drift.DriftDistance < 1.0f)
             {
                 return heartbeatPoint;
@@ -2874,6 +5001,10 @@ public sealed class RealGameClient(
             // Tiny correction baked into each heartbeat so server/local trajectories
             // stay close without visible snap-backs.
             var chaseCompensationScale = _isChaseMode ? 0.35f : 0.60f;
+            if (hasRecentSentAuthority && !hasRecentEchoAuthority)
+            {
+                chaseCompensationScale *= 0.75f;
+            }
             var gain = drift.LargeJump ? 0.035f : 0.020f;
             if (drift.DriftDistance >= 2.0f)
             {
@@ -2926,11 +5057,14 @@ public sealed class RealGameClient(
     private void UpdateSnapshot(PlayerSnapshot? player, TargetSnapshot? target)
     {
         IReadOnlyList<NearbyUnitSnapshot> nearbyUnits;
+        IReadOnlyList<NearbyWorldObjectSnapshot> nearbyWorldObjects;
+        var activeQuests = BuildActiveQuestSnapshots();
         lock (_entitiesSync)
         {
             var nowTick = Environment.TickCount64;
             nearbyUnits = _entities
                 .Where(x => x.Key != _currentCharacter?.Guid)
+                .Where(x => x.Value.IsCreature || x.Value.IsPlayer || x.Value.IsCorpse)
                 .Select(x =>
                 {
                     float? posX = null;
@@ -2957,12 +5091,106 @@ public sealed class RealGameClient(
                         posX,
                         posY,
                         posZ,
-                        x.Value.HealthPercent);
+                        x.Value.HealthPercent,
+                        x.Value.EntryId,
+                        x.Value.NpcFlags == 0 ? null : x.Value.NpcFlags,
+                        x.Value.IsQuestGiver,
+                        x.Value.QuestGiverStatus);
+                })
+                .ToArray();
+
+            nearbyWorldObjects = _entities
+                .Where(x => x.Key != _currentCharacter?.Guid)
+                .Where(x => x.Value.IsGameObject || x.Value.IsDynamicObject)
+                .Select(x =>
+                {
+                    float? posX = null;
+                    float? posY = null;
+                    float? posZ = null;
+                    if (x.Value.TryGetProjectedPosition(nowTick, out var projected))
+                    {
+                        posX = projected.X;
+                        posY = projected.Y;
+                        posZ = projected.Z;
+                    }
+
+                    return new NearbyWorldObjectSnapshot(
+                        x.Key,
+                        x.Value.TypeId ?? 0,
+                        x.Value.EntryId,
+                        x.Value.OwnerGuid,
+                        posX,
+                        posY,
+                        posZ,
+                        x.Value.O);
                 })
                 .ToArray();
         }
 
-        gameStateStore.Update(new WorldSnapshot(player, target, nearbyUnits, DateTimeOffset.UtcNow));
+        gameStateStore.Update(new WorldSnapshot(player, target, nearbyUnits, nearbyWorldObjects, activeQuests, DateTimeOffset.UtcNow));
+    }
+
+    private sealed class ActiveQuestState
+    {
+        public ActiveQuestState(uint questId)
+        {
+            QuestId = questId;
+        }
+
+        public uint QuestId { get; }
+
+        public bool IsCompleted { get; set; }
+
+        public uint[] CreatureOrGoCounts { get; } = new uint[4];
+
+        public bool[] CreatureOrGoKnown { get; } = new bool[4];
+
+        public uint?[] ItemCounts { get; } = new uint?[6];
+
+        public Dictionary<uint, QuestObjectiveRuntimeProgress> PendingObjectiveProgress { get; } = [];
+
+        public DateTimeOffset LastUpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    }
+
+    private sealed class MovementCommandScope : IDisposable
+    {
+        private readonly RealGameClient _owner;
+        private bool _disposed;
+
+        public MovementCommandScope(
+            RealGameClient owner,
+            long operationId,
+            string commandName,
+            CancellationTokenSource commandCts,
+            CancellationTokenSource linkedCts)
+        {
+            _owner = owner;
+            OperationId = operationId;
+            CommandName = commandName;
+            CommandCts = commandCts;
+            LinkedCts = linkedCts;
+        }
+
+        public long OperationId { get; }
+
+        public string CommandName { get; }
+
+        public CancellationTokenSource CommandCts { get; }
+
+        public CancellationTokenSource LinkedCts { get; }
+
+        public CancellationToken CancellationToken => LinkedCts.Token;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _owner.EndMovementCommand(this);
+        }
     }
 
     private sealed class EntityState
@@ -2997,6 +5225,9 @@ public sealed class RealGameClient(
         public uint DynamicFlags { get; set; }
         public uint PlayerFlags { get; set; }
         public uint FactionTemplateId { get; set; }
+        public uint? EntryId { get; set; }
+        public uint NpcFlags { get; set; }
+        public QuestGiverStatus? QuestGiverStatus { get; set; }
         public int? Level { get; set; }
         public byte? TypeId { get; set; }
         public float? X { get; set; }
@@ -3024,6 +5255,7 @@ public sealed class RealGameClient(
         public bool IsSkinnable => (UnitFlags & 0x04000000) != 0; // UNIT_FLAG_SKINNABLE
         public bool IsGhostPlayerFlag => (PlayerFlags & 0x00000010) != 0; // PLAYER_FLAGS_GHOST
         public bool IsAttackableHint => (UnitFlags & NotAttackableMask) == 0;
+        public bool IsQuestGiver => (NpcFlags & 0x00000002) != 0;
         public bool IsDeadHint =>
             (Health == 0 && MaxHealth > 0) ||
             IsStandStateDead ||
@@ -3032,6 +5264,8 @@ public sealed class RealGameClient(
             (IsDynamicDead && !IsFeignDeath);
         public bool IsCreature => TypeId == 3;
         public bool IsCorpse => TypeId == 7;
+        public bool IsGameObject => TypeId == 5;
+        public bool IsDynamicObject => TypeId == 6;
         // TrinityCore 3.3.5 players use HighGuid::Player = 0x0000 in the top 16 bits.
         // Keep a conservative fallback when TypeId is absent in incremental updates.
         public bool IsPlayer =>
@@ -3143,6 +5377,8 @@ public sealed class RealGameClient(
         WorldOpcode? RecvOpcode,
         uint? RecvMovementTimeMs,
         long? RecvAgeMs);
+
+    private readonly record struct QuestObjectiveRuntimeProgress(uint CurrentCount, uint RequiredCount);
 
     private readonly record struct SpeedSample(float X, float Y, float Z, long TickMs);
 }

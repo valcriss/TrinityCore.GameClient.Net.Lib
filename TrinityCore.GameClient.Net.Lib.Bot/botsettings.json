@@ -8,7 +8,8 @@
                        "WorldHost":  "127.0.0.1",
                        "WorldPort":  8085,
                        "LogoutTimeoutSeconds":  25,
-                       "CharacterName":  "test"
+                       "CharacterName":  "test",
+                       "AutoEnableGmWhispers":  true
                    },
     "Combat":  {
                    "AggroRadius":  35,
@@ -62,12 +63,14 @@
                        "FaceNudgeNoProgressMs":  1600,
                        "FaceNudgeStepTimeoutMs":  500,
                        "FaceRefreshBackAngleDeg":  130.0,
+                       "ChaseCommandMaxDistance":  8.0,
                        "TargetPredictionMaxAgeMs":  1200,
                        "TargetPredictionMinLeadSeconds":  0.15,
                        "TargetPredictionMaxLeadSeconds":  0.9,
                        "TargetPredictionMinSpeed":  0.4,
                        "TargetPredictionMaxSpeed":  9.0,
-                       "TargetPredictionMaxDistance":  6.0
+                       "TargetPredictionMaxDistance":  6.0,
+                       "TargetPredictionMaxVerticalDelta":  1.75
                    },
     "Behavior":  {
                      "TickMs":  200,
@@ -82,6 +85,46 @@
     "Logging":  {
                     "Directory":  "logs",
                     "EnablePacketTrace":  true
+                },
+    "Exploration":  {
+                        "Enabled":  true,
+                        "IdleBeforeExploreMs":  4000,
+                        "ExploreCommandIntervalMs":  1200,
+                        "StepMinDistance":  10.0,
+                        "StepMaxDistance":  35.0,
+                        "CandidateCount":  20,
+                        "ArrivalRadius":  2.5,
+                        "StepTimeoutMs":  3500,
+                        "GridCellSize":  14.0,
+                        "MaxCandidateVerticalDelta":  3.0,
+                        "MaxDirectPathDistance":  18.0,
+                        "VisitDecaySeconds":  120,
+                        "BlacklistSeconds":  20,
+                        "NoProgressTimeoutMs":  4000,
+                        "MinProgressDistance":  0.3
+                    },
+    "Hazard":  {
+                   "Enabled":  true,
+                   "DamageProbeRadius":  3.25,
+                   "ContactProbeRadius":  1.65,
+                   "VerticalProbeTolerance":  2.0,
+                   "KnownHazardRadius":  2.75,
+                   "SuspectedHazardRadius":  2.35,
+                   "EscapeBuffer":  0.85,
+                   "RouteSafetyBuffer":  0.15,
+                   "EscapeArrivalRadius":  0.6,
+                   "EscapeCooldownMs":  900,
+                   "MemorySeconds":  90,
+                   "SuspectedMemorySeconds":  18,
+                   "CandidateCount":  12,
+                   "BlockedHazardWindowSeconds":  8,
+                   "ForcedRetreatThreshold":  3,
+                   "ForcedRetreatBuffer":  2.2,
+                   "KnownEntryIds":  [
+
+                                     ],
+                   "TreatUnknownGameObjectsAsHazardsOnDamage":  true,
+                   "TreatUnknownDynamicObjectsAsHazardsOnDamage":  true
                 }
 }
 
