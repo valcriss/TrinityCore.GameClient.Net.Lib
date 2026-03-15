@@ -335,3 +335,5 @@ ASALocalRun/
 
 sonarqube.bat
 .sonarqube
+TrinityCore-3.3.5/
+data/

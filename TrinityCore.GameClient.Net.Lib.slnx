@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="TrinityCore.GameClient.Net.Behavior/TrinityCore.GameClient.Net.Behavior.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Client/TrinityCore.GameClient.Net.Client.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.GameState/TrinityCore.GameClient.Net.GameState.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Lib.Bot/TrinityCore.GameClient.Net.Lib.Bot.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Lib.Sample/TrinityCore.GameClient.Net.Lib.Sample.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Lib/TrinityCore.GameClient.Net.Lib.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Navigation/TrinityCore.GameClient.Net.Navigation.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Protocol/TrinityCore.GameClient.Net.Protocol.csproj" />
+  <Project Path="TrinityCore.GameClient.Net.Transport/TrinityCore.GameClient.Net.Transport.csproj" />
+</Solution>
